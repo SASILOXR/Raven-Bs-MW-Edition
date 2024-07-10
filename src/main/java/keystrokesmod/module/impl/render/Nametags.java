@@ -6,6 +6,7 @@ import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
+import keystrokesmod.utility.PacketUtils;
 import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.gui.ScaledResolution;
@@ -210,6 +211,9 @@ public class Nametags extends Module {
             }
             if (convertedPosition[2] >= 0.0D && convertedPosition[2] < 1.0D) {
                 double[] headConvertedPosition = convertTo2D(interpolatedX, interpolatedY + 1.0D, interpolatedZ);
+                if (headConvertedPosition == null) {
+                    continue;
+                }
                 double height = Math.abs(headConvertedPosition[1] - convertedPosition[1]);
                 entityPositions.put(entityPlayer, new double[]{convertedPosition[0], convertedPosition[1], height, convertedPosition[2]});
             }
