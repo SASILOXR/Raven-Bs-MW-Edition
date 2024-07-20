@@ -1,10 +1,7 @@
 package keystrokesmod.module.impl.player;
 
 import keystrokesmod.Raven;
-import keystrokesmod.event.PostUpdateEvent;
-import keystrokesmod.event.PreMotionEvent;
-import keystrokesmod.event.PreUpdateEvent;
-import keystrokesmod.event.ReceivePacketEvent;
+import keystrokesmod.event.*;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.minigames.BedWars;
@@ -29,10 +26,8 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.awt.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.List;
 
 public class BedAura extends Module {
     public SliderSetting mode;
@@ -55,7 +50,7 @@ public class BedAura extends Module {
     public float breakProgress;
     private int currentSlot = -1;
     private int lastSlot = -1;
-    private boolean rotate;
+    public boolean rotate;
     public BlockPos currentBlock;
     private long lastCheck = 0;
     public boolean stopAutoblock;
@@ -250,13 +245,11 @@ public class BedAura extends Module {
         return null;
     }
 
-    private BlockPos getBestBlock(BlockPos[] positions, boolean getSurrounding) {
-        if (positions == null) {
+    public BlockPos getBestBlock(BlockPos[] positions, boolean getSurrounding) {
+        if (positions == null || positions.length == 0) {
             return null;
         }
-        double maxRangeSquared = range.getInput() * range.getInput();
-        double bestEfficiency = 0;
-        BlockPos closestBlock = null;
+        HashMap<BlockPos, double[]> blockMap = new HashMap<>();
         for (BlockPos pos : positions) {
             if (pos == null) {
                 continue;
@@ -273,34 +266,34 @@ public class BedAura extends Module {
                     if (!RotationUtils.inRange(offset, range.getInput())) {
                         continue;
                     }
-
                     double efficiency = getEfficiency(offset);
                     double distance = mc.thePlayer.getDistanceSqToCenter(offset);
-
-                    if (betterBlock(distance, efficiency, maxRangeSquared, bestEfficiency)) {
-                        maxRangeSquared = distance;
-                        bestEfficiency = efficiency;
-                        closestBlock = offset;
-                    }
+                    blockMap.put(offset, new double[]{distance, efficiency});
                 }
             }
             else {
                 if (!RotationUtils.inRange(pos, range.getInput())) {
                     continue;
                 }
-
                 double efficiency = getEfficiency(pos);
                 double distance = mc.thePlayer.getDistanceSqToCenter(pos);
-
-                if (betterBlock(distance, efficiency, maxRangeSquared, bestEfficiency)) {
-                    maxRangeSquared = distance;
-                    bestEfficiency = efficiency;
-                    closestBlock = pos;
-                }
+                blockMap.put(pos, new double[]{distance, efficiency});
             }
         }
+        List<Map.Entry<BlockPos, double[]>> sortedByDistance = sortByDistance(blockMap);
+        List<Map.Entry<BlockPos, double[]>> sortedByEfficiency = sortByEfficiency(sortedByDistance);
+        return sortedByEfficiency.isEmpty() ? null : sortedByEfficiency.get(0).getKey();
+    }
 
-        return closestBlock;
+    private List<Map.Entry<BlockPos, double[]>> sortByDistance(HashMap<BlockPos, double[]> blockMap) {
+        List<Map.Entry<BlockPos, double[]>> list = new ArrayList<>(blockMap.entrySet());
+        list.sort(Comparator.comparingDouble(entry -> entry.getValue()[0]));
+        return list;
+    }
+
+    private List<Map.Entry<BlockPos, double[]>> sortByEfficiency(List<Map.Entry<BlockPos, double[]>> blockList) {
+        blockList.sort((entry1, entry2) -> Double.compare(entry2.getValue()[1], entry1.getValue()[1]));
+        return blockList;
     }
 
     private double getEfficiency(BlockPos pos) {
@@ -315,8 +308,8 @@ public class BedAura extends Module {
         return efficiency;
     }
 
-    private boolean betterBlock(double distance, double efficiency, double maxRangeSquared, double bestEfficiency) {
-        return (distance < maxRangeSquared || efficiency > bestEfficiency);
+    private boolean betterBlock(double combinedStats, double combinedBest) {
+        return combinedStats > combinedBest;
     }
 
     private void reset(boolean resetSlot) {

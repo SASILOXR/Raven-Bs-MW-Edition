@@ -340,55 +340,56 @@ public class Commands {
                         print(i + 1 + ". " + Raven.profileManager.profiles.get(i).getName(), 0);
                     }
                 }
-                else if (args[1].equals("save") || args[1].equals("s")) {
-                    if (args.length != 3) {
-                        print(invSyn, 1);
-                        return;
-                    }
-                    String name = args[2];
-                    if (name.length() < 2 || name.length() > 10) {
-                        print("&cInvalid name.", 1);
-                        return;
-                    }
-                    Raven.profileManager.saveProfile(new Profile(name, 0));
-                    print("&aSaved profile:", 1);
-                    print(name, 0);
-                    Raven.profileManager.loadProfiles();
-                }
-                else if (args[1].equals("load") || args[1].equals("l")) {
-                    if (args.length != 3) {
-                        print(invSyn, 1);
-                        return;
-                    }
-                    String name = args[2];
-                    for (Profile profile : Raven.profileManager.profiles) {
-                        if (profile.getName().equals(name)) {
-                            Raven.profileManager.loadProfile(profile.getName());
-                            print("&aLoaded profile:", 1);
-                            print(name, 0);
-                            if (Settings.sendMessage.isToggled()) {
-                                Utils.sendMessage("&7Enabled profile: &b" + name);
+                else if (args.length > 1) {
+                    if (args[1].equals("save") || args[1].equals("s")) {
+                        if (args.length != 3) {
+                            print(invSyn, 1);
+                            return;
+                        }
+                        String name = args[2];
+                        if (name.length() < 2 || name.length() > 10) {
+                            print("&cInvalid name.", 1);
+                            return;
+                        }
+                        Raven.profileManager.saveProfile(new Profile(name, 0));
+                        print("&aSaved profile:", 1);
+                        print(name, 0);
+                        Raven.profileManager.loadProfiles();
+                    } else if (args[1].equals("load") || args[1].equals("l")) {
+                        if (args.length != 3) {
+                            print(invSyn, 1);
+                            return;
+                        }
+                        String name = args[2];
+                        for (Profile profile : Raven.profileManager.profiles) {
+                            if (profile.getName().equals(name)) {
+                                Raven.profileManager.loadProfile(profile.getName());
+                                print("&aLoaded profile:", 1);
+                                print(name, 0);
+                                if (Settings.sendMessage.isToggled()) {
+                                    Utils.sendMessage("&7Enabled profile: &b" + name);
+                                }
+                                return;
                             }
+                        }
+                        print("&cInvalid profile.", 1);
+                    } else if (args[1].equals("remove") || args[1].equals("r")) {
+                        if (args.length != 3) {
+                            print(invSyn, 1);
                             return;
                         }
-                    }
-                    print("&cInvalid profile.", 1);
-                } else if (args[1].equals("remove") || args[1].equals("r")) {
-                    if (args.length != 3) {
-                        print(invSyn, 1);
-                        return;
-                    }
-                    String name = args[2];
-                    for (Profile profile : Raven.profileManager.profiles) {
-                        if (profile.getName().equals(name)) {
-                            Raven.profileManager.deleteProfile(profile.getName());
-                            print("&aRemoved profile:", 1);
-                            print(name, 0);
-                            Raven.profileManager.loadProfiles();
-                            return;
+                        String name = args[2];
+                        for (Profile profile : Raven.profileManager.profiles) {
+                            if (profile.getName().equals(name)) {
+                                Raven.profileManager.deleteProfile(profile.getName());
+                                print("&aRemoved profile:", 1);
+                                print(name, 0);
+                                Raven.profileManager.loadProfiles();
+                                return;
+                            }
                         }
+                        print("&cInvalid profile.", 1);
                     }
-                    print("&cInvalid profile.", 1);
                 }
             } else if (!cm.startsWith("help") && !cm.startsWith("?")) {
                 if (cm.startsWith("shoutout")) {

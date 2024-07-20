@@ -3,21 +3,17 @@ package keystrokesmod.module.impl.minigames;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
-import keystrokesmod.utility.BlockUtils;
 import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Utils;
-import net.minecraft.block.BlockBed;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemEnderPearl;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.EnumFacing;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.awt.*;
@@ -58,23 +54,6 @@ public class BedWars extends Module {
 
     public void onDisable() {
         outsideSpawn = true;
-    }
-
-    @SubscribeEvent
-    public void onBlock(BlockEvent.PlaceEvent e) {
-        if (!Utils.nullCheck() || !obsidian.isToggled()) {
-            return;
-        }
-        if (!(e.state.getBlock() instanceof BlockObsidian)) {
-            return;
-        }
-        for (EnumFacing facing : EnumFacing.values()) {
-            if (BlockUtils.getBlock(e.pos.offset(facing)) instanceof BlockBed) {
-                obsidianPos.add(e.pos);
-                Utils.sendMessage(e.player.getDisplayName().getFormattedText() + " &7placed &dObsidian");
-                break;
-            }
-        }
     }
 
     @SubscribeEvent

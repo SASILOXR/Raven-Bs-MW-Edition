@@ -15,6 +15,7 @@
     "render.MixinRendererLivingEntity",
     "render.MixinEntityRenderer",
     "network.MixinModList",
-    "client.MixinMovementInputFromOptions"
+    "client.MixinMovementInputFromOptions",
+    "client.MixinMinecraft"
   ]
 }

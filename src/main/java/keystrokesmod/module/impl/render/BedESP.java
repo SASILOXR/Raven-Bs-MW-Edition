@@ -86,12 +86,13 @@ public class BedESP extends Module {
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent e) {
         if (Utils.nullCheck()) {
+            float blockHeight = getBlockHeight();
             if (firstBed.isToggled() && this.bed != null) {
                 if (!(mc.theWorld.getBlockState(bed[0]).getBlock() instanceof BlockBed)) {
                     this.bed = null;
                     return;
                 }
-                renderBed(this.bed);
+                renderBed(this.bed, blockHeight);
                 return;
             }
             if (this.beds.isEmpty()) {
@@ -104,7 +105,7 @@ public class BedESP extends Module {
                     iterator.remove();
                     continue;
                 }
-                renderBed(blockPos);
+                renderBed(blockPos, blockHeight);
             }
         }
     }
@@ -114,7 +115,7 @@ public class BedESP extends Module {
         this.beds.clear();
     }
 
-    private void renderBed(final BlockPos[] array) {
+    private void renderBed(final BlockPos[] array, float height) {
         final double n = array[0].getX() - mc.getRenderManager().viewerPosX;
         final double n2 = array[0].getY() - mc.getRenderManager().viewerPosY;
         final double n3 = array[0].getZ() - mc.getRenderManager().viewerPosZ;
@@ -133,14 +134,14 @@ public class BedESP extends Module {
         AxisAlignedBB axisAlignedBB;
         if (array[0].getX() != array[1].getX()) {
             if (array[0].getX() > array[1].getX()) {
-                axisAlignedBB = new AxisAlignedBB(n - 1.0, n2, n3, n + 1.0, n2 + getBlockHeight(), n3 + 1.0);
+                axisAlignedBB = new AxisAlignedBB(n - 1.0, n2, n3, n + 1.0, n2 + height, n3 + 1.0);
             } else {
-                axisAlignedBB = new AxisAlignedBB(n, n2, n3, n + 2.0, n2 + getBlockHeight(), n3 + 1.0);
+                axisAlignedBB = new AxisAlignedBB(n, n2, n3, n + 2.0, n2 + height, n3 + 1.0);
             }
         } else if (array[0].getZ() > array[1].getZ()) {
-            axisAlignedBB = new AxisAlignedBB(n, n2, n3 - 1.0, n + 1.0, n2 + getBlockHeight(), n3 + 1.0);
+            axisAlignedBB = new AxisAlignedBB(n, n2, n3 - 1.0, n + 1.0, n2 + height, n3 + 1.0);
         } else {
-            axisAlignedBB = new AxisAlignedBB(n, n2, n3, n + 1.0, n2 + getBlockHeight(), n3 + 2.0);
+            axisAlignedBB = new AxisAlignedBB(n, n2, n3, n + 1.0, n2 + height, n3 + 2.0);
         }
         RenderUtils.drawBoundingBox(axisAlignedBB, n5, n6, n7);
         GL11.glEnable(3553);

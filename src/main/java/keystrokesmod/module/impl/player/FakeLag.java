@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.Raven;
 import keystrokesmod.event.SendPacketEvent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -79,6 +80,7 @@ public class FakeLag extends Module {
                 long receiveTime = entry.getValue();
                 long ms = System.currentTimeMillis();
                 if (Utils.getDifference(ms, receiveTime) > packetDelay.getInput() || !delay) {
+                    Raven.badPacketsHandler.handlePacket(packet);
                     PacketUtils.sendPacketNoEvent(packet);
                     packets.remove();
                 }

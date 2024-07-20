@@ -4,7 +4,6 @@ import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.Utils;
-import net.minecraftforge.event.world.BlockEvent;
 import org.lwjgl.input.Keyboard;
 
 public class BHop extends Module {

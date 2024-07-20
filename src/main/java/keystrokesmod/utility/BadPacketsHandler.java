@@ -1,10 +1,12 @@
 package keystrokesmod.utility;
 
+import keystrokesmod.Raven;
 import keystrokesmod.event.PostUpdateEvent;
 import keystrokesmod.event.ReceivePacketEvent;
 import keystrokesmod.event.SendPacketEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.S09PacketHeldItemChange;
 import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
@@ -14,7 +16,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class BadPacketsHandler { // ensures you don't get banned
     public boolean C08;
     public boolean C07;
-    private boolean C02;
+    public boolean C02;
     public boolean C09;
     public boolean delayAttack;
     public boolean delay;
@@ -76,5 +78,21 @@ public class BadPacketsHandler { // ensures you don't get banned
             delayAttack = true;
         }
         C08 = C07 = C02 = C09 = false;
+    }
+
+    public void handlePacket(Packet packet) {
+        if (packet instanceof C09PacketHeldItemChange) {
+            this.playerSlot = ((C09PacketHeldItemChange) packet).getSlotId();
+            C09 = true;
+        }
+        else if (packet instanceof C02PacketUseEntity) {
+            C02 = true;
+        }
+        else if (packet instanceof C07PacketPlayerDigging) {
+            C07 = true;
+        }
+        else if (packet instanceof C08PacketPlayerBlockPlacement) {
+            C08 = true;
+        }
     }
 }

@@ -41,8 +41,8 @@ public class CPSCalculator {
                 aR();
             }
             else if (d.button == 2 && Settings.middleClickFriends.isToggled()) {
-                EntityLivingBase g = Utils.raytrace(30);
-                if (!AntiBot.isBot(g) && !Utils.addFriend(g.getName())) {
+                EntityLivingBase g = Utils.raytrace(200);
+                if (g != null && !AntiBot.isBot(g) && !Utils.addFriend(g.getName())) {
                     Utils.removeFriend(g.getName());
                 }
             }

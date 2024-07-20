@@ -14,6 +14,8 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.Packet;
+import net.minecraft.network.handshake.client.C00Handshake;
+import net.minecraft.network.login.client.C00PacketLoginStart;
 import net.minecraft.network.play.client.*;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.MouseEvent;
@@ -72,7 +74,7 @@ public class KillAura extends Module {
     // autoclicker vars end
     private boolean attack;
     private boolean blocking;
-    public boolean blinking;
+    public AtomicBoolean blinking = new AtomicBoolean();
     public boolean lag;
     private boolean swapped;
     public boolean rmbDown;
@@ -167,55 +169,65 @@ public class KillAura extends Module {
                 mc.thePlayer.sendQueue.addToSendQueue(new C0APacketAnimation());
             }
         }
-        if (block.get() && (autoBlockMode.getInput() == 3 || autoBlockMode.getInput() == 4 || autoBlockMode.getInput() == 5) && Utils.holdingSword()) {
-            setBlockState(block.get(), false, false);
+        int autoBlock = (int) autoBlockMode.getInput();
+        if (block.get() && (autoBlock  == 3 || autoBlock  == 4 || autoBlock  == 5) && Utils.holdingSword()) {
             if (ModuleManager.bedAura.stopAutoblock) {
                 resetBlinkState(false);
                 ModuleManager.bedAura.stopAutoblock = false;
+                block.set(false);
                 return;
             }
+            setBlockState(block.get(), false, false);
             switch ((int) autoBlockMode.getInput()) {
                 case 3:
                     if (lag) {
-                        blinking = true;
-                        if (Raven.badPacketsHandler.playerSlot != mc.thePlayer.inventory.currentItem % 8 + 1) {
-                            mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(Raven.badPacketsHandler.playerSlot = mc.thePlayer.inventory.currentItem % 8 + 1));
-                            swapped = true;
-                        }
+                        blinking.set(true);
+                        mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(Raven.badPacketsHandler.playerSlot = mc.thePlayer.inventory.currentItem % 8 + 1));
+                        swapped = true;
                         lag = false;
                     }
                     else {
                         if (Raven.badPacketsHandler.delayAttack) {
                             return;
                         }
-                        if (Raven.badPacketsHandler.playerSlot != mc.thePlayer.inventory.currentItem) {
-                            mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(Raven.badPacketsHandler.playerSlot = mc.thePlayer.inventory.currentItem));
-                            swapped = false;
-                        }
-                        attackAndInteract(target, swingWhileBlocking, false);
+                        mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(Raven.badPacketsHandler.playerSlot = mc.thePlayer.inventory.currentItem));
+                        swapped = false;
+                        attackAndInteract(target, swingWhileBlocking);
                         sendBlock();
                         releasePackets();
                         lag = true;
                     }
                     break;
                 case 4:
-                case 5:
                     if (lag) {
-                        blinking = true;
+                        blinking.set(true);
                         unBlock();
                         lag = false;
                     }
                     else {
-                        attackAndInteract(target, swingWhileBlocking, autoBlockMode.getInput() == 5); // attack while blinked
-                        releasePackets(); // release
+                        attackAndInteract(target, swingWhileBlocking); // attack while blinked
                         sendBlock(); // block after releasing unblock
+                        lag = true;
+                        releasePackets(); // release
+                    }
+                    break;
+                case 5:
+                    if (lag) {
+                        blinking.set(true);
+                        unBlock();
+                        lag = false;
+                    }
+                    else {
+                        attackAndInteract(target, swingWhileBlocking); // attack while blinked
+                        sendBlock(); // block after releasing unblock
+                        releasePackets(); // release
                         lag = true;
                     }
                     break;
             }
             return;
         }
-        else if (blinking || lag) {
+        else if (blinking.get() || lag) {
             resetBlinkState(true);
         }
         if (target == null) {
@@ -225,6 +237,9 @@ public class KillAura extends Module {
             resetBlinkState(true);
             attack = false;
             if (!aimingEntity()) {
+                return;
+            }
+            if (ModuleManager.bedAura.rotate) {
                 return;
             }
             switchTargets = true;
@@ -238,7 +253,7 @@ public class KillAura extends Module {
             reset();
             return;
         }
-        setTarget(new float[]{e.getYaw(), e.getPitch()});
+        setTarget();
         if (target != null && rotationMode.getInput() == 1) {
             float[] rotations = RotationUtils.getRotations(target, e.getYaw(), e.getPitch());
             if (rotationSmoothing.getInput() > 0) {
@@ -281,14 +296,14 @@ public class KillAura extends Module {
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public void onSendPacket(SendPacketEvent e) {
-        if (!Utils.nullCheck() || !blinking) {
+        if (!Utils.nullCheck() || !blinking.get()) {
             return;
         }
         Packet packet = e.getPacket();
         if (packet.getClass().getSimpleName().startsWith("S")) {
             return;
         }
-        if (packet instanceof C00PacketKeepAlive) {
+        if (packet instanceof C00PacketKeepAlive || packet instanceof C00PacketLoginStart || packet instanceof C00Handshake) {
             return;
         }
         blinkedPackets.add(e.getPacket());
@@ -398,7 +413,7 @@ public class KillAura extends Module {
         blocking = Reflection.setBlocking(state);
     }
 
-    private void setTarget(float[] rotations) {
+    private void setTarget() {
         availableTargets.clear();
         block.set(false);
         ModuleManager.targetHUD.renderEntity = null;
@@ -433,7 +448,7 @@ public class KillAura extends Module {
             if (entity.isInvisible() && !targetInvis.isToggled()) {
                 continue;
             }
-            if (!hitThroughBlocks.isToggled() && behindBlocks(rotations)) {
+            if (!hitThroughBlocks.isToggled() && !mc.thePlayer.canEntityBeSeen(entity)) {
                 continue;
             }
             final float n = (float) fov.getInput();
@@ -527,13 +542,13 @@ public class KillAura extends Module {
         return true;
     }
 
-    private void attackAndInteract(EntityLivingBase target, boolean swingWhileBlocking, boolean predict) {
+    private void attackAndInteract(EntityLivingBase target, boolean swingWhileBlocking) {
         if (target != null && attack) {
             attack = false;
             if (!aimingEntity()) {
                 return;
             }
-            if (predict && target.hurtResistantTime > 16) {
+            if (ModuleManager.bedAura.rotate) {
                 return;
             }
             switchTargets = true;
@@ -541,6 +556,9 @@ public class KillAura extends Module {
             mc.thePlayer.sendQueue.addToSendQueue(new C02PacketUseEntity(target, C02PacketUseEntity.Action.INTERACT));
         }
         else if (ModuleManager.antiFireball != null && ModuleManager.antiFireball.isEnabled() && ModuleManager.antiFireball.fireball != null && ModuleManager.antiFireball.attack) {
+            if (ModuleManager.bedAura.rotate) {
+                return;
+            }
             Utils.attackEntity(ModuleManager.antiFireball.fireball, !ModuleManager.antiFireball.silentSwing.isToggled(), ModuleManager.antiFireball.silentSwing.isToggled());
             mc.thePlayer.sendQueue.addToSendQueue(new C02PacketUseEntity(ModuleManager.antiFireball.fireball, C02PacketUseEntity.Action.INTERACT));
         }
@@ -566,7 +584,7 @@ public class KillAura extends Module {
 
     public void gd() {
         double c = aps.getInput() + 0.4D * this.rand.nextDouble();
-        long d = (long) ((int) Math.round(1000.0D / c));
+        long d = (int) Math.round(1000.0D / c);
         if (System.currentTimeMillis() > this.k) {
             if (!this.n && this.rand.nextInt(100) >= 85) {
                 this.n = true;
@@ -619,9 +637,7 @@ public class KillAura extends Module {
         try {
             synchronized (blinkedPackets) {
                 for (Packet packet : blinkedPackets) {
-                    if (packet instanceof C09PacketHeldItemChange) {
-                        Raven.badPacketsHandler.playerSlot = ((C09PacketHeldItemChange) packet).getSlotId();
-                    }
+                    Raven.badPacketsHandler.handlePacket(packet);
                     PacketUtils.sendPacketNoEvent(packet);
                 }
             }
@@ -630,27 +646,7 @@ public class KillAura extends Module {
             Utils.sendModuleMessage(this, "&cThere was an error releasing blinked packets");
         }
         blinkedPackets.clear();
-        blinking = false;
-    }
-
-    private boolean behindBlocks(float[] rotations) {
-        switch ((int) rotationMode.getInput()) {
-            case 0:
-            case 2:
-                if (mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
-                    BlockPos p = mc.objectMouseOver.getBlockPos();
-                    if (p != null && mc.theWorld.getBlockState(p).getBlock() != Blocks.air) {
-                        return true;
-                    }
-                }
-                break;
-            case 1:
-                if (rotationSmoothing.getInput() > 0) {
-                    return RotationUtils.rayCast(attackRange.getInput(), prevRotations != null ? prevRotations[0] : mc.thePlayer.rotationYaw, prevRotations != null ? prevRotations[1] : mc.thePlayer.rotationPitch) != null;
-                }
-                return RotationUtils.rayCast(attackRange.getInput(), rotations[0], rotations[1]) != null;
-        }
-        return false;
+        blinking.set(false);
     }
 
     private void sendBlock() {

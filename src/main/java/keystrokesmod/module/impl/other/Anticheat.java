@@ -171,7 +171,7 @@ public class Anticheat extends Module {
             double deltaY = playerData.serverPosY - serverPosY;
             double deltaZ = Math.abs(playerData.serverPosZ - serverPosZ);
             if (deltaY >= 5 && deltaX <= 10 && deltaZ <= 10 && deltaY <= 40) {
-                if (!Utils.overVoid(serverPosX, serverPosY, serverPosZ) && Utils.getFallDistance(entityPlayer) > 3) {
+                if (!Utils.overVoid(serverPosX, serverPosY, serverPosZ) && Utils.getFallDistance(entityPlayer) > 3 && !Utils.onLadder(entityPlayer) && !entityPlayer.isInWater() && !entityPlayer.isInLava()) {
                     alert(entityPlayer, noFall);
                 }
             }

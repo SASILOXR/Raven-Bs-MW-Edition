@@ -1,10 +1,10 @@
 package keystrokesmod.module.impl.combat;
 
 import keystrokesmod.event.JumpEvent;
+import keystrokesmod.event.PreInputEvent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.Utils;
-import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class JumpReset extends Module {
@@ -23,7 +23,7 @@ public class JumpReset extends Module {
     }
 
     @SubscribeEvent
-    public void onLivingUpdate(LivingEvent.LivingUpdateEvent ev) {
+    public void onPreInput(PreInputEvent e) {
         if (Utils.nullCheck()) {
             if (chance.getInput() == 0) {
                 return;

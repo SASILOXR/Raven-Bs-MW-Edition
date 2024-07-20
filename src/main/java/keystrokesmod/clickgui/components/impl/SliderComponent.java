@@ -44,7 +44,7 @@ public class SliderComponent extends Component {
         String value;
         double input = this.sliderSetting.getInput();
         String info = this.sliderSetting.getInfo();
-        if (input != 1 && info.equals(" second")) {
+        if (input != 1 && (info.equals(" second") || info.equals(" block"))) {
             info += "s";
         }
         if (this.sliderSetting.isString) {

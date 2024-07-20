@@ -19,6 +19,7 @@ public class RotationUtils {
     public static void setRenderYaw(float yaw) {
         mc.thePlayer.rotationYawHead = yaw;
         if (Settings.rotateBody.isToggled() && Settings.fullBody.isToggled()) {
+            mc.thePlayer.prevRenderYawOffset = prevRenderYaw;
             mc.thePlayer.renderYawOffset = yaw;
         }
     }
@@ -153,7 +154,7 @@ public class RotationUtils {
         return (float) (Math.atan2(n - mc.thePlayer.posX, n2 - mc.thePlayer.posZ) * 57.295780181884766 * -1.0);
     }
 
-    public static MovingObjectPosition rayCast(final double distance, final float yaw, final float pitch) {
+    public static MovingObjectPosition rayCast(double distance, float yaw, float pitch) {
         final Vec3 getPositionEyes = mc.thePlayer.getPositionEyes(1.0f);
         final float n4 = -yaw * 0.017453292f;
         final float n5 = -pitch * 0.017453292f;

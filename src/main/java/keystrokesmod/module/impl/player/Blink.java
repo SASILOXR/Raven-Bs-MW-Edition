@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.Raven;
 import keystrokesmod.event.PreUpdateEvent;
 import keystrokesmod.event.SendPacketEvent;
 import keystrokesmod.module.Module;
@@ -46,6 +47,7 @@ public class Blink extends Module {
     public void onDisable() {
         synchronized (blinkedPackets) {
             for (Packet packet : blinkedPackets) {
+                Raven.badPacketsHandler.handlePacket(packet);
                 PacketUtils.sendPacketNoEvent(packet);
             }
         }

@@ -16,6 +16,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.inventory.*;
 import net.minecraft.network.play.client.C02PacketUseEntity;
+import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.MouseEvent;
@@ -46,9 +47,12 @@ public class Reflection {
     public static Method loadShader;
     public static Method getPlayerInfo;
     public static Field inGround;
+    public static Method getFOVModifier;
     public static Field itemInUseCount;
     public static Field S08PacketPlayerPosLookYaw;
     public static Field S08PacketPlayerPosLookPitch;
+    public static Field C06PacketPlayerPosLookYaw;
+    public static Field C06PacketPlayerPosLookPitch;
     public static Field C02PacketUseEntityEntityId;
     public static Field bookContents;
     public static Field fallDistance;
@@ -138,6 +142,16 @@ public class Reflection {
                 S08PacketPlayerPosLookPitch.setAccessible(true);
             }
 
+            C06PacketPlayerPosLookYaw = ReflectionHelper.findField(C03PacketPlayer.class, "field_149476_e", "yaw");
+            if (C06PacketPlayerPosLookYaw != null) {
+                C06PacketPlayerPosLookYaw.setAccessible(true);
+            }
+
+            C06PacketPlayerPosLookPitch = ReflectionHelper.findField(C03PacketPlayer.class, "field_149473_f", "pitch");
+            if (C06PacketPlayerPosLookPitch != null) {
+                C06PacketPlayerPosLookPitch.setAccessible(true);
+            }
+
             C02PacketUseEntityEntityId = ReflectionHelper.findField(C02PacketUseEntity.class, "entityId", "field_149567_a");
             if (C02PacketUseEntityEntityId != null) {
                 C02PacketUseEntityEntityId.setAccessible(true);
@@ -180,6 +194,12 @@ public class Reflection {
 
             if (rightClickMouse != null) {
                 rightClickMouse.setAccessible(true);
+            }
+
+            getFOVModifier = ReflectionHelper.findMethod(EntityRenderer.class, Minecraft.getMinecraft().entityRenderer, new String[]{"func_78481_a", "getFOVModifier"}, float.class, boolean.class);
+
+            if (getFOVModifier != null) {
+                getFOVModifier.setAccessible(true);
             }
 
             loadShader = ReflectionHelper.findMethod(EntityRenderer.class, Minecraft.getMinecraft().entityRenderer, new String[]{"func_175069_a", "loadShader"}, ResourceLocation.class);

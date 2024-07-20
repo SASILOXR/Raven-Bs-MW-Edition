@@ -6,7 +6,6 @@ import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
-import keystrokesmod.utility.PacketUtils;
 import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.gui.ScaledResolution;
@@ -113,10 +112,6 @@ public class Nametags extends Module {
                 name = color + distance + "m§r " + name;
             }
             double[] renderPositions = entityPositions.get(entityPlayer);
-            if ((renderPositions[3] < 0) || (renderPositions[3] >= 1)) {
-                GlStateManager.popMatrix();
-                continue;
-            }
             GlStateManager.translate(renderPositions[0], renderPositions[1], 0);
             int strWidth = mc.fontRendererObj.getStringWidth(name) / 2;
             GlStateManager.color(0.0F, 0.0F, 0.0F);

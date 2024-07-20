@@ -49,6 +49,7 @@ public class ModuleManager {
     public static SafeWalk safeWalk;
     public static Module keepSprint;
     public static Module antiKnockback;
+    public static ExtendCamera extendCamera;
     public static Tower tower;
     public static NoCameraClip noCameraClip;
     public static Module bedwars;
@@ -69,6 +70,7 @@ public class ModuleManager {
         this.addModule(new Radar());
         this.addModule(new Settings());
         this.addModule(reach = new Reach());
+        this.addModule(extendCamera = new ExtendCamera());
         this.addModule(new RodAimbot());
         this.addModule(new Velocity());
         this.addModule(bHop = new BHop());
@@ -78,8 +80,10 @@ public class ModuleManager {
         this.addModule(new Boost());
         this.addModule(new AutoTool());
         this.addModule(noHurtCam = new NoHurtCam());
+        this.addModule(new Teleport());
         this.addModule(fly = new Fly());
         this.addModule(new InvMove());
+        this.addModule(new TPAura());
         this.addModule(new Trajectories());
         this.addModule(potions = new Potions());
         this.addModule(new AutoSwap());

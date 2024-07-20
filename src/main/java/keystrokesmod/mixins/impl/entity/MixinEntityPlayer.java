@@ -9,7 +9,6 @@ import net.minecraft.entity.*;
 import net.minecraft.entity.boss.EntityDragonPart;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.potion.Potion;
@@ -23,6 +22,9 @@ import net.minecraftforge.common.ForgeHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(EntityPlayer.class)
 public abstract class MixinEntityPlayer extends EntityLivingBase {
@@ -169,11 +171,11 @@ public abstract class MixinEntityPlayer extends EntityLivingBase {
         }
     }
 
-    @Overwrite
-    public boolean isBlocking() {
+    @Inject(method = "isBlocking", at = @At("RETURN"), cancellable = true)
+    private void isBlocking(CallbackInfoReturnable<Boolean> cir) {
         if (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && ModuleManager.killAura.block.get() && ((Object) this) == Minecraft.getMinecraft().thePlayer && (!ModuleManager.killAura.manualBlock.isToggled() || ModuleManager.killAura.rmbDown)) {
-            return true;
+            cir.setReturnValue(true);
         }
-        return this.isUsingItem() && this.itemInUse.getItem().getItemUseAction(this.itemInUse) == EnumAction.BLOCK;
+        cir.setReturnValue(cir.getReturnValue());
     }
 }

@@ -22,7 +22,7 @@ public class Bridge {
         map.remove(key);
     }
 
-    public boolean containsKey(String key) {
+    public boolean has(String key) {
         return map.containsKey(key);
     }
 
