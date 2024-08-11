@@ -15,7 +15,7 @@ public class Gui extends Module {
 
     public Gui() {
         super("Gui", category.client, 54);
-        //this.registerSetting(guiScale = new SliderSetting("Gui scale", 1, 0.5, 3, 0.01));
+        //this.registerSetting(guiScale = new SliderSetting("Gui scale", 1, 0.5, 2, 0.01));
         this.registerSetting(rainBowOutlines = new ButtonSetting("Rainbow outlines", true));
         this.registerSetting(removePlayerModel = new ButtonSetting("Remove player model", false));
         this.registerSetting(removeWatermark = new ButtonSetting("Remove watermark", false));

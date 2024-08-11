@@ -85,7 +85,7 @@ public class HUD extends Module {
                     }
                     String moduleName = module.getName();
                     if (showInfo.isToggled() && !module.getInfo().isEmpty()) {
-                        moduleName += " §7" + module.getInfo();
+                        moduleName += (module.getInfoType() == 0 ? " §7" : " §b") + module.getInfo();
                     }
                     if (lowercase.isToggled()) {
                         moduleName = moduleName.toLowerCase();

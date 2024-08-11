@@ -1,9 +1,9 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.event.ReceivePacketEvent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
-import keystrokesmod.utility.BlockUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.block.*;
 import net.minecraft.enchantment.Enchantment;
@@ -14,9 +14,11 @@ import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.*;
+import net.minecraft.network.play.server.S30PacketWindowItems;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Mouse;
 
 import java.util.Arrays;
@@ -40,11 +42,12 @@ public class InvManager extends Module {
     private SliderSetting projectileSlot;
     private SliderSetting speedPotionSlot;
     private SliderSetting pearlSlot;
-    private String[] ignoreItems = {"stick", "book", "expbottle", "flesh", "string", "cake", "mushroom", "flint", "compass", "dyePowder", "feather", "shears", "anvil", "torch", "seeds", "leather", "skull", "record"};
+    private String[] ignoreItems = { "stick", "bed", "sapling", "pressureplate", "weightedplate", "book", "glassbottle", "reeds", "sugar", "expbottle", "flesh", "string", "cake", "mushroom", "flint", "compass", "dyePowder", "feather", "shears", "anvil", "torch", "seeds", "leather", "skull", "record", "flower", "minecart", "waterlily", "wheat", "sulphur", "boat", "dyepowder", "frame", "writingbook", "comparator", "banner", "diode", "item.redstone", "ghasttear", "goldnugget", "netherstalkseeds" };
     private int lastStole;
     private int lastSort;
     private int lastArmor;
     private int lastClean;
+    private boolean receivedInventoryData;
 
     public InvManager() {
         super("InvManager", category.player);
@@ -69,6 +72,7 @@ public class InvManager extends Module {
 
     public void onEnable() {
         resetDelay();
+        receivedInventoryData = false;
     }
 
     public void onUpdate() {
@@ -97,14 +101,14 @@ public class InvManager extends Module {
                         return;
                     }
                 }
-                if (blocksSlot.getInput() != 0) {
-                    if (sort(getMostBlocks(), (int) blocksSlot.getInput())) {
+                if (goldenAppleSlot.getInput() != 0) {
+                    if (sort(getBiggestStack(Items.golden_apple, (int) goldenAppleSlot.getInput()), (int) goldenAppleSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
-                if (goldenAppleSlot.getInput() != 0) {
-                    if (sort(getBiggestStack(Items.golden_apple, (int) goldenAppleSlot.getInput()), (int) goldenAppleSlot.getInput())) {
+                if (blocksSlot.getInput() != 0) {
+                    if (sort(getMostBlocks(), (int) blocksSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
@@ -115,14 +119,14 @@ public class InvManager extends Module {
                         return;
                     }
                 }
-                if (speedPotionSlot.getInput() != 0) {
-                    if (sort(getBestPotion((int) speedPotionSlot.getInput(), null), (int) speedPotionSlot.getInput())) {
+                if (pearlSlot.getInput() != 0) {
+                    if (sort(getBiggestStack(Items.ender_pearl, (int) pearlSlot.getInput()), (int) pearlSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
-                if (pearlSlot.getInput() != 0) {
-                    if (sort(getBiggestStack(Items.ender_pearl, (int) pearlSlot.getInput()), (int) pearlSlot.getInput())) {
+                if (speedPotionSlot.getInput() != 0) {
+                    if (sort(getBestPotion((int) speedPotionSlot.getInput(), null), (int) speedPotionSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
@@ -187,7 +191,7 @@ public class InvManager extends Module {
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemBlock) {
-                    if (!canBePlaced((ItemBlock) item.getItem())) {
+                    if (!Utils.canBePlaced((ItemBlock) item.getItem())) {
                         continue;
                     }
                     if (++lastStole >= stealerDelay.getInput()) {
@@ -309,6 +313,14 @@ public class InvManager extends Module {
         }
         else {
             resetDelay();
+            receivedInventoryData = false;
+        }
+    }
+
+    @SubscribeEvent
+    public void onReceivePacket(ReceivePacketEvent e) {
+        if (e.getPacket() instanceof S30PacketWindowItems) {
+            receivedInventoryData = true;
         }
     }
 
@@ -363,8 +375,9 @@ public class InvManager extends Module {
     }
 
     private void autoClose() {
-        if (autoClose.isToggled()) {
+        if (autoClose.isToggled() && receivedInventoryData) {
             mc.thePlayer.closeScreen();
+            receivedInventoryData = false;
         }
     }
 
@@ -701,7 +714,7 @@ public class InvManager extends Module {
         }
         for (int i = 9; i < 45; i++) {
             ItemStack item = getItemStack(i);
-            if (item != null && item.getItem() instanceof ItemBlock && item.stackSize > stack && canBePlaced((ItemBlock) item.getItem()) && item.stackSize > stackInSlot) {
+            if (item != null && item.getItem() instanceof ItemBlock && item.stackSize > stack && Utils.canBePlaced((ItemBlock) item.getItem()) && item.stackSize > stackInSlot) {
                 stack = item.stackSize;
                 biggestSlot = i;
             }
@@ -719,16 +732,5 @@ public class InvManager extends Module {
             return null;
         }
         return item;
-    }
-
-    public static boolean canBePlaced(ItemBlock itemBlock) {
-        Block block = itemBlock.getBlock();
-        if (block == null) {
-            return false;
-        }
-        if (BlockUtils.isInteractable(block) || block instanceof BlockLever || block instanceof BlockButton || block instanceof BlockSkull || block instanceof BlockLiquid || block instanceof BlockCactus || block instanceof BlockCarpet || block instanceof BlockTripWire || block instanceof BlockTripWireHook || block instanceof BlockTallGrass || block instanceof BlockFlower || block instanceof BlockFlowerPot || block instanceof BlockSign || block instanceof BlockLadder || block instanceof BlockTorch || block instanceof BlockRedstoneTorch || block instanceof BlockFence || block instanceof BlockPane || block instanceof BlockStainedGlassPane || block instanceof BlockGravel || block instanceof BlockClay || block instanceof BlockSand || block instanceof BlockSoulSand) {
-            return false;
-        }
-        return true;
     }
 }

@@ -162,7 +162,8 @@ public class BedWars extends Module {
         String unlocalizedName = item.getItem().getUnlocalizedName();
         if (item.getItem() instanceof ItemEnderPearl && enderPearl.isToggled()) {
             return "&7an §3Ender Pearl";
-        } else if (unlocalizedName.contains("tile.obsidian") && obsidian.isToggled()) {
+        }
+        else if (unlocalizedName.contains("tile.obsidian") && obsidian.isToggled()) {
             return "§dObsidian";
         }
         return null;

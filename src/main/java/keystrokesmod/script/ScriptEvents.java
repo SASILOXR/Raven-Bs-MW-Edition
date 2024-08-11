@@ -9,7 +9,6 @@ import keystrokesmod.script.packets.clientbound.SPacket;
 import keystrokesmod.script.packets.serverbound.CPacket;
 import keystrokesmod.script.packets.serverbound.PacketHandler;
 import keystrokesmod.utility.Utils;
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
@@ -113,12 +112,7 @@ public class ScriptEvents {
         if (e.entity == null) {
             return;
         }
-        if (e.entity == Minecraft.getMinecraft().thePlayer) {
-            Raven.scriptManager.invoke("onWorldJoin", module, ScriptDefaults.client.getPlayer());
-            ScriptManager.localPlayer = new Entity(Minecraft.getMinecraft().thePlayer);
-            return;
-        }
-        Raven.scriptManager.invoke("onWorldJoin", module, new Entity(e.entity));
+        Raven.scriptManager.invoke("onWorldJoin", module, Entity.convert(e.entity));
     }
 
     @SubscribeEvent

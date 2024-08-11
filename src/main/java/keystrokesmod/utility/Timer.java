@@ -1,8 +1,8 @@
 package keystrokesmod.utility;
 
 public class Timer {
-    private float updates;
-    private long last;
+    public float updates;
+    public long last;
     private float cached;
 
     public Timer(float updates) {
@@ -12,7 +12,8 @@ public class Timer {
     public float getValueFloat(float begin, float end, int type) {
         if (this.cached == end) {
             return this.cached;
-        } else {
+        }
+        else {
             float t = (float) (System.currentTimeMillis() - this.last) / this.updates;
             switch (type) {
                 case 1:
@@ -48,7 +49,7 @@ public class Timer {
     }
 
     private float bounce(float t) {
-        float i = 0.0F;
+        float i;
         double i2 = 7.5625D;
         double i3 = 2.75D;
         if ((double) t < 1.0D / i3) {

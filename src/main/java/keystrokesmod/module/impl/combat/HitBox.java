@@ -43,6 +43,11 @@ public class HitBox extends Module {
         return ((int) multiplier.getInput() == multiplier.getInput() ? (int) multiplier.getInput() + "" : multiplier.getInput()) + multiplier.getInfo();
     }
 
+    @Override
+    public int getInfoType() {
+        return 1;
+    }
+
     @SubscribeEvent
     public void m(MouseEvent e) {
         if (Utils.nullCheck()) {

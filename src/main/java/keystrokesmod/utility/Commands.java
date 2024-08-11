@@ -176,7 +176,7 @@ public class Commands {
                         Fly.horizontalSpeed.setValueRaw(value);
                         break;
                     case "bhop":
-                        BHop.speed.setValueRaw(value);
+                        BHop.speedSetting.setValueRaw(value);
                         break;
                     case "speed":
                         Speed.speed.setValueRaw(value);
@@ -436,14 +436,14 @@ public class Commands {
 
     }
 
-    public static void rc(FontRenderer fr, int h, int w, int s) {
+    public static void rc(FontRenderer fr, int h, int w, double s) {
         int x = w - 195;
         int y = h - 130;
         int sY = h - 345;
         int sH = 230;
         GL11.glEnable(3089);
-        int mw = w * s;
-        GL11.glScissor(0, mc.displayHeight - (sY + sH) * s, mw - (mw < 2 ? 0 : 2), sH * s - 2);
+        double mw = w * s;
+        GL11.glScissor(0, (int) (mc.displayHeight - (sY + sH) * s), (int) (mw - (mw < 2 ? 0 : 2)), (int) (sH * s - 2));
         RenderUtils.db(1000, 1000, ccs);
         rss(fr, rs, x, y);
         GL11.glDisable(3089);

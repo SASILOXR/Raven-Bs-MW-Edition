@@ -27,7 +27,7 @@ public class BlockUtils {
     }
 
     public static boolean isInteractable(Block block) {
-        return block instanceof BlockFurnace || block instanceof BlockFenceGate || block instanceof BlockChest || block instanceof BlockEnderChest || block instanceof BlockEnchantmentTable || block instanceof BlockBrewingStand || block instanceof BlockBed || block instanceof BlockDropper || block instanceof BlockDispenser || block instanceof BlockHopper || block instanceof BlockAnvil || block == Blocks.crafting_table;
+        return block instanceof BlockFurnace || block instanceof BlockTrapDoor || block instanceof BlockDoor || block instanceof BlockJukebox || block instanceof BlockFenceGate || block instanceof BlockChest || block instanceof BlockEnderChest || block instanceof BlockEnchantmentTable || block instanceof BlockBrewingStand || block instanceof BlockBed || block instanceof BlockDropper || block instanceof BlockDispenser || block instanceof BlockHopper || block instanceof BlockAnvil || block instanceof BlockNote || block instanceof BlockWorkbench;
     }
 
     public static float getBlockHardness(final Block block, final ItemStack itemStack, boolean ignoreSlow, boolean ignoreGround) {
@@ -92,17 +92,6 @@ public class BlockUtils {
 
     public static IBlockState getBlockState(BlockPos blockPos) {
         return mc.theWorld.getBlockState(blockPos);
-    }
-
-    public static boolean isBlockUnderNoCollisions() {
-        for (int offset = 0; offset < mc.thePlayer.posY + mc.thePlayer.getEyeHeight(); offset += 2) {
-            BlockPos blockPos = new BlockPos(mc.thePlayer.posX, offset, mc.thePlayer.posZ);
-
-            if (mc.theWorld.getBlockState(blockPos).getBlock() != Blocks.air) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static boolean check(final BlockPos blockPos, final Block block) {

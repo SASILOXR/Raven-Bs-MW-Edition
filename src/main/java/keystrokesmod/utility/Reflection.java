@@ -15,6 +15,7 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.inventory.*;
+import net.minecraft.item.ItemFood;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
@@ -51,12 +52,13 @@ public class Reflection {
     public static Field itemInUseCount;
     public static Field S08PacketPlayerPosLookYaw;
     public static Field S08PacketPlayerPosLookPitch;
-    public static Field C06PacketPlayerPosLookYaw;
-    public static Field C06PacketPlayerPosLookPitch;
+    public static Field C03PacketPlayerYaw;
+    public static Field C03PacketPlayerPitch;
     public static Field C02PacketUseEntityEntityId;
     public static Field bookContents;
     public static Field fallDistance;
     public static Field thirdPersonDistance;
+    public static Field alwaysEdible;
 
     public static HashMap<Class, Field> containerInventoryPlayer = new HashMap<>();
     private static List<Class> containerClasses = Arrays.asList(GuiFurnace.class, GuiBrewingStand.class, GuiEnchantment.class, ContainerHopper.class, GuiDispenser.class, ContainerWorkbench.class, ContainerMerchant.class, ContainerHorseInventory.class);
@@ -112,6 +114,11 @@ public class Reflection {
                 thirdPersonDistance.setAccessible(true);
             }
 
+            alwaysEdible = ReflectionHelper.findField(ItemFood.class, "alwaysEdible", "field_77852_bZ");
+            if (alwaysEdible != null) {
+                alwaysEdible.setAccessible(true);
+            }
+
             useShader = ReflectionHelper.findField(EntityRenderer.class, "useShader", "field_175083_ad");
             if (useShader != null) {
                 useShader.setAccessible(true);
@@ -142,14 +149,14 @@ public class Reflection {
                 S08PacketPlayerPosLookPitch.setAccessible(true);
             }
 
-            C06PacketPlayerPosLookYaw = ReflectionHelper.findField(C03PacketPlayer.class, "field_149476_e", "yaw");
-            if (C06PacketPlayerPosLookYaw != null) {
-                C06PacketPlayerPosLookYaw.setAccessible(true);
+            C03PacketPlayerYaw = ReflectionHelper.findField(C03PacketPlayer.class, "field_149476_e", "yaw");
+            if (C03PacketPlayerYaw != null) {
+                C03PacketPlayerYaw.setAccessible(true);
             }
 
-            C06PacketPlayerPosLookPitch = ReflectionHelper.findField(C03PacketPlayer.class, "field_149473_f", "pitch");
-            if (C06PacketPlayerPosLookPitch != null) {
-                C06PacketPlayerPosLookPitch.setAccessible(true);
+            C03PacketPlayerPitch = ReflectionHelper.findField(C03PacketPlayer.class, "field_149473_f", "pitch");
+            if (C03PacketPlayerPitch != null) {
+                C03PacketPlayerPitch.setAccessible(true);
             }
 
             C02PacketUseEntityEntityId = ReflectionHelper.findField(C02PacketUseEntity.class, "entityId", "field_149567_a");

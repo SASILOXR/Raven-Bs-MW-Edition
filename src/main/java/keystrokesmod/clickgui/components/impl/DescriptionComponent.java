@@ -6,8 +6,6 @@ import keystrokesmod.utility.Theme;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
-
 public class DescriptionComponent extends Component {
     private DescriptionSetting desc;
     private ModuleComponent p;
@@ -18,7 +16,7 @@ public class DescriptionComponent extends Component {
     public DescriptionComponent(DescriptionSetting desc, ModuleComponent b, int o) {
         this.desc = desc;
         this.p = b;
-        this.x = b.categoryComponent.getX() + b.categoryComponent.gw();
+        this.x = b.categoryComponent.getX() + b.categoryComponent.getWidth();
         this.y = b.categoryComponent.getY() + b.o;
         this.o = o;
     }

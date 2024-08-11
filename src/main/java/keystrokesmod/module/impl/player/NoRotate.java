@@ -23,7 +23,7 @@ public class NoRotate extends Module {
     }
 
     @SubscribeEvent
-    public void onReceivePacket(ReceivePacketEvent event) { // from croat
+    public void onReceivePacket(ReceivePacketEvent event) {
         if (!Utils.nullCheck()) {
             return;
         }
@@ -48,11 +48,11 @@ public class NoRotate extends Module {
         if (!Utils.nullCheck()) {
             return;
         }
-        if (received && rotations != null && e.getPacket() instanceof C03PacketPlayer.C06PacketPlayerPosLook) {
+        if (received && rotations != null && (e.getPacket() instanceof C03PacketPlayer.C06PacketPlayerPosLook || e.getPacket() instanceof C03PacketPlayer.C05PacketPlayerLook)) {
             C03PacketPlayer.C06PacketPlayerPosLook packet = (C03PacketPlayer.C06PacketPlayerPosLook) e.getPacket();
             try {
-                Reflection.C06PacketPlayerPosLookYaw.set(packet, rotations[0]);
-                Reflection.C06PacketPlayerPosLookPitch.set(packet, rotations[1]);
+                Reflection.C03PacketPlayerYaw.set(packet, rotations[0]);
+                Reflection.C03PacketPlayerPitch.set(packet, rotations[1]);
             }
             catch (Exception exception) {
                 exception.printStackTrace();

@@ -6,10 +6,12 @@ import net.minecraftforge.fml.common.eventhandler.Event;
 @Cancelable
 public class JumpEvent extends Event {
     private float motionY, yaw;
+    private boolean applySprint;
 
-    public JumpEvent(float motionY, float yaw) {
+    public JumpEvent(float motionY, float yaw, boolean applySprint) {
         this.motionY = motionY;
         this.yaw = yaw;
+        this.applySprint = applySprint;
     }
 
     public float getMotionY() {
@@ -26,5 +28,13 @@ public class JumpEvent extends Event {
 
     public void setYaw(float yaw) {
         this.yaw = yaw;
+    }
+
+    public boolean applySprint() {
+        return applySprint;
+    }
+
+    public void setSprint(boolean applySprint) {
+        this.applySprint = applySprint;
     }
 }

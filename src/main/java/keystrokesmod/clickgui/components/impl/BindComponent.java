@@ -10,8 +10,6 @@ import net.minecraft.client.Minecraft;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-import java.awt.*;
-
 public class BindComponent extends Component {
     public boolean isBinding;
     private ModuleComponent moduleComponent;
@@ -21,7 +19,7 @@ public class BindComponent extends Component {
 
     public BindComponent(ModuleComponent moduleComponent, int bind) {
         this.moduleComponent = moduleComponent;
-        this.x = moduleComponent.categoryComponent.getX() + moduleComponent.categoryComponent.gw();
+        this.x = moduleComponent.categoryComponent.getX() + moduleComponent.categoryComponent.getWidth();
         this.y = moduleComponent.categoryComponent.getY() + moduleComponent.o;
         this.bind = bind;
     }
@@ -38,12 +36,12 @@ public class BindComponent extends Component {
     }
 
     public void drawScreen(int x, int y) {
-        this.y = this.moduleComponent.categoryComponent.getY() + this.bind;
+        this.y = this.moduleComponent.categoryComponent.getModuleY() + this.bind;
         this.x = this.moduleComponent.categoryComponent.getX();
     }
 
-    public void onClick(int x, int y, int b) {
-        if (this.i(x, y) && this.moduleComponent.po && this.moduleComponent.mod.canBeEnabled()) {
+    public boolean onClick(int x, int y, int b) {
+        if (this.i(x, y) && this.moduleComponent.isOpened && this.moduleComponent.mod.canBeEnabled()) {
             if (b == 0) {
                 this.isBinding = !this.isBinding;
             }
@@ -63,6 +61,7 @@ public class BindComponent extends Component {
                 }
             }
         }
+        return false;
     }
 
     public void keyTyped(char t, int keybind) {
@@ -76,7 +75,8 @@ public class BindComponent extends Component {
                 if (Raven.currentProfile != null) {
                     ((ProfileModule) Raven.currentProfile.getModule()).saved = false;
                 }
-            } else {
+            }
+            else {
                 if (Raven.currentProfile != null) {
                     ((ProfileModule) Raven.currentProfile.getModule()).saved = false;
                 }
@@ -88,10 +88,10 @@ public class BindComponent extends Component {
     }
 
     public boolean i(int x, int y) {
-        return x > this.x && x < this.x + this.moduleComponent.categoryComponent.gw() && y > this.y - 1 && y < this.y + 12;
+        return x > this.x && x < this.x + this.moduleComponent.categoryComponent.getWidth() && y > this.y - 1 && y < this.y + 12;
     }
 
-    public int gh() {
+    public int getHeight() {
         return 16;
     }
 

@@ -28,7 +28,7 @@ public class ModuleComponent extends Component {
     public CategoryComponent categoryComponent;
     public int o;
     public ArrayList<Component> settings;
-    public boolean po;
+    public boolean isOpened;
     private boolean hovering;
 
     public ModuleComponent(Module mod, CategoryComponent p, int o) {
@@ -36,7 +36,7 @@ public class ModuleComponent extends Component {
         this.categoryComponent = p;
         this.o = o;
         this.settings = new ArrayList();
-        this.po = false;
+        this.isOpened = false;
         int y = o + 12;
         if (mod != null && !mod.getSettings().isEmpty()) {
             for (Setting v : mod.getSettings()) {
@@ -127,9 +127,9 @@ public class ModuleComponent extends Component {
 
     public void render() {
         if (hovering) {
-            RenderUtils.drawRoundedRectangle(this.categoryComponent.getX(), this.categoryComponent.getY() + o, this.categoryComponent.getX() + this.categoryComponent.gw(), this.categoryComponent.getY() + 16 + this.o, 8, hoverColor);
+            RenderUtils.drawRoundedRectangle(this.categoryComponent.getX(), this.categoryComponent.getY() + o, this.categoryComponent.getX() + this.categoryComponent.getWidth(), this.categoryComponent.getY() + 16 + this.o, 8, hoverColor);
         }
-        v((float) this.categoryComponent.getX(), (float) (this.categoryComponent.getY() + this.o), (float) (this.categoryComponent.getX() + this.categoryComponent.gw()), (float) (this.categoryComponent.getY() + 15 + this.o), this.mod.isEnabled() ? this.c2 : -12829381, this.mod.isEnabled() ? this.c2 : -12302777);
+        v((float) this.categoryComponent.getX(), (float) (this.categoryComponent.getY() + this.o), (float) (this.categoryComponent.getX() + this.categoryComponent.getWidth()), (float) (this.categoryComponent.getY() + 15 + this.o), this.mod.isEnabled() ? this.c2 : -12829381, this.mod.isEnabled() ? this.c2 : -12302777);
         GL11.glPushMatrix();
         int button_rgb = this.mod.isEnabled() ? enabledColor : disabledColor;
         if (this.mod.script != null && this.mod.script.error) {
@@ -138,17 +138,17 @@ public class ModuleComponent extends Component {
         if (this.mod.moduleCategory() == Module.category.profiles && !(this.mod instanceof Manager) && !((ProfileModule) this.mod).saved && Raven.currentProfile.getModule() == this.mod) {
             button_rgb = unsavedColor;
         }
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.mod.getName(), (float) (this.categoryComponent.getX() + this.categoryComponent.gw() / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.mod.getName()) / 2), (float) (this.categoryComponent.getY() + this.o + 4), button_rgb);
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.mod.getName(), (float) (this.categoryComponent.getX() + this.categoryComponent.getWidth() / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.mod.getName()) / 2), (float) (this.categoryComponent.getY() + this.o + 4), button_rgb);
         GL11.glPopMatrix();
-        if (this.po && !this.settings.isEmpty()) {
+        if (this.isOpened && !this.settings.isEmpty()) {
             for (Component c : this.settings) {
                 c.render();
             }
         }
     }
 
-    public int gh() {
-        if (!this.po) {
+    public int getHeight() {
+        if (!this.isOpened) {
             return 16;
         } else {
             int h = 16;
@@ -175,9 +175,10 @@ public class ModuleComponent extends Component {
                 c.drawScreen(x, y);
             }
         }
-        if (ii(x, y)) {
+        if (overModuleName(x, y) && this.categoryComponent.opened) {
             hovering = true;
-        } else {
+        }
+        else {
             hovering = false;
         }
     }
@@ -186,8 +187,8 @@ public class ModuleComponent extends Component {
         return mod.getName();
     }
 
-    public void onClick(int x, int y, int b) {
-        if (this.ii(x, y) && b == 0 && this.mod.canBeEnabled()) {
+    public boolean onClick(int x, int y, int b) {
+        if (this.overModuleName(x, y) && b == 0 && this.mod.canBeEnabled()) {
             this.mod.toggle();
             if (this.mod.moduleCategory() != Module.category.profiles) {
                 if (Raven.currentProfile != null) {
@@ -196,14 +197,16 @@ public class ModuleComponent extends Component {
             }
         }
 
-        if (this.ii(x, y) && b == 1) {
-            this.po = !this.po;
+        if (this.overModuleName(x, y) && b == 1) {
+            this.isOpened = !this.isOpened;
             this.categoryComponent.render();
+            return true;
         }
 
         for (Component c : this.settings) {
             c.onClick(x, y, b);
         }
+        return false;
     }
 
     public void mouseReleased(int x, int y, int m) {
@@ -225,7 +228,7 @@ public class ModuleComponent extends Component {
         }
     }
 
-    public boolean ii(int x, int y) {
-        return x > this.categoryComponent.getX() && x < this.categoryComponent.getX() + this.categoryComponent.gw() && y > this.categoryComponent.getY() + this.o && y < this.categoryComponent.getY() + 16 + this.o;
+    public boolean overModuleName(int x, int y) {
+        return x > this.categoryComponent.getX() && x < this.categoryComponent.getX() + this.categoryComponent.getWidth() && y > this.categoryComponent.getModuleY() + this.o && y < this.categoryComponent.getModuleY() + 16 + this.o;
     }
 }

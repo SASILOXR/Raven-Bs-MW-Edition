@@ -9,12 +9,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class AutoSwap extends Module {
-    private ButtonSetting sameType;
-    private ButtonSetting swapToGreaterStack;
+    public ButtonSetting sameType;
+    public ButtonSetting swapToGreaterStack;
     public AutoSwap() {
         super("AutoSwap", category.player);
         this.registerSetting(new DescriptionSetting("Automatically swaps blocks."));
-        this.registerSetting(sameType = new ButtonSetting("Only same type", true));
+        this.registerSetting(sameType = new ButtonSetting("Only same type", false));
         this.registerSetting(swapToGreaterStack = new ButtonSetting("Swap to greater stack", true));
     }
 

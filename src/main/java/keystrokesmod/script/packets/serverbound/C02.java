@@ -23,7 +23,7 @@ public class C02 extends CPacket {
             this.entity = null;
         }
         else {
-            this.entity = new Entity(packet.getEntityFromWorld(Minecraft.getMinecraft().theWorld));
+            this.entity = Entity.convert(packet.getEntityFromWorld(Minecraft.getMinecraft().theWorld));
         }
         this.action = packet.getAction().name();
         if (packet.getHitVec() != null) {

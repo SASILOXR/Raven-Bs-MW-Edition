@@ -94,7 +94,7 @@ public abstract class MixinEntityLivingBase extends Entity {
 
     @Overwrite
     protected void jump() {
-        JumpEvent jumpEvent = new JumpEvent(this.getJumpUpwardsMotion(), this.rotationYaw);
+        JumpEvent jumpEvent = new JumpEvent(this.getJumpUpwardsMotion(), this.rotationYaw, this.isSprinting());
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(jumpEvent);
         if (jumpEvent.isCanceled()) {
             return;
@@ -110,7 +110,7 @@ public abstract class MixinEntityLivingBase extends Entity {
             this.motionY += (double) ((float) (this.getActivePotionEffect(Potion.jump).getAmplifier() + 1) * 0.1F);
         }
 
-        if (this.isSprinting()) {
+        if (jumpEvent.applySprint()) {
             float f = jumpEvent.getYaw() * 0.017453292F;
             this.motionX -= (double) (MathHelper.sin(f) * 0.2F);
             this.motionZ += (double) (MathHelper.cos(f) * 0.2F);

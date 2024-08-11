@@ -14,12 +14,17 @@ import net.minecraft.util.BlockPos;
 import net.minecraft.util.MathHelper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class Entity {
     public net.minecraft.entity.Entity entity;
     public String type;
     public int entityId;
+    public boolean isLiving;
+    public boolean isPlayer;
+    public boolean isUser;
+    private static HashMap<Integer, Entity> cache = new HashMap<>();
 
     public Entity(net.minecraft.entity.Entity entity) {
         this.entity = entity;
@@ -28,6 +33,30 @@ public class Entity {
         }
         this.type = entity.getClass().getSimpleName();
         this.entityId = entity.getEntityId();
+        this.isLiving = entity instanceof EntityLivingBase;
+        this.isPlayer = entity instanceof EntityPlayer;
+        if (this.isPlayer && Minecraft.getMinecraft().thePlayer != null && entity.getUniqueID().equals(Minecraft.getMinecraft().thePlayer.getUniqueID())) {
+            this.isUser = true;
+        }
+    }
+
+    public static Entity convert(net.minecraft.entity.Entity entity) {
+        if (entity == null) {
+            return null;
+        }
+        int id = entity.getEntityId() + System.identityHashCode(entity);
+        Entity cachedEntity = cache.get(id);
+
+        if (cachedEntity == null) {
+            cachedEntity = new Entity(entity);
+            cache.put(id, cachedEntity);
+        }
+
+        return cachedEntity;
+    }
+
+    public static void clearCache() {
+        cache.clear();
     }
 
     public boolean allowEditing() {
@@ -75,14 +104,16 @@ public class Entity {
         return getNetworkPlayer().getUUID();
     }
 
+    public double getBPS() {
+        return Utils.gbps(this.entity, 0);
+    }
+
     public float getHealth() {
         if (!(entity instanceof EntityLivingBase)) {
             return -1;
         }
         return ((EntityLivingBase) entity).getHealth();
     }
-
-
 
     public float getEyeHeight() {
         return entity.getEyeHeight();
@@ -97,7 +128,14 @@ public class Entity {
     }
 
     public ItemStack getHeldItem() {
-        if (!(entity instanceof EntityLivingBase)) {
+        if (entity instanceof EntityItem) {
+            net.minecraft.item.ItemStack item = ((EntityItem) entity).getEntityItem();
+            if (item == null) {
+                return null;
+            }
+            return new ItemStack(item);
+        }
+        else if (!(entity instanceof EntityLivingBase)) {
             return null;
         }
         net.minecraft.item.ItemStack stack = ((EntityLivingBase) entity).getHeldItem();
@@ -114,7 +152,7 @@ public class Entity {
         return ((EntityLivingBase) entity).hurtTime;
     }
 
-    public Vec3 getLastPos() {
+    public Vec3 getLastPosition() {
         return new Vec3(entity.lastTickPosX, entity.lastTickPosY, entity.lastTickPosZ);
     }
 

@@ -1,6 +1,5 @@
 package keystrokesmod.utility;
 
-import keystrokesmod.Raven;
 import keystrokesmod.event.PostUpdateEvent;
 import keystrokesmod.event.ReceivePacketEvent;
 import keystrokesmod.event.SendPacketEvent;
@@ -13,15 +12,19 @@ import net.minecraft.network.play.server.S0CPacketSpawnPlayer;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-public class BadPacketsHandler { // ensures you don't get banned
-    public boolean C08;
-    public boolean C07;
-    public boolean C02;
-    public boolean C09;
-    public boolean delayAttack;
-    public boolean delay;
-    public int playerSlot = -1;
-    public int serverSlot = -1;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class BadPacketsHandler {
+    public AtomicBoolean C0A = new AtomicBoolean(false);
+    public AtomicBoolean C08 = new AtomicBoolean(false);
+    public AtomicBoolean C07 = new AtomicBoolean(false);
+    public AtomicBoolean C02 = new AtomicBoolean(false);
+    public AtomicBoolean C09 = new AtomicBoolean(false);
+    public AtomicBoolean delayAttack = new AtomicBoolean(false);
+    public AtomicBoolean delay = new AtomicBoolean(false);
+    public AtomicInteger playerSlot = new AtomicInteger(-1);
+    public AtomicInteger serverSlot = new AtomicInteger(-1);
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onSendPacket(SendPacketEvent e) {
@@ -29,25 +32,29 @@ public class BadPacketsHandler { // ensures you don't get banned
             return;
         }
         if (e.getPacket() instanceof C02PacketUseEntity) { // sending a C07 on the same tick as C02 can ban, this usually happens when you unblock and attack on the same tick
-            if (C07) {
+            if (C07.get()) {
                 e.setCanceled(true);
                 return;
             }
-            C02 = true;
+            C02.set(true);
         }
         else if (e.getPacket() instanceof C08PacketPlayerBlockPlacement) {
-            C08 = true;
+            C08.set(true);
         }
         else if (e.getPacket() instanceof C07PacketPlayerDigging) {
-            C07 = true;
+            C07.set(true);
+        }
+        else if (e.getPacket() instanceof C0APacketAnimation) {
+            C0A.set(true);
         }
         else if (e.getPacket() instanceof C09PacketHeldItemChange) {
-            if (((C09PacketHeldItemChange) e.getPacket()).getSlotId() == playerSlot && ((C09PacketHeldItemChange) e.getPacket()).getSlotId() == serverSlot) {
+            if (((C09PacketHeldItemChange) e.getPacket()).getSlotId() == playerSlot.get() && ((C09PacketHeldItemChange) e.getPacket()).getSlotId() == serverSlot.get()) {
                 e.setCanceled(true);
                 return;
             }
-            C09 = true;
-            serverSlot = playerSlot = ((C09PacketHeldItemChange) e.getPacket()).getSlotId();
+            C09.set(true);
+            playerSlot.set(((C09PacketHeldItemChange) e.getPacket()).getSlotId());
+            serverSlot.set(((C09PacketHeldItemChange) e.getPacket()).getSlotId());
         }
     }
 
@@ -56,43 +63,50 @@ public class BadPacketsHandler { // ensures you don't get banned
         if (e.getPacket() instanceof S09PacketHeldItemChange) {
             S09PacketHeldItemChange packet = (S09PacketHeldItemChange) e.getPacket();
             if (packet.getHeldItemHotbarIndex() >= 0 && packet.getHeldItemHotbarIndex() < InventoryPlayer.getHotbarSize()) {
-                serverSlot = packet.getHeldItemHotbarIndex();
+                serverSlot.set(packet.getHeldItemHotbarIndex());
             }
         }
         else if (e.getPacket() instanceof S0CPacketSpawnPlayer && Minecraft.getMinecraft().thePlayer != null) {
             if (((S0CPacketSpawnPlayer) e.getPacket()).getEntityID() != Minecraft.getMinecraft().thePlayer.getEntityId()) {
                 return;
             }
-            this.playerSlot = -1;
+            this.playerSlot.set(-1);
         }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPostUpdate(PostUpdateEvent e) {
-        if (delay) {
-            delayAttack = false;
-            delay = false;
+        if (delay.get()) {
+            delayAttack.set(false);
+            delay.set(false);
         }
-        if (C08 || C09) {
-            delay = true;
-            delayAttack = true;
+        if (C08.get() || C09.get()) {
+            delay.set(true);
+            delayAttack.set(true);
         }
-        C08 = C07 = C02 = C09 = false;
+        C08.set(false);
+        C07.set(false);
+        C02.set(false);
+        C0A.set(false);
+        C09.set(false);
     }
 
     public void handlePacket(Packet packet) {
         if (packet instanceof C09PacketHeldItemChange) {
-            this.playerSlot = ((C09PacketHeldItemChange) packet).getSlotId();
-            C09 = true;
+            this.playerSlot.set(((C09PacketHeldItemChange) packet).getSlotId());
+            C09.set(true);
         }
         else if (packet instanceof C02PacketUseEntity) {
-            C02 = true;
+            C02.set(true);
         }
         else if (packet instanceof C07PacketPlayerDigging) {
-            C07 = true;
+            C07.set(true);
         }
         else if (packet instanceof C08PacketPlayerBlockPlacement) {
-            C08 = true;
+            C08.set(true);
+        }
+        else if (packet instanceof C0APacketAnimation) {
+            C0A.set(true);
         }
     }
 }

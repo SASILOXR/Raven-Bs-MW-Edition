@@ -31,6 +31,11 @@ public class Velocity extends Module {
         return (horizontal.getInput() == 100 ? "" : (int) horizontal.getInput() + "h") + (horizontal.getInput() != 100 && vertical.getInput() != 100 ? " " : "") + (vertical.getInput() == 100 ? "" : (int) vertical.getInput() + "v");
     }
 
+    @Override
+    public int getInfoType() {
+        return 1;
+    }
+
     @SubscribeEvent
     public void onLivingUpdate(LivingUpdateEvent ev) {
         if (Utils.nullCheck() && !LongJump.stopModules && !ModuleManager.bedAura.cancelKnockback()) {

@@ -57,7 +57,13 @@ public class ButtonSetting extends Setting {
     @Override
     public void loadProfile(JsonObject data) {
         if (data.has(getName()) && data.get(getName()).isJsonPrimitive() && !this.isMethodButton) {
-            boolean booleanValue = data.getAsJsonPrimitive(getName()).getAsBoolean();
+            boolean booleanValue = isEnabled;
+            try {
+                booleanValue = data.getAsJsonPrimitive(getName()).getAsBoolean();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
             setEnabled(booleanValue);
         }
     }

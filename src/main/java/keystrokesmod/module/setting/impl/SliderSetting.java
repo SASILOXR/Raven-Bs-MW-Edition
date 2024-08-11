@@ -61,7 +61,7 @@ public class SliderSetting extends Setting {
     }
 
     public double getInput() {
-        return roundToInterval(this.defaultValue, 2);
+        return roundToInterval(this.defaultValue, 4);
     }
 
     public double getMin() {
@@ -101,7 +101,13 @@ public class SliderSetting extends Setting {
     @Override
     public void loadProfile(JsonObject data) {
         if (data.has(getName()) && data.get(getName()).isJsonPrimitive()) {
-            double newValue = data.getAsJsonPrimitive(getName()).getAsDouble();
+            double newValue = defaultValue;
+            try {
+                newValue = data.getAsJsonPrimitive(getName()).getAsDouble();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
             setValue(newValue);
         }
     }

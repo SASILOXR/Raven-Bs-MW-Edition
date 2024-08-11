@@ -140,6 +140,10 @@ public class Module {
         return "";
     }
 
+    public int getInfoType() {
+        return 0;
+    }
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }

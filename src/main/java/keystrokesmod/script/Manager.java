@@ -3,7 +3,9 @@ package keystrokesmod.script;
 import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
+import keystrokesmod.script.classes.Entity;
 import keystrokesmod.utility.Utils;
+import keystrokesmod.utility.profile.ProfileModule;
 import org.lwjgl.Sys;
 
 import java.awt.*;
@@ -30,6 +32,8 @@ public class Manager extends Module {
                     else {
                         Utils.sendMessage("&7Loaded &b" + Raven.scriptManager.scripts.size() + " &7script" + ((Raven.scriptManager.scripts.size() == 1) ? "." : "s."));
                     }
+                    Entity.clearCache();
+                    ((ProfileModule) Raven.currentProfile.getModule()).saved = false;
                 }
                 else {
                     Utils.sendMessage("&cYou are on cooldown.");

@@ -89,7 +89,7 @@ public class Nametags extends Module {
                 name = entityPlayer.getDisplayName().getFormattedText();
             }
             if (showHealth.isToggled()) {
-                name = name + " " + Utils.getHealthStr(entityPlayer);
+                name = name + " " + Utils.getHealthStr(entityPlayer, false);
             }
             if (showHitsToKill.isToggled()) {
                 name = name + " " + Utils.getHitsToKill(entityPlayer, mc.thePlayer.getCurrentEquippedItem());
@@ -200,12 +200,12 @@ public class Nametags extends Module {
 
             interpolatedY += entityPlayer.isSneaking() ? entityPlayer.height - 0.05 : entityPlayer.height + 0.27;
 
-            double[] convertedPosition = convertTo2D(interpolatedX, interpolatedY, interpolatedZ);
+            double[] convertedPosition = RenderUtils.convertTo2D(interpolatedX, interpolatedY, interpolatedZ);
             if (convertedPosition == null) {
                 continue;
             }
             if (convertedPosition[2] >= 0.0D && convertedPosition[2] < 1.0D) {
-                double[] headConvertedPosition = convertTo2D(interpolatedX, interpolatedY + 1.0D, interpolatedZ);
+                double[] headConvertedPosition = RenderUtils.convertTo2D(interpolatedX, interpolatedY + 1.0D, interpolatedZ);
                 if (headConvertedPosition == null) {
                     continue;
                 }
@@ -213,21 +213,6 @@ public class Nametags extends Module {
                 entityPositions.put(entityPlayer, new double[]{convertedPosition[0], convertedPosition[1], height, convertedPosition[2]});
             }
         }
-    }
-
-    private double[] convertTo2D(double x, double y, double z) {
-        FloatBuffer screenCoords = BufferUtils.createFloatBuffer(3);
-        IntBuffer viewport = BufferUtils.createIntBuffer(16);
-        FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
-        FloatBuffer projection = BufferUtils.createFloatBuffer(16);
-        GL11.glGetFloat(2982, modelView);
-        GL11.glGetFloat(2983, projection);
-        GL11.glGetInteger(2978, viewport);
-        boolean result = GLU.gluProject((float)x, (float)y, (float)z, modelView, projection, viewport, screenCoords);
-        if (result) {
-            return new double[] { screenCoords.get(0), org.lwjgl.opengl.Display.getHeight() - screenCoords.get(1), screenCoords.get(2) };
-        }
-        return null;
     }
 
     private void renderArmor(EntityPlayer e) {
@@ -261,7 +246,6 @@ public class Nametags extends Module {
         GlStateManager.enableDepth();
         RenderHelper.enableGUIStandardItemLighting();
         mc.getRenderItem().renderItemAndEffectIntoGUI(stack, xPos, yPos - 8);
-        RenderHelper.disableStandardItemLighting();
         mc.getRenderItem().zLevel = 0.0F;
         GlStateManager.disableDepth();
         GlStateManager.scale(0.5, 0.5, 0.5);

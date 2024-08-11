@@ -2,16 +2,14 @@ package keystrokesmod.utility;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.client.Settings;
 import keystrokesmod.module.impl.combat.AutoClicker;
 import keystrokesmod.module.impl.minigames.DuelsStats;
 import keystrokesmod.module.setting.impl.SliderSetting;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockAir;
-import net.minecraft.block.BlockLadder;
-import net.minecraft.block.BlockSign;
+import net.minecraft.block.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.inventory.GuiInventory;
@@ -191,8 +189,11 @@ public class Utils {
         return entity.getHealth() + entity.getAbsorptionAmount();
     }
 
-    public static String getHealthStr(EntityLivingBase entity) {
+    public static String getHealthStr(EntityLivingBase entity, boolean accountDead) {
         float completeHealth = getCompleteHealth(entity);
+        if (accountDead && entity.isDead) {
+            completeHealth = 0;
+        }
         return getColorForHealth(entity.getHealth() / entity.getMaxHealth(), completeHealth);
     }
 
@@ -596,10 +597,18 @@ public class Utils {
         return mc.theWorld.getCollidingBoundingBoxes(entity, entity.getEntityBoundingBox().offset(entity.motionX / 3.0D, -1.0D, entity.motionZ / 3.0D)).isEmpty();
     }
 
+    public static boolean isDiagonal() {
+        float yaw = ((mc.thePlayer.rotationYaw % 360) + 360) % 360 > 180 ? ((mc.thePlayer.rotationYaw % 360) + 360) % 360 - 360 : ((mc.thePlayer.rotationYaw % 360) + 360) % 360;
+        return (yaw >= -170 && yaw <= 170) && !(yaw >= -10 && yaw <= 10) && !(yaw >= 80 && yaw <= 100) && !(yaw >= -100 && yaw <= -80) || Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
+    }
+
     public static double gbps(Entity en, int d) {
         double x = en.posX - en.prevPosX;
         double z = en.posZ - en.prevPosZ;
         double sp = Math.sqrt(x * x + z * z) * 20.0D;
+        if (d == 0) {
+            return sp;
+        }
         return rnd(sp, d);
     }
 
@@ -798,5 +807,16 @@ public class Utils {
             }
         }
         return getAmount + EnchantmentHelper.getEnchantmentLevel(Enchantment.sharpness.effectId, itemStack) * 1.25;
+    }
+
+    public static boolean canBePlaced(ItemBlock itemBlock) {
+        Block block = itemBlock.getBlock();
+        if (block == null) {
+            return false;
+        }
+        if (BlockUtils.isInteractable(block) || block instanceof BlockDaylightDetector || block instanceof BlockBeacon || block instanceof BlockBanner || block instanceof BlockEndPortalFrame || block instanceof BlockEndPortal || block instanceof BlockLever || block instanceof BlockButton || block instanceof BlockSkull || block instanceof BlockLiquid || block instanceof BlockCactus || block instanceof BlockDoublePlant || block instanceof BlockLilyPad || block instanceof BlockCarpet || block instanceof BlockTripWire || block instanceof BlockTripWireHook || block instanceof BlockTallGrass || block instanceof BlockFlower || block instanceof BlockFlowerPot || block instanceof BlockSign || block instanceof BlockLadder || block instanceof BlockTorch || block instanceof BlockRedstoneTorch || block instanceof BlockFence || block instanceof BlockPane || block instanceof BlockStainedGlassPane || block instanceof BlockGravel || block instanceof BlockClay || block instanceof BlockSand || block instanceof BlockSoulSand || block instanceof BlockRail) {
+            return false;
+        }
+        return true;
     }
 }

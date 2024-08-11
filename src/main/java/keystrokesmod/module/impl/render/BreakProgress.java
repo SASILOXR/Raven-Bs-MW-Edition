@@ -14,10 +14,13 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+import java.awt.*;
+
 public class BreakProgress extends Module {
     private SliderSetting mode;
     private ButtonSetting manual;
     private ButtonSetting bedAura;
+    private ButtonSetting fadeIn;
     private String[] modes = new String[]{"Percentage", "Second", "Decimal"};
     private float progress;
     private BlockPos block;
@@ -28,6 +31,7 @@ public class BreakProgress extends Module {
         this.registerSetting(mode = new SliderSetting("Mode", modes, 0));
         this.registerSetting(manual = new ButtonSetting("Show manual", true));
         this.registerSetting(bedAura = new ButtonSetting("Show BedAura", true));
+        this.registerSetting(fadeIn = new ButtonSetting("Fade in", false));
     }
 
     @SubscribeEvent
@@ -45,7 +49,11 @@ public class BreakProgress extends Module {
         GlStateManager.scale(-0.02266667f, -0.02266667f, -0.02266667f);
         GlStateManager.depthMask(false);
         GlStateManager.disableDepth();
-        mc.fontRendererObj.drawString(this.progressStr, (float) (-mc.fontRendererObj.getStringWidth(this.progressStr) / 2), -3.0f, -1, true);
+        GlStateManager.enableBlend();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        int colorAlpha = Utils.merge(-1, (int) (255 * progress));
+        mc.fontRendererObj.drawString(this.progressStr, (float) (-mc.fontRendererObj.getStringWidth(this.progressStr) / 2), -3.0f, fadeIn.isToggled() ? colorAlpha : -1, true);
+        GlStateManager.disableBlend();
         GlStateManager.enableDepth();
         GlStateManager.depthMask(true);
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);

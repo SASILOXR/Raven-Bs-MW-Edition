@@ -69,11 +69,14 @@ public class TargetHUD extends Module {
             }
             String playerInfo = target.getDisplayName().getFormattedText();
             double health = target.getHealth() / target.getMaxHealth();
+            if (target.isDead) {
+                health = 0;
+            }
             if (health != lastHealth) {
                 (healthBarTimer = new Timer(350)).start();
             }
             lastHealth = health;
-            playerInfo += " " + Utils.getHealthStr(target);
+            playerInfo += " " + Utils.getHealthStr(target, true);
             drawTargetHUD(fadeTimer, playerInfo, health);
         }
     }
@@ -116,10 +119,7 @@ public class TargetHUD extends Module {
             RenderUtils.drawRoundedRectangle((float) n13, (float) n15, (float) n14, (float) (n15 + 5), 4.0f, Utils.merge(Color.black.getRGB(), n11)); // background
             int k = Utils.merge(array[0], n12);
             int n16 = Utils.merge(array[1], n12);
-            float healthBar = (float) (int) (n14 + (n13 - n14) * (1.0 - ((health < 0.05) ? 0.05 : health)));
-            if (healthBar - n13 < 3) { // if goes below, the rounded health bar glitches out
-                healthBar = n13 + 3;
-            }
+            float healthBar = (float) (int) (n14 + (n13 - n14) * (1 - health));
             if (healthBar != lastHealthBar && lastHealthBar - n13 >= 3 && healthBarTimer != null ) {
                 float diff = lastHealthBar - healthBar;
                 if (diff > 0) {
@@ -134,6 +134,9 @@ public class TargetHUD extends Module {
             }
             if (healthColor.isToggled()) {
                 k = n16 = Utils.merge(Utils.getColorForHealth(health), n12);
+            }
+            if (lastHealthBar > n14) { // exceeds total width then clamp
+                lastHealthBar = n14;
             }
             RenderUtils.drawRoundedGradientRect((float) n13, (float) n15, lastHealthBar, (float) (n15 + 5), 4.0f, k, k, k, n16); // health bar
             GlStateManager.pushMatrix();

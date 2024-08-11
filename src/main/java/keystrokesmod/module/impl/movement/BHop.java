@@ -1,14 +1,18 @@
 package keystrokesmod.module.impl.movement;
 
+import keystrokesmod.event.JumpEvent;
 import keystrokesmod.module.Module;
+import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
+import keystrokesmod.utility.RotationUtils;
 import keystrokesmod.utility.Utils;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 
 public class BHop extends Module {
     private SliderSetting mode;
-    public static SliderSetting speed;
+    public static SliderSetting speedSetting;
     private ButtonSetting autoJump;
     private ButtonSetting liquidDisable;
     private ButtonSetting sneakDisable;
@@ -19,7 +23,7 @@ public class BHop extends Module {
     public BHop() {
         super("Bhop", Module.category.movement);
         this.registerSetting(mode = new SliderSetting("Mode", modes, 0));
-        this.registerSetting(speed = new SliderSetting("Speed", 2.0, 0.5, 8.0, 0.1));
+        this.registerSetting(speedSetting = new SliderSetting("Speed", 2.0, 0.5, 8.0, 0.1));
         this.registerSetting(autoJump = new ButtonSetting("Auto jump", true));
         this.registerSetting(liquidDisable = new ButtonSetting("Disable in liquid", true));
         this.registerSetting(sneakDisable = new ButtonSetting("Disable while sneaking", true));
@@ -35,6 +39,9 @@ public class BHop extends Module {
         if (((mc.thePlayer.isInWater() || mc.thePlayer.isInLava()) && liquidDisable.isToggled()) || (mc.thePlayer.isSneaking() && sneakDisable.isToggled())) {
             return;
         }
+        if (ModuleManager.bedAura.isEnabled() && ModuleManager.bedAura.disableBHop.isToggled() && ModuleManager.bedAura.currentBlock != null && RotationUtils.inRange(ModuleManager.bedAura.currentBlock, ModuleManager.bedAura.range.getInput())) {
+            return;
+        }
         switch ((int) mode.getInput()) {
             case 0:
                 if (Utils.isMoving()) {
@@ -42,7 +49,7 @@ public class BHop extends Module {
                         mc.thePlayer.jump();
                     }
                     mc.thePlayer.setSprinting(true);
-                    Utils.setSpeed(Utils.getHorizontalSpeed() + 0.005 * speed.getInput());
+                    Utils.setSpeed(Utils.getHorizontalSpeed() + 0.005 * speedSetting.getInput());
                     hopping = true;
                     break;
                 }
@@ -60,7 +67,7 @@ public class BHop extends Module {
                     }
                     mc.thePlayer.setSprinting(true);
                     double horizontalSpeed = Utils.getHorizontalSpeed();
-                    double additionalSpeed = 0.4847 * ((speed.getInput() - 1.0) / 3.0 + 1.0);
+                    double additionalSpeed = 0.4847 * ((speedSetting.getInput() - 1.0) / 3.0 + 1.0);
                     if (horizontalSpeed < additionalSpeed) {
                         horizontalSpeed = additionalSpeed;
                     }
@@ -78,5 +85,10 @@ public class BHop extends Module {
             mc.thePlayer.motionX = 0;
         }
         hopping = false;
+    }
+
+    @SubscribeEvent
+    public void onJump(JumpEvent e) {
+        e.setSprint(false);
     }
 }

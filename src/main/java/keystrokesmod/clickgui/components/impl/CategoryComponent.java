@@ -12,6 +12,12 @@ import keystrokesmod.utility.profile.Profile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.renderer.entity.RenderItem;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
@@ -22,11 +28,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class CategoryComponent {
     public List<ModuleComponent> modules = new CopyOnWriteArrayList<>();
     public Module.category categoryName;
-    private boolean categoryOpened;
-    private int k;
+    public boolean opened;
+    private int width;
     private int y;
     private int x;
-    private int bh;
+    private int titleHeight;
     public boolean dragging;
     public int xx;
     public int yy;
@@ -34,33 +40,40 @@ public class CategoryComponent {
     public String pvp;
     public boolean pin = false;
     public boolean hovering = false;
-    private Timer smoothTimer;
-    public int scale;
+    public boolean hoveringOverCategory = false;
+    public Timer smoothTimer;
+    private Timer textTimer;
+    public Timer moduleSmoothTimer;
+    public ScaledResolution scale;
     private float big;
+    private float bigSettings;
     private final int translucentBackground = new Color(0, 0, 0, 110).getRGB();
     private final  int background = new Color(0, 0, 0, 255).getRGB();
     private final  int regularOutline = new Color(81, 99, 149).getRGB();
     private final  int regularOutline2 = new Color(97, 67, 133).getRGB();
     private final  int categoryNameColor = new Color(220, 220, 220).getRGB();
-    private final  int categoryCloseColor = new Color(250, 95, 85).getRGB();
-    private final  int categoryOpenColor = new Color(135, 238, 144).getRGB();
+    private float lastHeight;
+    public int moduleY;
+    private int lastModuleY;
+    private int screenHeight;
 
     public CategoryComponent(Module.category category) {
         this.categoryName = category;
-        this.k = 92;
+        this.width = 92;
         this.x = 5;
-        this.y = 5;
-        this.bh = 13;
+        this.moduleY = this.y = 5;
+        this.titleHeight = 13;
         this.smoothTimer = null;
+        this.textTimer = null;
         this.xx = 0;
-        this.categoryOpened = false;
+        this.opened = false;
         this.dragging = false;
-        int tY = this.bh + 3;
-        this.scale = new ScaledResolution(Minecraft.getMinecraft()).getScaleFactor();
+        int moduleRenderX = this.titleHeight + 3;
+        this.scale = new ScaledResolution(Minecraft.getMinecraft());
 
-        for (Iterator var3 = Raven.getModuleManager().inCategory(this.categoryName).iterator(); var3.hasNext(); tY += 16) {
+        for (Iterator var3 = Raven.getModuleManager().inCategory(this.categoryName).iterator(); var3.hasNext(); moduleRenderX += 16) {
             Module mod = (Module) var3.next();
-            ModuleComponent b = new ModuleComponent(mod, this, tY);
+            ModuleComponent b = new ModuleComponent(mod, this, moduleRenderX);
             this.modules.add(b);
         }
     }
@@ -71,11 +84,11 @@ public class CategoryComponent {
 
     public void reloadModules(boolean isProfile) {
         this.modules.clear();
-        this.bh = 13;
-        int tY = this.bh + 3;
+        this.titleHeight = 13;
+        int moduleRenderY = this.titleHeight + 3;
 
         if ((this.categoryName == Module.category.profiles && isProfile) || (this.categoryName == Module.category.scripts && !isProfile)) {
-            ModuleComponent manager = new ModuleComponent(isProfile ? new Manager() : new keystrokesmod.script.Manager(), this, tY);
+            ModuleComponent manager = new ModuleComponent(isProfile ? new Manager() : new keystrokesmod.script.Manager(), this, moduleRenderY);
             this.modules.add(manager);
 
             if ((Raven.profileManager == null && isProfile) || (Raven.scriptManager == null && !isProfile)) {
@@ -84,30 +97,30 @@ public class CategoryComponent {
 
             if (isProfile) {
                 for (Profile profile : Raven.profileManager.profiles) {
-                    tY += 16;
-                    ModuleComponent b = new ModuleComponent(profile.getModule(), this, tY);
+                    moduleRenderY += 16;
+                    ModuleComponent b = new ModuleComponent(profile.getModule(), this, moduleRenderY);
                     this.modules.add(b);
                 }
             }
             else {
                 for (Module module : Raven.scriptManager.scripts.values()) {
-                    tY += 16;
-                    ModuleComponent b = new ModuleComponent(module, this, tY);
+                    moduleRenderY += 16;
+                    ModuleComponent b = new ModuleComponent(module, this, moduleRenderY);
                     this.modules.add(b);
                 }
             }
         }
     }
 
-    public void x(int n) {
+    public void setX(int n) {
         this.x = n;
     }
 
-    public void y(int y) {
-        this.y = y;
+    public void setY(int y) {
+        this.moduleY = this.y = y;
     }
 
-    public void d(boolean d) {
+    public void overTitle(boolean d) {
         this.dragging = d;
     }
 
@@ -119,44 +132,93 @@ public class CategoryComponent {
         this.pin = on;
     }
 
-    public boolean fv() {
-        return this.categoryOpened;
+    public boolean isOpened() {
+        return this.opened;
     }
 
     public void mouseClicked(boolean on) {
-        this.categoryOpened = on;
-        (this.smoothTimer = new Timer(150)).start();
+        this.opened = on;
+        (this.smoothTimer = new Timer(300)).start();
+        (this.textTimer = new Timer(200)).start();
     }
 
-    public void rf(FontRenderer renderer) {
-        this.k = 92;
-        int h = 0;
-        if (!this.modules.isEmpty() && this.categoryOpened) {
-            Component c;
-            for (Iterator var3 = this.modules.iterator(); var3.hasNext(); h += c.gh()) {
-                c = (Component) var3.next();
+    public void openModule(ModuleComponent component) {
+        (this.smoothTimer = new Timer(300)).start();
+    }
+
+    public void onScroll(int mouseScrollInput) {
+        if (!hoveringOverCategory || !this.opened) {
+            return;
+        }
+
+        if (mouseScrollInput > 0) {
+            this.moduleY += 18;
+        }
+        else if (mouseScrollInput < 0) {
+            this.moduleY -= 18;
+        }
+
+        (moduleSmoothTimer = new Timer(200)).start();
+    }
+
+    public void render(FontRenderer renderer) {
+        this.moduleY = Math.min(this.moduleY, this.y);
+        if (this.moduleY + this.bigSettings < this.y + this.big + this.titleHeight) {
+            this.moduleY = (int) (this.y + this.big - this.bigSettings);
+        }
+        this.width = 92;
+        int modulesHeight = 0;
+        int settingsHeight = 0;
+        if (!this.modules.isEmpty() && this.opened) {
+            Iterator<ModuleComponent> iterator = this.modules.iterator();
+            while (iterator.hasNext()) {
+                ModuleComponent c = iterator.next();
+                settingsHeight += c.getHeight();
+                if (modulesHeight > this.screenHeight - 80) { // max category height
+                    continue;
+                }
+                if (this.y + this.titleHeight + c.getHeight() + modulesHeight > this.y + this.titleHeight + (16 * this.modules.size())) {
+                    modulesHeight += c.getHeight();
+                    continue;
+                }
+                modulesHeight += 16;
             }
-            big = h;
+            big = modulesHeight;
+            bigSettings = settingsHeight;
         }
 
-        float extra = smoothTimer == null ? this.y + this.bh + h + 4 : smoothTimer.getValueFloat(this.y + this.bh + 4, this.y + this.bh + h + 4, 1);
-
-        if (!this.categoryOpened) {
-            extra = smoothTimer == null ? this.y + this.bh + h + 4 : (this.y + this.bh + 4 + big) - smoothTimer.getValueFloat(0, big, 1);
+        float middlePos = (float) (this.x + this.width / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.categoryName.name()) / 2);
+        float xPos = opened ? middlePos : this.x + 12;
+        float extra = this.y + this.titleHeight + modulesHeight + 4;
+        if (smoothTimer != null && System.currentTimeMillis() - smoothTimer.last >= 400) {
+            smoothTimer = null;
         }
-
+        if (extra != lastHeight && smoothTimer != null) {
+            double diff = lastHeight - extra;
+            if (diff < 0) {
+                extra = smoothTimer.getValueFloat(lastHeight, this.y + this.titleHeight + modulesHeight + 4, 1);
+            }
+            else if (diff > 0) {
+                extra = (this.y + this.titleHeight + 4 + big) - smoothTimer.getValueFloat(0, big, 1);
+            }
+        }
+        float namePos = textTimer == null ? xPos : textTimer.getValueFloat(this.x + 12, middlePos, 1);
+        if (!this.opened) {
+            namePos = textTimer == null ? xPos : middlePos - textTimer.getValueFloat(0, this.width / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.categoryName.name()) / 2 - 12, 1);
+        }
+        lastHeight = extra;
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        RenderUtils.scissor(0, this.y - 2, this.x + this.k + 4, extra - this.y + 4);
-        RenderUtils.drawRoundedGradientOutlinedRectangle(this.x - 2, this.y, this.x + this.k + 2, extra, 9, Gui.translucentBackground.isToggled() ? translucentBackground : background,
-                ((categoryOpened || hovering) && Gui.rainBowOutlines.isToggled()) ? RenderUtils.setAlpha(Utils.getChroma(2, 0), 0.5) : regularOutline, ((categoryOpened || hovering) && Gui.rainBowOutlines.isToggled()) ? RenderUtils.setAlpha(Utils.getChroma(2, 700), 0.5) : regularOutline2);
-
-        renderer.drawString(this.n4m ? this.pvp : this.categoryName.name(), (float) (this.x + 2), (float) (this.y + 4), categoryNameColor, false);
+        RenderUtils.scissor(0, this.y - 2, this.x + this.width + 4, extra - this.y + 4);
+        RenderUtils.drawRoundedGradientOutlinedRectangle(this.x - 2, this.y, this.x + this.width + 2, extra, 9, Gui.translucentBackground.isToggled() ? translucentBackground : background,
+                ((opened || hovering) && Gui.rainBowOutlines.isToggled()) ? RenderUtils.setAlpha(Utils.getChroma(2, 0), 0.5) : regularOutline, ((opened || hovering) && Gui.rainBowOutlines.isToggled()) ? RenderUtils.setAlpha(Utils.getChroma(2, 700), 0.5) : regularOutline2);
+        renderItemForCategory(this.categoryName, this.x + 1, this.y + 4, opened || hovering);
+        renderer.drawString(this.n4m ? this.pvp : this.categoryName.name(), namePos, (float) (this.y + 4), categoryNameColor, false);
+        RenderUtils.scissor(0, this.y + this.titleHeight + 3, this.x + this.width + 4, extra - this.y - 4 - this.titleHeight);
         if (!this.n4m) {
-            GL11.glPushMatrix();
-            renderer.drawString(this.categoryOpened ? "-" : "+", (float) (this.x + 80), (float) ((double) this.y + 4.5D), this.categoryOpened ? categoryCloseColor : categoryOpenColor, false);
-            GL11.glPopMatrix();
-            if (this.categoryOpened && !this.modules.isEmpty()) {
+            int prevY = this.y;
+            this.y = (int) this.moduleY;
+            if ((this.opened || smoothTimer != null) && !this.modules.isEmpty()) {
                 Iterator var5 = this.modules.iterator();
 
                 while (var5.hasNext()) {
@@ -164,19 +226,19 @@ public class CategoryComponent {
                     c2.render();
                 }
             }
-
+            this.y = prevY;
         }
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         GL11.glPopMatrix();
     }
 
     public void render() {
-        int o = this.bh + 3;
+        int o = this.titleHeight + 3;
 
-        Component c;
-        for (Iterator var2 = this.modules.iterator(); var2.hasNext(); o += c.gh()) {
-            c = (Component) var2.next();
-            c.so(o);
+        Component component;
+        for (Iterator var2 = this.modules.iterator(); var2.hasNext(); o += component.getHeight()) {
+            component = (Component) var2.next();
+            component.so(o);
         }
 
     }
@@ -189,35 +251,104 @@ public class CategoryComponent {
         return this.y;
     }
 
-    public int gw() {
-        return this.k;
+    public int getModuleY() {
+        return this.moduleY;
     }
 
-    public void up(int x, int y) {
+    public int getWidth() {
+        return this.width;
+    }
+
+    public void mousePosition(int x, int y) {
         if (this.dragging) {
-            this.x(x - this.xx);
-            this.y(y - this.yy);
+            this.setX(x - this.xx);
+            this.setY(y - this.yy);
         }
-        if (overCategory(x, y)) {
-            hovering = true;
-        } else {
-            hovering = false;
-        }
+        hoveringOverCategory = overCategory(x, y);
+        hovering = overTitle(x, y);
     }
 
     public boolean i(int x, int y) {
-        return x >= this.x + 92 - 13 && x <= this.x + this.k && (float) y >= (float) this.y + 2.0F && y <= this.y + this.bh + 1;
+        return x >= this.x + 92 - 13 && x <= this.x + this.width && (float) y >= (float) this.y + 2.0F && y <= this.y + this.titleHeight + 1;
     }
 
-    public boolean d(int x, int y) {
-        return x >= this.x + 77 && x <= this.x + this.k - 6 && (float) y >= (float) this.y + 2.0F && y <= this.y + this.bh + 1;
+    public boolean overTitle(int x, int y) {
+        return x >= this.x && x <= this.x + this.width && (float) y >= (float) this.y + 2.0F && y <= this.y + this.titleHeight + 1;
     }
 
     public boolean overCategory(int x, int y) {
-        return x >= this.x - 2 && x <= this.x + this.k + 2 && (float) y >= (float) this.y + 2.0F && y <= this.y + this.bh + 1;
+        return x >= this.x - 2 && x <= this.x + this.width + 2 && (float) y >= (float) this.y + 2.0F && y <= this.y + this.titleHeight + big + 1;
     }
 
     public boolean v(int x, int y) {
-        return x >= this.x && x <= this.x + this.k && y >= this.y && y <= this.y + this.bh;
+        return x >= this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.titleHeight;
+    }
+
+    private void renderItemForCategory(Module.category category, int x, int y, boolean enchant) {
+        RenderItem renderItem = Minecraft.getMinecraft().getRenderItem();
+        double scale = 0.55;
+        GlStateManager.pushMatrix();
+        GlStateManager.scale(scale, scale, scale);
+        ItemStack itemStack = null;
+        switch (category) {
+            case combat:
+                itemStack = new ItemStack(Items.diamond_sword);
+                break;
+            case movement:
+                itemStack = new ItemStack(Items.diamond_boots);
+                break;
+            case player:
+                itemStack = new ItemStack(Items.golden_apple);
+                break;
+            case world:
+                itemStack = new ItemStack(Items.map);
+                break;
+            case render:
+                itemStack = new ItemStack(Items.ender_eye);
+                break;
+            case minigames:
+                itemStack = new ItemStack(Items.gold_ingot);
+                break;
+            case fun:
+                itemStack = new ItemStack(Items.slime_ball);
+                break;
+            case other:
+                itemStack = new ItemStack(Items.clock);
+                break;
+            case client:
+                itemStack = new ItemStack(Items.compass);
+                break;
+            case profiles:
+                itemStack = new ItemStack(Items.book);
+                break;
+            case scripts:
+                itemStack = new ItemStack(Items.redstone);
+                break;
+        }
+        if (itemStack != null) {
+            if (enchant) {
+                if (category != Module.category.player) {
+                    itemStack.addEnchantment(Enchantment.unbreaking, 2);
+                }
+                else {
+                    itemStack.setItemDamage(1);
+                }
+            }
+            RenderHelper.enableGUIStandardItemLighting();
+            GlStateManager.disableBlend();
+            renderItem.renderItemAndEffectIntoGUI(itemStack, (int) (x / scale), (int) (y / scale));
+            GlStateManager.enableBlend();
+            RenderHelper.disableStandardItemLighting();
+        }
+        GlStateManager.scale(1, 1, 1);
+        GlStateManager.popMatrix();
+    }
+
+    public int getScreenHeight() {
+        return screenHeight;
+    }
+
+    public void setScreenHeight(int screenHeight) {
+        this.screenHeight = screenHeight;
     }
 }

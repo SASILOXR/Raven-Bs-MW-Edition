@@ -7,7 +7,8 @@ public class Component {
     public void drawScreen(int x, int y) {
     }
 
-    public void onClick(int x, int y, int b) {
+    public boolean onClick(int x, int y, int b) {
+        return false;
     }
 
     public void mouseReleased(int x, int y, int m) {
@@ -19,7 +20,7 @@ public class Component {
     public void so(int n) {
     }
 
-    public int gh() {
+    public int getHeight() {
         return 0;
     }
 

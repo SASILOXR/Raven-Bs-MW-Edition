@@ -26,6 +26,7 @@ public class ModuleManager {
     public static Module fastPlace;
     public static MurderMystery murderMystery;
     public static AntiFireball antiFireball;
+    public static AutoSwap autoSwap;
     public static BedAura bedAura;
     public static FastMine fastMine;
     public static Module antiShuffle;
@@ -50,6 +51,7 @@ public class ModuleManager {
     public static Module keepSprint;
     public static Module antiKnockback;
     public static ExtendCamera extendCamera;
+    public static InvManager invManager;
     public static Tower tower;
     public static NoCameraClip noCameraClip;
     public static Module bedwars;
@@ -74,7 +76,7 @@ public class ModuleManager {
         this.addModule(new RodAimbot());
         this.addModule(new Velocity());
         this.addModule(bHop = new BHop());
-        this.addModule(new InvManager());
+        this.addModule(invManager = new InvManager());
         this.addModule(scaffold = new Scaffold());
         this.addModule(new AntiAFK());
         this.addModule(new Boost());
@@ -86,7 +88,7 @@ public class ModuleManager {
         this.addModule(new TPAura());
         this.addModule(new Trajectories());
         this.addModule(potions = new Potions());
-        this.addModule(new AutoSwap());
+        this.addModule(autoSwap = new AutoSwap());
         this.addModule(keepSprint = new KeepSprint());
         this.addModule(bedAura = new BedAura());
         this.addModule(noSlow = new NoSlow());
@@ -174,6 +176,15 @@ public class ModuleManager {
     public Module getModule(String moduleName) {
         for (Module module : modules) {
             if (module.getName().equals(moduleName)) {
+                return module;
+            }
+        }
+        return null;
+    }
+
+    public Module getModule(Class clazz) {
+        for (Module module : modules) {
+            if (module.getClass().equals(clazz)) {
                 return module;
             }
         }

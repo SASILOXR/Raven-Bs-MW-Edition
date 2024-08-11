@@ -17,7 +17,10 @@ import java.util.List;
 public class AntiKnockback extends Module {
     private SliderSetting horizontal;
     private SliderSetting vertical;
+    private ButtonSetting cancelBurning;
     private ButtonSetting cancelExplosion;
+    private ButtonSetting cancelWhileFalling;
+    private ButtonSetting cancelOffGround;
     private ButtonSetting damageBoost;
     private SliderSetting boostMultiplier;
     private ButtonSetting groundCheck;
@@ -28,7 +31,10 @@ public class AntiKnockback extends Module {
         this.registerSetting(new DescriptionSetting("Overrides Velocity."));
         this.registerSetting(horizontal = new SliderSetting("Horizontal", 0.0, 0.0, 100.0, 1.0));
         this.registerSetting(vertical = new SliderSetting("Vertical", 0.0, 0.0, 100.0, 1.0));
+        this.registerSetting(cancelBurning = new ButtonSetting("Cancel burning", true));
         this.registerSetting(cancelExplosion = new ButtonSetting("Cancel explosion packet", true));
+        this.registerSetting(cancelWhileFalling = new ButtonSetting("Cancel while falling", true));
+        this.registerSetting(cancelOffGround = new ButtonSetting("Cancel off ground", true));
         this.registerSetting(damageBoost = new ButtonSetting("Damage boost", false));
         this.registerSetting(boostMultiplier = new SliderSetting("Boost multiplier", 2.0, 1.0, 8.0, 0.1));
         this.registerSetting(groundCheck = new ButtonSetting("Ground check", false));
@@ -42,11 +48,17 @@ public class AntiKnockback extends Module {
         }
         if (e.getPacket() instanceof S12PacketEntityVelocity) {
             if (((S12PacketEntityVelocity) e.getPacket()).getEntityID() == mc.thePlayer.getEntityId()) {
+                if (!cancelBurning.isToggled() && mc.thePlayer.isBurning()) {
+                    return;
+                }
                 if (lobbyCheck.isToggled() && isLobby()) {
                     return;
                 }
                 e.setCanceled(true);
                 if (cancel()) {
+                    return;
+                }
+                if (cancelConditions()) {
                     return;
                 }
                 S12PacketEntityVelocity s12PacketEntityVelocity = (S12PacketEntityVelocity) e.getPacket();
@@ -79,6 +91,9 @@ public class AntiKnockback extends Module {
             if (cancelExplosion.isToggled() || cancel()) {
                 return;
             }
+            if (cancelConditions()) {
+                return;
+            }
             S27PacketExplosion s27PacketExplosion = (S27PacketExplosion) e.getPacket();
             if (horizontal.getInput() == 0 && vertical.getInput() > 0) {
                 mc.thePlayer.motionY += s27PacketExplosion.func_149144_d() * vertical.getInput()/100;
@@ -105,6 +120,11 @@ public class AntiKnockback extends Module {
         return (horizontal.getInput() == 100 ? "" : (int) horizontal.getInput() + "h") + (horizontal.getInput() != 100 && vertical.getInput() != 100 ? " " : "") + (vertical.getInput() == 100 ? "" : (int) vertical.getInput() + "v");
     }
 
+    @Override
+    public int getInfoType() {
+        return 1;
+    }
+
     private boolean isLobby() {
         if (Utils.isHypixel()) {
             List<String> sidebarLines = Utils.getSidebarLines();
@@ -113,6 +133,18 @@ public class AntiKnockback extends Module {
                 if (parts.length > 1 && parts[1].charAt(0) == 'L') {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    private boolean cancelConditions() {
+        if (mc.thePlayer != null) {
+            if (cancelWhileFalling.isToggled() && mc.thePlayer.fallDistance > 0) {
+                return true;
+            }
+            if (cancelOffGround.isToggled() && !mc.thePlayer.onGround) {
+                return true;
             }
         }
         return false;

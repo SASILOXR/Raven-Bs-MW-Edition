@@ -8,19 +8,25 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.glu.GLU;
 
 import java.awt.*;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 public class RenderUtils {
     private static Minecraft mc = Minecraft.getMinecraft();
     public static boolean ring_c = false;
+    private static Frustum frustum = new Frustum();
 
     public static void renderBlock(BlockPos blockPos, int color, boolean outline, boolean shade) {
         renderBox(blockPos.getX(), blockPos.getY(), blockPos.getZ(), 1, 1, 1, color, outline, shade);
@@ -44,11 +50,21 @@ public class RenderUtils {
         GL11.glScissor((int) x, (int) (y - height), (int) width, (int) height);
     }
 
+    public static boolean isInViewFrustum(final Entity entity) {
+        return isInViewFrustum(entity.getEntityBoundingBox()) || entity.ignoreFrustumCheck;
+    }
+
+    private static boolean isInViewFrustum(final AxisAlignedBB bb) {
+        frustum.setPosition(mc.getRenderViewEntity().posX, mc.getRenderViewEntity().posY, mc.getRenderViewEntity().posZ);
+        return frustum.isBoundingBoxInFrustum(bb);
+    }
+
     public static void drawRect(double left, double top, double right, double bottom, int color) {
         float f3 = (color >> 24 & 255) / 255.0F;
         float f = (color >> 16 & 255) / 255.0F;
         float f1 = (color >> 8 & 255) / 255.0F;
         float f2 = (color & 255) / 255.0F;
+        GlStateManager.pushMatrix();
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer worldrenderer = tessellator.getWorldRenderer();
         GlStateManager.enableBlend();
@@ -63,6 +79,8 @@ public class RenderUtils {
         tessellator.draw();
         GlStateManager.enableTexture2D();
         GlStateManager.disableBlend();
+        GlStateManager.color(1, 1, 1);
+        GlStateManager.popMatrix();
     }
 
     public static void drawOutline(float x, float y, float x2, float y2, float lineWidth, int color) {
@@ -606,33 +624,53 @@ public class RenderUtils {
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    public static void drawRoundedRectangle(float n, float n2, float n3, float n4, final float n5, final int n6) {
-        n *= 2.0;
-        n2 *= 2.0;
-        n3 *= 2.0;
-        n4 *= 2.0;
+    public static double[] convertTo2D(double x, double y, double z) {
+        FloatBuffer screenCoords = BufferUtils.createFloatBuffer(3);
+        IntBuffer viewport = BufferUtils.createIntBuffer(16);
+        FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
+        FloatBuffer projection = BufferUtils.createFloatBuffer(16);
+        GL11.glGetFloat(2982, modelView);
+        GL11.glGetFloat(2983, projection);
+        GL11.glGetInteger(2978, viewport);
+        boolean result = GLU.gluProject((float)x, (float)y, (float)z, modelView, projection, viewport, screenCoords);
+        if (result) {
+            return new double[] { screenCoords.get(0), org.lwjgl.opengl.Display.getHeight() - screenCoords.get(1), screenCoords.get(2) };
+        }
+        return null;
+    }
+
+    public static void drawRoundedRectangle(float x, float y, float x2, float y2, final float radius, final int color) {
+        if (x2 <= x) {
+            return;
+        }
+        x *= 2.0;
+        y *= 2.0;
+        x2 *= 2.0;
+        y2 *= 2.0;
         GL11.glPushAttrib(0);
         GL11.glScaled(0.5, 0.5, 0.5);
         GL11.glEnable(3042);
         GL11.glDisable(3553);
         GL11.glEnable(2848);
         GL11.glBegin(9);
-        glColor(n6);
+        glColor(color);
         for (int i = 0; i <= 90; i += 3) {
             final double n7 = (double) (i * 0.017453292f);
-            GL11.glVertex2d((double) (n + n5) + Math.sin(n7) * n5 * -1.0, (double) (n2 + n5) + Math.cos(n7) * n5 * -1.0);
+            GL11.glVertex2d((double) (x + radius) + Math.sin(n7) * radius * -1.0, (double) (y + radius) + Math.cos(n7) * radius * -1.0);
         }
         for (int j = 90; j <= 180; j += 3) {
             final double n8 = (double) (j * 0.017453292f);
-            GL11.glVertex2d((double) (n + n5) + Math.sin(n8) * n5 * -1.0, (double) (n4 - n5) + Math.cos(n8) * n5 * -1.0);
+            GL11.glVertex2d((double) (x + radius) + Math.sin(n8) * radius * -1.0, (double) (y2 - radius) + Math.cos(n8) * radius * -1.0);
         }
-        for (int k = 0; k <= 90; k += 3) {
-            final double n9 = (double) (k * 0.017453292f);
-            GL11.glVertex2d((double) (n3 - n5) + Math.sin(n9) * n5, (double) (n4 - n5) + Math.cos(n9) * n5);
-        }
-        for (int l = 90; l <= 180; l += 3) {
-            final double n10 = (double) (l * 0.017453292f);
-            GL11.glVertex2d((double) (n3 - n5) + Math.sin(n10) * n5, (double) (n2 + n5) + Math.cos(n10) * n5);
+        if (x2 - x >= 4.5) {
+            for (int k = 0; k <= 90; k += 1) {
+                final double n9 = (double) (k * 0.017453292f);
+                GL11.glVertex2d((double) (x2 - radius) + Math.sin(n9) * radius, (double) (y2 - radius) + Math.cos(n9) * radius);
+            }
+            for (int l = 90; l <= 180; l += 1) {
+                final double n10 = (double) (l * 0.017453292f);
+                GL11.glVertex2d((double) (x2 - radius) + Math.sin(n10) * radius, (double) (y + radius) + Math.cos(n10) * radius);
+            }
         }
         GL11.glEnd();
         GL11.glEnable(3553);
@@ -645,6 +683,9 @@ public class RenderUtils {
     }
 
     public static void drawRoundedGradientRect(float x, float y, float x2, float y2, final float n5, final int n6, final int n7, final int n8, final int n9) {
+        if (x2 <= x) {
+            return;
+        }
         GL11.glEnable(3042);
         GL11.glDisable(3553);
         GL11.glBlendFunc(770, 771);
@@ -671,15 +712,17 @@ public class RenderUtils {
             final double n11 = j * 0.017453292f;
             GL11.glVertex2d((double) (x + n5) + Math.sin(n11) * n5 * -1.0, (double) (y2 - n5) + Math.cos(n11) * n5 * -1.0);
         }
-        glColor(n8);
-        for (int k = 0; k <= 90; k += 3) {
-            final double n12 = k * 0.017453292f;
-            GL11.glVertex2d((double) (x2 - n5) + Math.sin(n12) * n5, (double) (y2 - n5) + Math.cos(n12) * n5);
-        }
-        glColor(n9);
-        for (int l = 90; l <= 180; l += 3) {
-            final double n13 = l * 0.017453292f;
-            GL11.glVertex2d((double) (x2 - n5) + Math.sin(n13) * n5, (double) (y + n5) + Math.cos(n13) * n5);
+        if (x2 - x >= 4.5) {
+            glColor(n8);
+            for (int k = 0; k <= 90; k += 3) {
+                final double n12 = k * 0.017453292f;
+                GL11.glVertex2d((double) (x2 - n5) + Math.sin(n12) * n5, (double) (y2 - n5) + Math.cos(n12) * n5);
+            }
+            glColor(n9);
+            for (int l = 90; l <= 180; l += 3) {
+                final double n13 = l * 0.017453292f;
+                GL11.glVertex2d((double) (x2 - n5) + Math.sin(n13) * n5, (double) (y + n5) + Math.cos(n13) * n5);
+            }
         }
         GL11.glEnd();
         GL11.glEnable(3553);

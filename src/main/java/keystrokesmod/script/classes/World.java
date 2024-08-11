@@ -19,6 +19,7 @@ public class World {
             return new Block(Blocks.air);
         }
         return new Block(block);
+
     }
 
     public Block getBlockAt(Vec3 pos) {
@@ -39,7 +40,7 @@ public class World {
     public List<Entity> getEntities() {
         List<Entity> entities = new ArrayList<>();
         for (net.minecraft.entity.Entity entity : mc.theWorld.loadedEntityList) {
-            entities.add(new Entity(entity));
+            entities.add(Entity.convert(entity));
         }
         return entities;
     }
@@ -47,7 +48,7 @@ public class World {
     public Entity getEntityById(int entityId) {
         for (net.minecraft.entity.Entity entity : mc.theWorld.loadedEntityList) {
             if (entity.getEntityId() == entityId) {
-                return new Entity(entity);
+                return Entity.convert(entity);
             }
         }
         return null;
@@ -64,7 +65,7 @@ public class World {
     public List<Entity> getPlayerEntities() {
         List<Entity> entities = new ArrayList<>();
         for (net.minecraft.entity.Entity entity : mc.theWorld.playerEntities) {
-            entities.add(new Entity(entity));
+            entities.add(Entity.convert(entity));
         }
         return entities;
     }

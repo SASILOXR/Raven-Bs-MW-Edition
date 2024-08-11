@@ -33,11 +33,12 @@ public class BedAura extends Module {
     public SliderSetting mode;
     private SliderSetting breakSpeed;
     private SliderSetting fov;
-    private SliderSetting range;
+    public SliderSetting range;
     private SliderSetting rate;
     public ButtonSetting allowAura;
     private ButtonSetting breakNearBlock;
     private ButtonSetting cancelKnockback;
+    public ButtonSetting disableBHop;
     private ButtonSetting disableBreakEffects;
     public ButtonSetting groundSpoof;
     public ButtonSetting ignoreSlow;
@@ -63,6 +64,7 @@ public class BedAura extends Module {
     public double lastProgress;
     public float vanillaProgress;
     private int defaultOutlineColor = new Color(226, 65, 65).getRGB();
+    private boolean aiming;
 
     public BedAura() {
         super("BedAura", category.player, 0);
@@ -74,6 +76,7 @@ public class BedAura extends Module {
         this.registerSetting(allowAura = new ButtonSetting("Allow aura", true));
         this.registerSetting(breakNearBlock = new ButtonSetting("Break near block", false));
         this.registerSetting(cancelKnockback = new ButtonSetting("Cancel knockback", false));
+        this.registerSetting(disableBHop = new ButtonSetting("Disable bhop", false));
         this.registerSetting(disableBreakEffects = new ButtonSetting("Disable break effects", false));
         this.registerSetting(groundSpoof = new ButtonSetting("Ground spoof", false));
         this.registerSetting(ignoreSlow = new ButtonSetting("Ignore slow", false));
@@ -148,8 +151,7 @@ public class BedAura extends Module {
                 nearestBlock = getBestBlock(bedPos, true);
             }
             breakBlock(nearestBlock);
-        }
-        else {
+        } else {
             nearestBlock = null;
             resetSlot();
             breakBlock(getBestBlock(bedPos, false) != null ? getBestBlock(bedPos, false) : bedPos[0]);
@@ -171,11 +173,6 @@ public class BedAura extends Module {
         }
     }
 
-    @SubscribeEvent
-    public void onPostUpdate(PostUpdateEvent e) {
-        stopAutoblock = false;
-    }
-
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onPreMotion(PreMotionEvent e) {
         if ((rotate || breakProgress >= 1 || breakProgress == 0) && currentBlock != null) {
@@ -189,6 +186,7 @@ public class BedAura extends Module {
             if (groundSpoof.isToggled() && !mc.thePlayer.isInWater()) {
                 e.setOnGround(true);
             }
+            aiming = true;
         }
     }
 
@@ -308,10 +306,6 @@ public class BedAura extends Module {
         return efficiency;
     }
 
-    private boolean betterBlock(double combinedStats, double combinedBest) {
-        return combinedStats > combinedBest;
-    }
-
     private void reset(boolean resetSlot) {
         if (resetSlot) {
             resetSlot();
@@ -321,6 +315,7 @@ public class BedAura extends Module {
         breakProgress = 0;
         rotate = false;
         nearestBlock = null;
+        aiming = false;
         ticksAfterBreak = 0;
         currentBlock = null;
         breakProgressMap.clear();
@@ -332,7 +327,7 @@ public class BedAura extends Module {
     }
 
     public void setPacketSlot(int slot) {
-        if (slot == currentSlot || slot == -1 || Raven.badPacketsHandler.playerSlot == slot) {
+        if (slot == currentSlot || slot == -1 || Raven.badPacketsHandler.playerSlot.get() == slot) {
             return;
         }
         mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(slot));
@@ -374,8 +369,11 @@ public class BedAura extends Module {
         if (!silentSwing.isToggled()) {
             swing();
         }
+        if (breakProgress == 0 && !aiming) {
+            return;
+        }
         if (mode.getInput() == 2 || mode.getInput() == 0) {
-            if (breakProgress == 0) {
+            if (breakProgress == 0 && aiming) {
                 resetSlot();
                 stopAutoblock = true;
                 rotate = true;
@@ -384,7 +382,7 @@ public class BedAura extends Module {
                 }
                 startBreak(blockPos);
             }
-            else if (breakProgress >= 1) {
+            else if (breakProgress >= 1 && aiming) {
                 if (mode.getInput() == 2) {
                     ModuleManager.killAura.resetBlinkState(false);
                     setPacketSlot(Utils.getTool(block));
@@ -426,7 +424,7 @@ public class BedAura extends Module {
                 lastProgress += progress;
             }
         }
-        else if (mode.getInput() == 1) {
+        else if (mode.getInput() == 1 && aiming) {
             stopAutoblock = true;
             rotate = true;
             if (!silentSwing.isToggled()) {
@@ -436,6 +434,7 @@ public class BedAura extends Module {
             setSlot(Utils.getTool(block));
             stopBreak(blockPos);
         }
+        aiming = false;
     }
 
     private void setSlot(int slot) {

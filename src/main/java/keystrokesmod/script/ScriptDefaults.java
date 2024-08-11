@@ -13,7 +13,6 @@ import keystrokesmod.script.packets.serverbound.PacketHandler;
 import keystrokesmod.utility.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiEnchantment;
 import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.*;
@@ -23,7 +22,6 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.network.Packet;
@@ -35,7 +33,6 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +104,10 @@ public class ScriptDefaults {
         }
 
         public static void setJump(boolean jump) {
+            mc.thePlayer.movementInput.jump = jump;
+        }
+
+        public static void setJumping(boolean jump) {
             mc.thePlayer.setJumping(jump);
         }
 
@@ -126,15 +127,20 @@ public class ScriptDefaults {
             return Keyboard.isKeyDown(key);
         }
 
-        public static void setSneak(boolean sneak) {
+        public static void setSneaking(boolean sneak) {
             mc.thePlayer.setSneaking(sneak);
         }
 
+        public static void setSneak(boolean sneak) {
+            mc.thePlayer.movementInput.sneak = sneak;
+        }
+
+        public static boolean isSneak() {
+            return mc.thePlayer.movementInput.sneak;
+        }
+
         public static Entity getPlayer() {
-            if (ScriptManager.localPlayer == null || mc.thePlayer == null || ScriptManager.localPlayer.entity != mc.thePlayer) {
-                ScriptManager.localPlayer = new Entity(mc.thePlayer);
-            }
-            return ScriptManager.localPlayer;
+            return Entity.convert(mc.thePlayer);
         }
 
         public static Object[] raycastBlock(double distance) {
@@ -158,7 +164,7 @@ public class ScriptDefaults {
             if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY) {
                 return null;
             }
-            return new Object[]{new Entity(hit.entityHit), new Vec3(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord), mc.thePlayer.getDistanceSqToEntity(hit.entityHit)};
+            return new Object[]{Entity.convert(hit.entityHit), new Vec3(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord), mc.thePlayer.getDistanceSqToEntity(hit.entityHit)};
         }
 
         public static Vec3 getMotion() {
@@ -182,7 +188,15 @@ public class ScriptDefaults {
         }
 
         public static float getStrafe() {
-            return mc.thePlayer.moveStrafing;
+            return mc.thePlayer.movementInput.moveStrafe;
+        }
+
+        public static void rightClick() {
+            Reflection.rightClick();
+        }
+
+        public static void leftClick() {
+            Reflection.clickMouse();
         }
 
         public static void sleep(int ms) {
@@ -195,7 +209,7 @@ public class ScriptDefaults {
         }
 
         public static float getForward() {
-            return mc.thePlayer.moveForward;
+            return mc.thePlayer.movementInput.moveForward;
         }
 
         public static void closeScreen() {
@@ -245,14 +259,17 @@ public class ScriptDefaults {
         }
 
         public static void setForward(float forward) {
-            mc.thePlayer.moveForward = forward;
+            mc.thePlayer.movementInput.moveForward = forward;
         }
 
         public static void setStrafe(float strafe) {
-            mc.thePlayer.moveStrafing = strafe;
+            mc.thePlayer.movementInput.moveStrafe = strafe;
         }
 
         public static String getServerIP() {
+            if (mc.getCurrentServerData() == null) {
+                return "";
+            }
             return mc.getCurrentServerData().serverIP;
         }
 
@@ -481,6 +498,10 @@ public class ScriptDefaults {
                 GL11.glDisable(GL11.GL_LINE_SMOOTH);
                 GL11.glPopMatrix();
             }
+
+            public static boolean isInView(Entity en) {
+                return RenderUtils.isInViewFrustum(en.entity);
+            }
         }
 
         public static class util {
@@ -571,7 +592,7 @@ public class ScriptDefaults {
             if (KillAura.target == null) {
                 return null;
             }
-            return new Entity(KillAura.target);
+            return Entity.convert(KillAura.target);
         }
 
         public Vec3 getBedAuraPosition() {

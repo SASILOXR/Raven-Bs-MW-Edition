@@ -46,4 +46,9 @@ public class Vec3 {
         double deltaZ = this.z - vec3.z;
         return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
     }
+
+    @Override
+    public String toString() {
+        return "Vec3(" + this.x + "," + this.y + "," + this.z + ")";
+    }
 }

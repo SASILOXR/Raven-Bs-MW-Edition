@@ -33,6 +33,11 @@ public class FastMine extends Module { // from b4 src
         return ((int) multiplier.getInput() == multiplier.getInput() ? (int) multiplier.getInput() + "" : multiplier.getInput()) + multiplier.getInfo();
     }
 
+    @Override
+    public int getInfoType() {
+        return 1;
+    }
+
     @SubscribeEvent
     public void a(TickEvent.PlayerTickEvent e) {
         if (e.phase != TickEvent.Phase.END || !mc.inGameHasFocus || !Utils.nullCheck()) {
