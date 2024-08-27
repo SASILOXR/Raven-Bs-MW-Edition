@@ -21,6 +21,7 @@ public class FastPlace extends Module {
         this.registerSetting(tickDelay = new SliderSetting("Tick delay", 1.0, 1.0, 3.0, 1.0));
         this.registerSetting(blocksOnly = new ButtonSetting("Blocks only", true));
         this.registerSetting(pitchCheck = new ButtonSetting("Pitch check", false));
+        this.closetModule = true;
     }
 
     @SubscribeEvent

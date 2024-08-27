@@ -7,13 +7,14 @@ import keystrokesmod.utility.Utils;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-public class DelayRemover extends Module { // from b4 src
+public class DelayRemover extends Module {
     public static ButtonSetting oldReg, removeJumpTicks;
 
     public DelayRemover() {
         super("Delay Remover", category.player, 0);
         this.registerSetting(oldReg = new ButtonSetting("1.7 hitreg", true));
         this.registerSetting(removeJumpTicks = new ButtonSetting("Remove jump ticks", false));
+        this.closetModule = true;
     }
 
     @SubscribeEvent

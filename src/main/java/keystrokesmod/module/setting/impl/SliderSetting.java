@@ -14,7 +14,8 @@ public class SliderSetting extends Setting {
     private double min;
     private double intervals;
     public boolean isString;
-    private String settingInfo = "";
+    private String suffix = "";
+    public boolean canBeDisabled;
 
     public SliderSetting(String settingName, double defaultValue, double min, double max, double intervals) {
         super(settingName);
@@ -26,18 +27,23 @@ public class SliderSetting extends Setting {
         this.isString = false;
     }
 
-    public SliderSetting(String settingName, double defaultValue, double min, double max, double intervals, String settingInfo) {
-        super(settingName);
-        this.settingName = settingName;
-        this.defaultValue = defaultValue;
-        this.min = min;
-        this.max = max;
-        this.intervals = intervals;
-        this.isString = false;
-        this.settingInfo = settingInfo;
+    public SliderSetting(String settingName, String suffix, double defaultValue, double min, double max, double intervals) {
+        this(settingName, defaultValue, min, max, intervals);
+        this.suffix = suffix;
     }
 
-    public SliderSetting(String settingName, String[] options, double defaultValue) {
+    public SliderSetting(String settingName, boolean canBeDisabled, double defaultValue, double min, double max, double intervals) {
+        this(settingName, defaultValue, min, max, intervals);
+        this.canBeDisabled = canBeDisabled;
+    }
+
+    public SliderSetting(String settingName, String suffix, boolean canBeDisabled, double defaultValue, double min, double max, double intervals) {
+        this(settingName, defaultValue, min, max, intervals);
+        this.suffix = suffix;
+        this.canBeDisabled = canBeDisabled;
+    }
+
+    public SliderSetting(String settingName, int defaultValue, String[] options) {
         super(settingName);
         this.settingName = settingName;
         this.options = options;
@@ -48,8 +54,13 @@ public class SliderSetting extends Setting {
         this.isString = true;
     }
 
-    public String getInfo() {
-        return this.settingInfo;
+    public SliderSetting(String settingName, String suffix, int defaultValue, String[] options) {
+        this(settingName, defaultValue, options);
+        this.suffix = suffix;
+    }
+
+    public String getSuffix() {
+        return this.suffix;
     }
 
     public String[] getOptions() {
@@ -107,6 +118,10 @@ public class SliderSetting extends Setting {
             }
             catch (Exception e) {
                 e.printStackTrace();
+            }
+            if (newValue == -1) {
+                setValueRaw(newValue);
+                return;
             }
             setValue(newValue);
         }

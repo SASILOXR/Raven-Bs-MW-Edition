@@ -2,6 +2,7 @@ package keystrokesmod.clickgui.components.impl;
 
 import keystrokesmod.Raven;
 import keystrokesmod.clickgui.components.Component;
+import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.RenderUtils;
@@ -44,16 +45,23 @@ public class SliderComponent extends Component {
         GL11.glScaled(0.5D, 0.5D, 0.5D);
         String value;
         double input = this.sliderSetting.getInput();
-        String info = this.sliderSetting.getInfo();
-        if (input != 1 && (info.equals(" second") || info.equals(" block"))) {
-            info += "s";
+        String suffix = this.sliderSetting.getSuffix();
+        if (input == -1 && this.sliderSetting.canBeDisabled) {
+            value = "§cDisabled";
+            suffix = "";
         }
-        if (this.sliderSetting.isString) {
-            value = this.sliderSetting.getOptions()[(int) this.sliderSetting.getInput()];
-        } else {
-            value = Utils.isWholeNumber(input) ? (int) input + "" : String.valueOf(input);
+        else {
+            if (input != 1 && (suffix.equals(" second") || suffix.equals(" block")) && this.moduleComponent.mod.moduleCategory() != Module.category.scripts) {
+                suffix += "s";
+            }
+            if (this.sliderSetting.isString) {
+                value = this.sliderSetting.getOptions()[(int) this.sliderSetting.getInput()];
+            }
+            else {
+                value = Utils.isWholeNumber(input) ? (int) input + "" : String.valueOf(input);
+            }
         }
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.sliderSetting.getName() + ": " + (this.sliderSetting.isString ? "§e" : "§b") +value + info, (float) ((int) ((float) (this.moduleComponent.categoryComponent.getX() + 4) * 2.0F)), (float) ((int) ((float) (this.moduleComponent.categoryComponent.getY() + this.o + 3) * 2.0F)), -1);
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.sliderSetting.getName() + ": " + (this.sliderSetting.isString ? "§e" : "§b") +value + suffix, (float) ((int) ((float) (this.moduleComponent.categoryComponent.getX() + 4) * 2.0F)), (float) ((int) ((float) (this.moduleComponent.categoryComponent.getY() + this.o + 3) * 2.0F)), -1);
         GL11.glPopMatrix();
     }
 
@@ -65,25 +73,27 @@ public class SliderComponent extends Component {
         this.y = this.moduleComponent.categoryComponent.getModuleY() + this.o;
         this.x = this.moduleComponent.categoryComponent.getX();
         double d = Math.min(this.moduleComponent.categoryComponent.getWidth() - 8, Math.max(0, x - this.x));
-        this.w = (double) (this.moduleComponent.categoryComponent.getWidth() - 8) * (this.sliderSetting.getInput() - this.sliderSetting.getMin()) / (this.sliderSetting.getMax() - this.sliderSetting.getMin());
+
         if (this.heldDown) {
-            if (d == 0.0D) {
-                if (this.sliderSetting.getInput() != this.sliderSetting.getMin() && ModuleManager.hud != null && ModuleManager.hud.isEnabled() && !ModuleManager.organizedModules.isEmpty()) {
-                    ModuleManager.sort();
-                }
-                this.sliderSetting.setValue(this.sliderSetting.getMin());
-            } else {
+            this.moduleComponent.mod.onSlide(this.sliderSetting);
+            if (d == 0.0D && this.sliderSetting.canBeDisabled) {
+                this.sliderSetting.setValueRaw(-1);
+            }
+            else {
                 double n = roundToInterval(d / (double) (this.moduleComponent.categoryComponent.getWidth() - 8) * (this.sliderSetting.getMax() - this.sliderSetting.getMin()) + this.sliderSetting.getMin(), 4);
-                if (this.sliderSetting.getInput() != n && ModuleManager.hud != null && ModuleManager.hud.isEnabled() && !ModuleManager.organizedModules.isEmpty()) {
-                    ModuleManager.sort();
-                }
                 this.sliderSetting.setValue(n);
             }
+
+            if (this.sliderSetting.getInput() != this.sliderSetting.getMin() && ModuleManager.hud != null && ModuleManager.hud.isEnabled() && !ModuleManager.organizedModules.isEmpty()) {
+                ModuleManager.sort();
+            }
+
             if (Raven.currentProfile != null) {
                 ((ProfileModule) Raven.currentProfile.getModule()).saved = false;
             }
         }
 
+        this.w = this.sliderSetting.getInput() == -1 ? 0 : (double) (this.moduleComponent.categoryComponent.getWidth() - 8) * (this.sliderSetting.getInput() - this.sliderSetting.getMin()) / (this.sliderSetting.getMax() - this.sliderSetting.getMin());
     }
 
     private static double roundToInterval(double v, int p) {

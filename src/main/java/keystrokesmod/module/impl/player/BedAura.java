@@ -68,11 +68,11 @@ public class BedAura extends Module {
 
     public BedAura() {
         super("BedAura", category.player, 0);
-        this.registerSetting(mode = new SliderSetting("Break mode", modes, 0));
-        this.registerSetting(breakSpeed = new SliderSetting("Break speed", 1, 0.8, 2, 0.01, "x"));
+        this.registerSetting(mode = new SliderSetting("Break mode", 0, modes));
+        this.registerSetting(breakSpeed = new SliderSetting("Break speed", "x", 1, 0.8, 2, 0.01));
         this.registerSetting(fov = new SliderSetting("FOV", 360.0, 30.0, 360.0, 4.0));
         this.registerSetting(range = new SliderSetting("Range", 4.5, 1.0, 8.0, 0.5));
-        this.registerSetting(rate = new SliderSetting("Rate", 0.2, 0.05, 3.0, 0.05, " second"));
+        this.registerSetting(rate = new SliderSetting("Rate", " second", 0.2, 0.05, 3.0, 0.05));
         this.registerSetting(allowAura = new ButtonSetting("Allow aura", true));
         this.registerSetting(breakNearBlock = new ButtonSetting("Break near block", false));
         this.registerSetting(cancelKnockback = new ButtonSetting("Cancel knockback", false));

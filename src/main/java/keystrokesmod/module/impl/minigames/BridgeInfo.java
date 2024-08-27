@@ -80,12 +80,12 @@ public class BridgeInfo extends Module {
             }
 
             if (this.g1p != null && this.g2p != null) {
-                this.d1 = Utils.rnd(mc.thePlayer.getDistance((double) this.g2p.getX(), (double) this.g2p.getY(), (double) this.g2p.getZ()) - 1.4D, 1);
+                this.d1 = Utils.round(mc.thePlayer.getDistance((double) this.g2p.getX(), (double) this.g2p.getY(), (double) this.g2p.getZ()) - 1.4D, 1);
                 if (this.d1 < 0.0D) {
                     this.d1 = 0.0D;
                 }
 
-                this.d2 = enem == null ? 0.0D : Utils.rnd(enem.getDistance((double) this.g1p.getX(), (double) this.g1p.getY(), (double) this.g1p.getZ()) - 1.4D, 1);
+                this.d2 = enem == null ? 0.0D : Utils.round(enem.getDistance((double) this.g1p.getX(), (double) this.g1p.getY(), (double) this.g1p.getZ()) - 1.4D, 1);
                 if (this.d2 < 0.0D) {
                     this.d2 = 0.0D;
                 }
@@ -212,7 +212,7 @@ public class BridgeInfo extends Module {
             ScaledResolution res = new ScaledResolution(this.mc);
             int x = res.getScaledWidth() / 2 - 84;
             int y = res.getScaledHeight() / 2 - 20;
-            RenderUtils.dct("Edit the HUD position by dragging.", '-', x, y, 2L, 0L, true, this.mc.fontRendererObj);
+            RenderUtils.drawColoredString("Edit the HUD position by dragging.", '-', x, y, 2L, 0L, true, this.mc.fontRendererObj);
 
             try {
                 this.handleInput();

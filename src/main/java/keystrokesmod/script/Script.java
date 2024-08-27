@@ -15,8 +15,8 @@ import java.util.*;
 
 public class Script {
     public String name;
-    public Class d;
-    public Object b;
+    public Class asClass;
+    public Object classObject;
     public String scriptName;
     public String codeStr;
     public boolean error = false;
@@ -29,11 +29,11 @@ public class Script {
     }
 
     public float[] getFloat(final String s, final Object... array) {
-        if (this.d == null || this.b == null) {
+        if (this.asClass == null || this.classObject == null) {
             return null;
         }
         Method method = null;
-        for (final Method method2 : this.d.getDeclaredMethods()) {
+        for (final Method method2 : this.asClass.getDeclaredMethods()) {
             if (method2.getName().equalsIgnoreCase(s) && method2.getParameterCount() == array.length && method2.getReturnType().equals(float[].class)) {
                 method = method2;
                 break;
@@ -42,7 +42,7 @@ public class Script {
         if (method != null) {
             try {
                 method.setAccessible(true);
-                final Object invoke = method.invoke(this.b, array);
+                final Object invoke = method.invoke(this.classObject, array);
                 if (invoke instanceof float[]) {
                     return (float[])invoke;
                 }
@@ -85,10 +85,18 @@ public class Script {
                 this.error = true;
                 return false;
             }
-            final URLClassLoader urlClassLoader = URLClassLoader.newInstance(new URL[]{file.toURI().toURL()}, Launch.classLoader);
-            this.d = urlClassLoader.loadClass(this.scriptName);
-            this.b = this.d.newInstance();
-            urlClassLoader.close();
+            try {
+                final SecureClassLoader secureClassLoader = new SecureClassLoader(new URL[]{file.toURI().toURL()}, Launch.classLoader);
+                this.asClass = secureClassLoader.loadClass(this.scriptName);
+                this.classObject = this.asClass.newInstance();
+                secureClassLoader.close();
+            }
+            catch (Throwable e) {
+                e.printStackTrace();
+                Utils.sendMessage("&7Script &b" + Utils.extractFileName(this.name) + " &7blocked, &cunsafe code&7 detected!");
+                this.error = true;
+                return false;
+            }
             return true;
         }
         catch (Exception ex) {
@@ -98,11 +106,11 @@ public class Script {
     }
 
     public int getBoolean(final String s, final Object... array) {
-        if (this.d == null || this.b == null) {
+        if (this.asClass == null || this.classObject == null) {
             return -1;
         }
         Method method = null;
-        for (final Method method2 : this.d.getDeclaredMethods()) {
+        for (final Method method2 : this.asClass.getDeclaredMethods()) {
             if (method2.getName().equalsIgnoreCase(s) && method2.getParameterCount() == array.length && method2.getReturnType().equals(Boolean.TYPE)) {
                 method = method2;
                 break;
@@ -111,7 +119,7 @@ public class Script {
         if (method != null) {
             try {
                 method.setAccessible(true);
-                final Object invoke = method.invoke(this.b, array);
+                final Object invoke = method.invoke(this.classObject, array);
                 if (invoke instanceof Boolean) {
                     return ((boolean)invoke) ? 1 : 0;
                 }
@@ -124,8 +132,8 @@ public class Script {
     }
 
     public void delete() {
-        this.d = null;
-        this.b = null;
+        this.asClass = null;
+        this.classObject = null;
         final File file = new File(Raven.scriptManager.tempDir + File.separator + this.scriptName + ".class");
         if (file.exists()) {
             file.delete();
@@ -149,11 +157,11 @@ public class Script {
     }
 
     public boolean invokeMethod(final String s, final Object... array) {
-        if (this.d == null || this.b == null) {
+        if (this.asClass == null || this.classObject == null) {
             return false;
         }
         Method method = null;
-        for (final Method method2 : this.d.getDeclaredMethods()) {
+        for (final Method method2 : this.asClass.getDeclaredMethods()) {
             if (method2.getName().equalsIgnoreCase(s) && method2.getParameterCount() == array.length && method2.getReturnType().equals(Void.TYPE)) {
                 method = method2;
                 break;
@@ -162,7 +170,7 @@ public class Script {
         if (method != null) {
             try {
                 method.setAccessible(true);
-                method.invoke(this.b, array);
+                method.invoke(this.classObject, array);
                 return true;
             }
             catch (Exception e) {
@@ -172,7 +180,7 @@ public class Script {
         return false;
     }
 
-    private int getLine(Exception e, String name) {
+    private int getLine(Throwable e, String name) {
         for (StackTraceElement element : e.getStackTrace()) {
             if (element.getClassName().equals(name)) {
                 return element.getLineNumber() - extraLines;
@@ -184,7 +192,7 @@ public class Script {
     private void printRunTimeError(Exception e, String methodName) {
         Utils.sendDebugMessage("§cRuntime error during script §b" + Utils.extractFileName(this.name));
         Utils.sendDebugMessage(" §7err: §c" + e.getCause().getClass().getSimpleName());
-        Utils.sendDebugMessage(" §7line: §c" + getLine((Exception) e.getCause(), this.scriptName));
+        Utils.sendDebugMessage(" §7line: §c" + getLine(e.getCause(), this.scriptName));
         Utils.sendDebugMessage(" §7src: §c" + methodName);
     }
 }

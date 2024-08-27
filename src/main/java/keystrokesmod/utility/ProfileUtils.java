@@ -5,16 +5,16 @@ import com.google.gson.JsonParser;
 
 public class ProfileUtils {
     public static String getMojangProfile(String n) {
-        String u = "";
-        String r = URLUtils.getTextFromURL("https://api.mojang.com/users/profiles/minecraft/" + n);
-        if (!r.isEmpty()) {
+        String result = "";
+        String response = URLUtils.getTextFromURL("https://api.mojang.com/users/profiles/minecraft/" + n);
+        if (!response.isEmpty()) {
             try {
-                u = r.split("d\":\"")[1].split("\"")[0];
+                result = response.split("d\":\"")[1].split("\"")[0];
             } catch (ArrayIndexOutOfBoundsException var4) {
             }
         }
 
-        return u;
+        return result;
     }
 
     public static int[] getHypixelStats(String playerName, ProfileUtils.DM dm) {
@@ -24,7 +24,7 @@ public class ProfileUtils {
             s[0] = -1;
             return s;
         } else {
-            String c = URLUtils.getTextFromURL("https://api.hypixel.net/player?key=" + URLUtils.k + "&uuid=" + u);
+            String c = URLUtils.getTextFromURL("https://api.hypixel.net/player?key=" + URLUtils.API_KEY + "&uuid=" + u);
             if (c.isEmpty()) {
                 return null;
             } else if (c.equals("{\"success\":true,\"player\":null}")) {
@@ -88,12 +88,13 @@ public class ProfileUtils {
     private static int getValueAsInt(JsonObject jsonObject, String key) {
         try {
             return jsonObject.get(key).getAsInt();
-        } catch (NullPointerException var3) {
+        }
+        catch (NullPointerException var3) {
             return 0;
         }
     }
 
-    public static enum DM {
+    public enum DM {
         OVERALL,
         BRIDGE,
         UHC,

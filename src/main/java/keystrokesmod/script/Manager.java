@@ -33,7 +33,9 @@ public class Manager extends Module {
                         Utils.sendMessage("&7Loaded &b" + Raven.scriptManager.scripts.size() + " &7script" + ((Raven.scriptManager.scripts.size() == 1) ? "." : "s."));
                     }
                     Entity.clearCache();
-                    ((ProfileModule) Raven.currentProfile.getModule()).saved = false;
+                    if (Raven.currentProfile != null && Raven.currentProfile.getModule() != null) {
+                        ((ProfileModule) Raven.currentProfile.getModule()).saved = false;
+                    }
                 }
                 else {
                     Utils.sendMessage("&cYou are on cooldown.");

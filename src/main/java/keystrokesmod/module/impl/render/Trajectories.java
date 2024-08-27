@@ -21,6 +21,7 @@ public class Trajectories extends Module {
     private ButtonSetting disableUncharged;
     private ButtonSetting highlightOnEntity;
     private int highlightColor = new Color(234, 38, 38).getRGB();
+    private int topColor = new Color(46, 255, 22).getRGB();
     public Trajectories() {
         super("Trajectories", category.render);
         this.registerSetting(autoScale = new ButtonSetting("Auto-scale", true));
@@ -40,10 +41,7 @@ public class Trajectories extends Module {
         if (heldItem.getItem() instanceof ItemBow && !mc.thePlayer.isUsingItem() && disableUncharged.isToggled()) {
             return;
         }
-        boolean bow = false;
-        if (heldItem.getItem() instanceof ItemBow) {
-            bow = true;
-        }
+        boolean bow = heldItem.getItem() instanceof ItemBow;
 
         float playerYaw = mc.thePlayer.rotationYaw;
         float playerPitch = mc.thePlayer.rotationPitch;
@@ -55,47 +53,56 @@ public class Trajectories extends Module {
         double motionX = (double)(-MathHelper.sin(playerYaw / 180.0f * (float)Math.PI) * MathHelper.cos(playerPitch / 180.0f * (float)Math.PI)) * (bow ? 1.0 : 0.4);
         double motionY = (double)(-MathHelper.sin(playerPitch / 180.0f * (float)Math.PI)) * (bow ? 1.0 : 0.4);
         double motionZ = (double)(MathHelper.cos(playerYaw / 180.0f * (float)Math.PI) * MathHelper.cos(playerPitch / 180.0f * (float)Math.PI)) * (bow ? 1.0 : 0.4);
+
         int itemInUse = 40;
         if (mc.thePlayer.getItemInUseCount() > 0 && bow) {
             itemInUse = mc.thePlayer.getItemInUseCount();
         }
-        int n10 = 72000 - itemInUse;
-        float f10 = (float)n10 / 20.0f;
-        if ((double)(f10 = (f10 * f10 + f10 * 2.0f) / 3.0f) < 0.1) {
+        int timeInUse = 72000 - itemInUse;
+        float strength = (float)timeInUse / 20.0f;
+        if ((double)(strength = (strength * strength + strength * 2.0f) / 3.0f) < 0.1) {
             return;
         }
-        if (f10 > 1.0f) {
-            f10 = 1.0f;
+        if (strength > 1.0f) {
+            strength = 1.0f;
         }
+
         RenderUtils.glColor(-1);
         GL11.glPushMatrix();
-        boolean bl3 = GL11.glIsEnabled(2929);
-        boolean bl4 = GL11.glIsEnabled(3553);
-        boolean bl5 = GL11.glIsEnabled(3042);
-        if (bl3) {
-            GL11.glDisable(2929);
+
+        boolean depthTest = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+        boolean textureTwoD = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
+        boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+
+        if (depthTest) {
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
         }
-        if (bl4) {
-            GL11.glDisable(3553);
+        if (textureTwoD) {
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
         }
-        GL11.glEnable(2848);
-        GL11.glBlendFunc(770, 771);
-        if (!bl5) {
-            GL11.glEnable(3042);
+        if (!blend) {
+            GL11.glEnable(GL11.GL_BLEND);
         }
-        float f11 = MathHelper.sqrt_double(motionX * motionX + motionY * motionY + motionZ * motionZ);
-        motionX /= f11;
-        motionY /= f11;
-        motionZ /= f11;
-        motionX *= (double)(bow ? f10 * 2.0f : 1.0f) * 1.5;
-        motionY *= (double)(bow ? f10 * 2.0f : 1.0f) * 1.5;
-        motionZ *= (double)(bow ? f10 * 2.0f : 1.0f) * 1.5;
+        GL11.glEnable(GL11.GL_LINE_SMOOTH);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+
+        float velocity = MathHelper.sqrt_double(motionX * motionX + motionY * motionY + motionZ * motionZ);
+        motionX /= velocity;
+        motionY /= velocity;
+        motionZ /= velocity;
+        motionX *= (double)(bow ? strength * 2.0f : 1.0f) * 1.5;
+        motionY *= (double)(bow ? strength * 2.0f : 1.0f) * 1.5;
+        motionZ *= (double)(bow ? strength * 2.0f : 1.0f) * 1.5;
+
         GL11.glLineWidth(1.5f);
-        GL11.glBegin(3);
+        GL11.glBegin(GL11.GL_LINE_STRIP);
+
         boolean ground = false;
         MovingObjectPosition target = null;
         boolean highlight = false;
+        boolean isTop = false;
         double[] transform = new double[]{posX, posY, posZ, motionX, motionY, motionZ};
+
         for (int k = 0; k <= 100 && !ground; ++k) {
             Vec3 start = new Vec3(transform[0], transform[1], transform[2]);
             Vec3 predicted = new Vec3(transform[0] + transform[3], transform[1] + transform[4], transform[2] + transform[5]);
@@ -106,11 +113,15 @@ public class Trajectories extends Module {
                     highlight = true;
                     break;
                 }
+
                 float f14 = 0.99f;
                 transform[4] *= f14;
                 transform[0] += (transform[3] *= f14);
                 transform[1] += (transform[4] -= bow ? 0.05 : 0.03);
                 transform[2] += (transform[5] *= f14);
+            } 
+            else if (rayTraced.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK && rayTraced.sideHit == EnumFacing.UP) {
+                isTop = true;
             }
         }
 
@@ -121,7 +132,7 @@ public class Trajectories extends Module {
             if (rayTraced != null) {
                 ground = true;
                 target = rayTraced;
-            }
+            } 
             else {
                 MovingObjectPosition entityHit = getEntityHit(start, predicted);
                 if (entityHit != null) {
@@ -129,29 +140,31 @@ public class Trajectories extends Module {
                     ground = true;
                 }
             }
+
             if (highlight && highlightOnEntity.isToggled()) {
                 RenderUtils.glColor(highlightColor);
+            } 
+            else if (isTop) {
+                RenderUtils.glColor(topColor);
             }
-            float f14 = 0.99f;
-            motionY *= f14;
-            GL11.glVertex3d((posX += (motionX *= f14)) - mc.getRenderManager().viewerPosX, (posY += (motionY -= bow ? 0.05 : 0.03)) - mc.getRenderManager().viewerPosY, (posZ += (motionZ *= f14)) - mc.getRenderManager().viewerPosZ);
+
+            float airResistance = 0.99f;
+            motionY *= airResistance;
+            GL11.glVertex3d((posX += (motionX *= airResistance)) - mc.getRenderManager().viewerPosX, (posY += (motionY -= bow ? 0.05 : 0.03)) - mc.getRenderManager().viewerPosY, (posZ += (motionZ *= airResistance)) - mc.getRenderManager().viewerPosZ);
         }
         GL11.glEnd();
-        GL11.glDisable(2929);
-        GL11.glDisable(3042);
+
         GL11.glTranslated(posX - mc.getRenderManager().viewerPosX, posY - mc.getRenderManager().viewerPosY, posZ - mc.getRenderManager().viewerPosZ);
         if (target != null && target.sideHit != null) {
-            switch (target.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK ? target.sideHit.getIndex() : target.sideHit.getIndex()) {
+            switch (target.sideHit.getIndex()) {
                 case 2:
-                case 3: {
+                case 3:
                     GL11.glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
                     break;
-                }
                 case 4:
-                case 5: {
+                case 5:
                     GL11.glRotatef(90.0f, 0.0f, 0.0f, 1.0f);
                     break;
-                }
             }
         }
         if (autoScale.isToggled()) {
@@ -159,15 +172,16 @@ public class Trajectories extends Module {
             GL11.glScaled(distance, distance, distance);
         }
         this.drawX();
-        GL11.glDisable(2848);
-        if (bl3) {
-            GL11.glEnable(2929);
+
+        GL11.glDisable(GL11.GL_LINE_SMOOTH);
+        if (depthTest) {
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
         }
-        if (bl4) {
-            GL11.glEnable(3553);
+        if (textureTwoD) {
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
         }
-        if (!bl5) {
-            GL11.glDisable(3042);
+        if (!blend) {
+            GL11.glDisable(GL11.GL_BLEND);
         }
         GL11.glPopMatrix();
     }
@@ -193,12 +207,14 @@ public class Trajectories extends Module {
     }
 
     public void drawX() {
-        GL11.glBegin(GL11.GL_LINES);
+        GL11.glPushMatrix();
         GL11.glScalef(0.95f, 0.95f, 0.95f);
+        GL11.glBegin(GL11.GL_LINES);
         GL11.glVertex3d(-0.25, 0.0, 0.25);
         GL11.glVertex3d(0.25, 0.0, -0.25);
         GL11.glVertex3d(-0.25, 0.0, -0.25);
         GL11.glVertex3d(0.25, 0.0, 0.25);
         GL11.glEnd();
+        GL11.glPopMatrix();
     }
 }

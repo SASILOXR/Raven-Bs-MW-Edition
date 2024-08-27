@@ -51,7 +51,7 @@ public class Commands {
                 n = args[1];
                 Raven.getExecutor().execute(() -> {
                     if (URLUtils.isHypixelKeyValid(n)) {
-                        URLUtils.k = n;
+                        URLUtils.API_KEY = n;
                         print("&a" + "success!", 0);
                     } else {
                         print("&c" + "Invalid key.", 0);
@@ -119,7 +119,7 @@ public class Commands {
                     return;
                 }
 
-                if (URLUtils.k.isEmpty()) {
+                if (URLUtils.API_KEY.isEmpty()) {
                     print("&cAPI Key is empty!", 1);
                     print("Use \"setkey [api_key]\".", 0);
                     return;
@@ -133,7 +133,7 @@ public class Commands {
                         if (s[0] == -1) {
                             print("&c" + (n.length() > 16 ? n.substring(0, 16) + "..." : n) + " does not exist!", 0);
                         } else {
-                            double wlr = s[1] != 0 ? Utils.rnd((double) s[0] / (double) s[1], 2) : (double) s[0];
+                            double wlr = s[1] != 0 ? Utils.round((double) s[0] / (double) s[1], 2) : (double) s[0];
                             print("&e" + n + " stats:", 1);
                             print("Wins: " + s[0], 0);
                             print("Losses: " + s[1], 0);

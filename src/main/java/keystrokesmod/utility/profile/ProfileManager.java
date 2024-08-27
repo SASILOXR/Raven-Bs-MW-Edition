@@ -4,7 +4,9 @@ import com.google.gson.*;
 import keystrokesmod.Raven;
 import keystrokesmod.clickgui.components.impl.CategoryComponent;
 import keystrokesmod.module.Module;
+import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.render.HUD;
+import keystrokesmod.module.impl.render.TargetHUD;
 import keystrokesmod.module.setting.Setting;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -79,6 +81,10 @@ public class ProfileManager {
         if (module instanceof HUD) {
             moduleInformation.addProperty("posX", HUD.hudX);
             moduleInformation.addProperty("posY", HUD.hudY);
+        }
+        else if (module instanceof TargetHUD) {
+            moduleInformation.addProperty("posX", ModuleManager.targetHUD.xPos);
+            moduleInformation.addProperty("posY", ModuleManager.targetHUD.xPos);
         }
         for (Setting setting : module.getSettings()) {
             if (setting instanceof ButtonSetting && !((ButtonSetting) setting).isMethodButton) {
@@ -174,6 +180,16 @@ public class ProfileManager {
                         if (moduleInformation.has("posY")) {
                             int hudY = moduleInformation.get("posY").getAsInt();
                             HUD.hudY = hudY;
+                        }
+                    }
+                    else if (module.getName().equals("TargetHUD")) {
+                        if (moduleInformation.has("posX")) {
+                            int posX = moduleInformation.get("posX").getAsInt();
+                            ModuleManager.targetHUD.xPos = posX;
+                        }
+                        if (moduleInformation.has("posY")) {
+                            int posY = moduleInformation.get("posY").getAsInt();
+                            ModuleManager.targetHUD.yPos = posY;
                         }
                     }
 

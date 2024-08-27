@@ -27,7 +27,7 @@ public class Tracers extends Module {
     private int rgb_c = 0;
 
     public Tracers() {
-        super("Tracers", Module.category.render, 0);
+        super("Tracers", category.render, 0);
         this.registerSetting(a = new ButtonSetting("Show invis", true));
         this.registerSetting(f = new SliderSetting("Line Width", 1.0D, 1.0D, 5.0D, 1.0D));
         this.registerSetting(b = new SliderSetting("Red", 0.0D, 0.0D, 255.0D, 1.0D));
@@ -41,7 +41,6 @@ public class Tracers extends Module {
         if (this.g) {
             mc.gameSettings.viewBobbing = false;
         }
-
     }
 
     public void onDisable() {
@@ -52,7 +51,6 @@ public class Tracers extends Module {
         if (mc.gameSettings.viewBobbing) {
             mc.gameSettings.viewBobbing = false;
         }
-
     }
 
     public void guiUpdate() {
@@ -70,7 +68,7 @@ public class Tracers extends Module {
                 while (var3.hasNext()) {
                     Entity en = (Entity) var3.next();
                     if (en instanceof EntityLivingBase && en != mc.thePlayer) {
-                        RenderUtils.dtl(en, rgb, (float) f.getInput());
+                        RenderUtils.drawTracerLine(en, rgb, (float) f.getInput(), Utils.getTimer().renderPartialTicks);
                     }
                 }
 
@@ -92,7 +90,7 @@ public class Tracers extends Module {
                     } while (!a.isToggled() && en.isInvisible());
 
                     if (!AntiBot.isBot(en)) {
-                        RenderUtils.dtl(en, rgb, (float) f.getInput());
+                        RenderUtils.drawTracerLine(en, rgb, (float) f.getInput(), Utils.getTimer().renderPartialTicks);
                     }
                 }
             }

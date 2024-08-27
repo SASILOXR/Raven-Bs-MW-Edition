@@ -3,6 +3,7 @@ package keystrokesmod.utility;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.GuiEnchantment;
+import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.gui.inventory.GuiBrewingStand;
 import net.minecraft.client.gui.inventory.GuiDispenser;
@@ -59,7 +60,7 @@ public class Reflection {
     public static Field fallDistance;
     public static Field thirdPersonDistance;
     public static Field alwaysEdible;
-
+    public static Field mcGuiInGame;
     public static HashMap<Class, Field> containerInventoryPlayer = new HashMap<>();
     private static List<Class> containerClasses = Arrays.asList(GuiFurnace.class, GuiBrewingStand.class, GuiEnchantment.class, ContainerHopper.class, GuiDispenser.class, ContainerWorkbench.class, ContainerMerchant.class, ContainerHorseInventory.class);
     public static boolean sendMessage = false;
@@ -102,6 +103,11 @@ public class Reflection {
             fallDistance = ReflectionHelper.findField(Entity.class, "fallDistance", "field_70143_R");
             if (fallDistance != null) {
                 fallDistance.setAccessible(true);
+            }
+
+            mcGuiInGame = ReflectionHelper.findField(GuiIngame.class, "mc", "field_73839_d");
+            if (mcGuiInGame != null) {
+                mcGuiInGame.setAccessible(true);
             }
 
             shaderResourceLocations = ReflectionHelper.findField(EntityRenderer.class, "shaderResourceLocations", "field_147712_ad");
@@ -250,21 +256,21 @@ public class Reflection {
         }
     }
 
-    public static void setButton(int t, boolean s) {
-        if (button != null && buttonstate != null && buttons != null) {
+    public static void setButton(int button, boolean state) {
+        if (Reflection.button != null && buttonstate != null && buttons != null) {
             MouseEvent m = new MouseEvent();
-
             try {
-                button.setAccessible(true);
-                button.set(m, t);
+                Reflection.button.setAccessible(true);
+                Reflection.button.set(m, button);
                 buttonstate.setAccessible(true);
-                buttonstate.set(m, s);
+                buttonstate.set(m, state);
                 MinecraftForge.EVENT_BUS.post(m);
                 buttons.setAccessible(true);
                 ByteBuffer bf = (ByteBuffer) buttons.get(null);
                 buttons.setAccessible(false);
-                bf.put(t, (byte) (s ? 1 : 0));
-            } catch (IllegalAccessException var4) {
+                bf.put(button, (byte) (state ? 1 : 0));
+            }
+            catch (IllegalAccessException var4) {
             }
         }
     }

@@ -32,15 +32,16 @@ public class HitBox extends Module {
 
     public HitBox() {
         super("HitBox", category.combat, 0);
-        this.registerSetting(multiplier = new SliderSetting("Multiplier", 1.2, 1.0, 5.0, 0.05, "x"));
+        this.registerSetting(multiplier = new SliderSetting("Multiplier", "x", 1.2, 1.0, 5.0, 0.05));
         this.registerSetting(playersOnly = new ButtonSetting("Players only", true));
         this.registerSetting(showHitbox = new ButtonSetting("Show new hitbox", false));
         this.registerSetting(weaponOnly = new ButtonSetting("Weapon only", false));
+        this.closetModule = true;
     }
 
     @Override
     public String getInfo() {
-        return ((int) multiplier.getInput() == multiplier.getInput() ? (int) multiplier.getInput() + "" : multiplier.getInput()) + multiplier.getInfo();
+        return ((int) multiplier.getInput() == multiplier.getInput() ? (int) multiplier.getInput() + "" : multiplier.getInput()) + multiplier.getSuffix();
     }
 
     @Override

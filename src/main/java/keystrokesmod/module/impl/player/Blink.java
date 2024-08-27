@@ -26,10 +26,11 @@ import org.lwjgl.opengl.GL11;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Blink extends Module {
     private ButtonSetting initialPosition;
-    private List<Packet> blinkedPackets = new ArrayList<>();
+    private ConcurrentLinkedQueue<Packet> blinkedPackets = new ConcurrentLinkedQueue<>();
     private Vec3 pos;
     private int color = new Color(0, 255, 0).getRGB();
     private int blinkTicks;

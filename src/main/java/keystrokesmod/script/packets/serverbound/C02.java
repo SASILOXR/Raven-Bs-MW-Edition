@@ -2,6 +2,7 @@ package keystrokesmod.script.packets.serverbound;
 
 import keystrokesmod.script.classes.Entity;
 import keystrokesmod.script.classes.Vec3;
+import keystrokesmod.utility.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 
@@ -33,18 +34,10 @@ public class C02 extends CPacket {
 
     @Override
     public C02PacketUseEntity convert() {
-        if (this.hitVec != null && getAction() == C02PacketUseEntity.Action.INTERACT_AT) {
+        C02PacketUseEntity.Action action = Utils.getEnum(C02PacketUseEntity.Action.class, this.action);
+        if (this.hitVec != null && action == C02PacketUseEntity.Action.INTERACT_AT) {
             return new C02PacketUseEntity(this.entity.entity, new net.minecraft.util.Vec3(this.hitVec.x, this.hitVec.y, this.hitVec.z));
         }
-        return new C02PacketUseEntity(this.entity.entity, getAction());
-    }
-
-    private C02PacketUseEntity.Action getAction() {
-        for (C02PacketUseEntity.Action action : C02PacketUseEntity.Action.values()) {
-            if (action.name().equals(this.action)) {
-                return action;
-            }
-        }
-        return null;
+        return new C02PacketUseEntity(this.entity.entity, action);
     }
 }

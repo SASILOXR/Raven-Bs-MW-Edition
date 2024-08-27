@@ -37,6 +37,7 @@ public class Reach extends Module {
         this.registerSetting(movingOnly = new ButtonSetting("Moving only", false));
         this.registerSetting(sprintOnly = new ButtonSetting("Sprint only", false));
         this.registerSetting(hitThroughBlocks = new ButtonSetting("Hit through blocks", false));
+        this.closetModule = true;
     }
 
     public void guiUpdate() {

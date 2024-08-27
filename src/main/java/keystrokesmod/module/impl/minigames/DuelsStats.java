@@ -27,7 +27,7 @@ public class DuelsStats extends Module {
 
     public DuelsStats() {
         super("Duels Stats", Module.category.minigames, 0);
-        this.registerSetting(mode = new SliderSetting("Mode", thr_lvl, 0));
+        this.registerSetting(mode = new SliderSetting("Mode", 0, thr_lvl));
         this.registerSetting(a = new ButtonSetting("Send ign on join", false));
         this.registerSetting(threatLevel = new ButtonSetting("Threat Level", true));
     }
@@ -103,7 +103,7 @@ public class DuelsStats extends Module {
             Utils.sendMessage("&eOpponent found: " + "&3" + n);
         }
 
-        if (URLUtils.k.isEmpty()) {
+        if (URLUtils.API_KEY.isEmpty()) {
             Utils.sendMessage("&cAPI Key is empty!");
         } else {
             ProfileUtils.DM dm = ProfileUtils.DM.values()[(int) (mode.getInput() - 1.0D)];
@@ -115,7 +115,7 @@ public class DuelsStats extends Module {
                         return;
                     }
 
-                    double wlr = s[1] != 0 ? Utils.rnd((double) s[0] / (double) s[1], 2) : (double) s[0];
+                    double wlr = s[1] != 0 ? Utils.round((double) s[0] / (double) s[1], 2) : (double) s[0];
                     Utils.sendMessage("&7&m-------------------------");
                     if (dm != ProfileUtils.DM.OVERALL) {
                         Utils.sendMessage("&eMode: &3" + dm.name());

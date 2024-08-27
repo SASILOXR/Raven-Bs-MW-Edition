@@ -8,7 +8,6 @@ import keystrokesmod.utility.Utils;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.apache.commons.lang3.RandomUtils;
-import org.lwjgl.input.Keyboard;
 
 public class Fly extends Module {
     private SliderSetting mode;
@@ -22,7 +21,7 @@ public class Fly extends Module {
 
     public Fly() {
         super("Fly", category.movement);
-        this.registerSetting(mode = new SliderSetting("Fly", modes, 0));
+        this.registerSetting(mode = new SliderSetting("Fly", 0, modes));
         this.registerSetting(horizontalSpeed = new SliderSetting("Horizontal speed", 2.0, 1.0, 9.0, 0.1));
         this.registerSetting(verticalSpeed = new SliderSetting("Vertical speed", 2.0, 1.0, 9.0, 0.1));
         this.registerSetting(showBPS = new ButtonSetting("Show BPS", false));

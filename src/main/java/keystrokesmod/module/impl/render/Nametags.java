@@ -1,6 +1,7 @@
 package keystrokesmod.module.impl.render;
 
 import keystrokesmod.module.Module;
+import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.player.Freecam;
 import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
@@ -19,13 +20,8 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.util.glu.GLU;
 
 import java.awt.*;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,6 +44,7 @@ public class Nametags extends Module {
     private int backGroundColor = new Color(0, 0, 0, 65).getRGB();
     private int friendColor = new Color(0, 255, 0, 255).getRGB();
     private int enemyColor = new Color(255, 0, 0, 255).getRGB();
+
     public Nametags() {
         super("Nametags", category.render, 0);
         this.registerSetting(scale = new SliderSetting("Scale", 1.0, 0.5, 5.0, 0.1));
@@ -97,19 +94,29 @@ public class Nametags extends Module {
             if (showDistance.isToggled()) {
                 int distance = Math.round(mc.thePlayer.getDistanceToEntity(entityPlayer));
                 String color = "§";
-                if (distance <= 8) {
+                if (distance < 8) {
                     color += "c";
                 }
-                else if (distance <= 15) {
+                else if (distance < 30) {
                     color += "6";
                 }
-                else if (distance <= 25) {
+                else if (distance < 60) {
                     color += "e";
                 }
+                else if (distance < 90) {
+                    color += "a";
+                }
                 else {
-                    color = "";
+                    color += "2";
                 }
                 name = color + distance + "m§r " + name;
+            }
+            if (ModuleManager.skyWars.isEnabled() && ModuleManager.skyWars.strengthIndicator.isToggled() && !ModuleManager.skyWars.strengthPlayers.isEmpty() && ModuleManager.skyWars.strengthPlayers.get(entityPlayer) != null) {
+                double startTime = ModuleManager.skyWars.strengthPlayers.get(entityPlayer);
+                double timePassed = (System.currentTimeMillis() - startTime) / 1000;
+                double strengthRemaining = Math.max(0, Utils.round(5.0 - timePassed, 1));
+                String strengthInfo = "§4" + (Utils.isWholeNumber(strengthRemaining) ? (int) strengthRemaining + "" : strengthRemaining) + "s§r ";
+                name = strengthInfo + name;
             }
             double[] renderPositions = entityPositions.get(entityPlayer);
             GlStateManager.translate(renderPositions[0], renderPositions[1], 0);
@@ -131,7 +138,12 @@ public class Nametags extends Module {
                 nameTagScale = rawScaleSetting / (Math.max(distance, 3) / 10);
             }
             else {
-                distance = Math.min(1, Math.max(0.7, 1 - (0.012 * Math.max(distance, 1))));
+                if (distance < 3 && entityPlayer == mc.thePlayer) {
+                    distance = Math.pow(1.02, -9.65 + 20);
+                }
+                else {
+                    distance = Math.max(0.7, Math.pow(1.05, -distance + 10));
+                }
                 nameTagScale *= distance;
             }
             GlStateManager.scale(nameTagScale, nameTagScale, nameTagScale);

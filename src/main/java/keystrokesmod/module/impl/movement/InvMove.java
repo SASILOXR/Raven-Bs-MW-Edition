@@ -2,36 +2,51 @@ package keystrokesmod.module.impl.movement;
 
 import keystrokesmod.clickgui.ClickGui;
 import keystrokesmod.event.JumpEvent;
+import keystrokesmod.event.PreUpdateEvent;
 import keystrokesmod.event.SendPacketEvent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.client.Settings;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
+import keystrokesmod.utility.PacketUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.gui.GuiChat;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.network.Packet;
+import net.minecraft.network.play.client.C0DPacketCloseWindow;
 import net.minecraft.network.play.client.C0EPacketClickWindow;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 public class InvMove extends Module {
+    public SliderSetting inventory;
+    private SliderSetting chestAndOthers;
     private SliderSetting motion;
     private ButtonSetting modifyMotionPost;
     private ButtonSetting slowWhenNecessary;
     private ButtonSetting allowJumping;
     public ButtonSetting invManagerOnly;
-    private ButtonSetting rotateWithArrows;
+    private ButtonSetting allowRotating;
     public int ticks;
     public boolean setMotion;
+    //private String[] inventoryModes = new String[] { "Disabled", "Vanilla", "Blink", "Close" };
+    private String[] chestAndOtherModes = new String[] { "Disabled", "Vanilla", "Blink" };
+    private ConcurrentLinkedQueue<Packet> blinkedPackets = new ConcurrentLinkedQueue<>();
 
     public InvMove() {
         super("InvMove", Module.category.movement);
-        this.registerSetting(motion = new SliderSetting("Motion", 1, 0.05, 1, 0.01, "x"));
+        this.registerSetting(inventory = new SliderSetting("Inventory", 1, chestAndOtherModes));
+        this.registerSetting(chestAndOthers = new SliderSetting("Chest & others", 1, chestAndOtherModes));
+        this.registerSetting(motion = new SliderSetting("Motion", "x", 1, 0.05, 1, 0.01));
         this.registerSetting(modifyMotionPost = new ButtonSetting("Modify motion after click", false));
         this.registerSetting(slowWhenNecessary = new ButtonSetting("Slow motion when necessary", false));
         this.registerSetting(allowJumping = new ButtonSetting("Allow jumping", true));
+        this.registerSetting(allowRotating = new ButtonSetting("Allow rotating", false));
         this.registerSetting(invManagerOnly = new ButtonSetting("Only with inventory manager", false));
-        this.registerSetting(rotateWithArrows = new ButtonSetting("Rotate with arrow keys", false));
     }
 
     public void onDisable() {
@@ -42,57 +57,67 @@ public class InvMove extends Module {
         KeyBinding.setKeyBindState(mc.gameSettings.keyBindLeft.getKeyCode(), false);
         KeyBinding.setKeyBindState(mc.gameSettings.keyBindJump.getKeyCode(), false);
         KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()));
+        releasePackets();
     }
 
-    public void onUpdate() {
+    @SubscribeEvent
+    public void onPreUpdate(PreUpdateEvent e) {
         if (invManagerOnly.isToggled() && !ModuleManager.invManager.isEnabled()) {
             return;
         }
-        if (mc.currentScreen != null) {
-            if (mc.currentScreen instanceof GuiChat) {
-                reset();
-                return;
-            }
-
-            if (!(mc.currentScreen instanceof ClickGui)) {
-                if (setMotion && !slowWhenNecessary.isToggled()) {
-                    if (++ticks == 10) {
-                        ticks = 0;
-                        setMotion = false;
-                    }
-                }
-
-                if (setMotion && motion.getInput() != 1) {
-                    Utils.setSpeed(Utils.getHorizontalSpeed() * (slowWhenNecessary.isToggled() ? 0.65 : motion.getInput()));
+        if (!guiCheck()) {
+            reset();
+            return;
+        }
+        if (!(mc.currentScreen instanceof ClickGui)) {
+            if (setMotion) {
+                if (++ticks == 10) {
+                    ticks = 0;
+                    setMotion = false;
                 }
             }
-            else {
-                reset();
-            }
 
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindForward.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindForward.getKeyCode()));
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindBack.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindBack.getKeyCode()));
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindRight.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode()));
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindLeft.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()));
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindJump.getKeyCode(), Utils.jumpDown());
-            KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()));
-            if (rotateWithArrows.isToggled()) {
-                if (Keyboard.isKeyDown(208) && mc.thePlayer.rotationPitch < 90.0F) {
-                    mc.thePlayer.rotationPitch += 6.0F;
+            if (setMotion && (motion.getInput() != 1 || (slowWhenNecessary.isToggled()))) {
+                final int speedAmplifier = Utils.getSpeedAmplifier();
+                double slowedMotion = 0.65;
+                switch (speedAmplifier) {
+                    case 1:
+                        slowedMotion = 0.615;
+                        break;
+                    case 2:
+                        slowedMotion = 0.568;
+                        break;
                 }
-                if (Keyboard.isKeyDown(200) && mc.thePlayer.rotationPitch > -90.0F) {
-                    mc.thePlayer.rotationPitch -= 6.0F;
-                }
-                if (Keyboard.isKeyDown(205)) {
-                    mc.thePlayer.rotationYaw += 6.0F;
-                }
-                if (Keyboard.isKeyDown(203)) {
-                    mc.thePlayer.rotationYaw -= 6.0F;
-                }
+                Utils.setSpeed(Utils.getHorizontalSpeed() * (slowWhenNecessary.isToggled() ? slowedMotion : motion.getInput()));
             }
         }
         else {
             reset();
+        }
+
+        KeyBinding.setKeyBindState(mc.gameSettings.keyBindForward.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindForward.getKeyCode()));
+        KeyBinding.setKeyBindState(mc.gameSettings.keyBindBack.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindBack.getKeyCode()));
+        KeyBinding.setKeyBindState(mc.gameSettings.keyBindRight.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode()));
+        KeyBinding.setKeyBindState(mc.gameSettings.keyBindLeft.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()));
+        KeyBinding.setKeyBindState(mc.gameSettings.keyBindJump.getKeyCode(), Utils.jumpDown());
+        KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()));
+        boolean foodLvlMet = (float)mc.thePlayer.getFoodStats().getFoodLevel() > 6.0F || mc.thePlayer.capabilities.allowFlying; // from mc
+        if ((Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()) || ModuleManager.sprint.isEnabled()) && mc.thePlayer.movementInput.moveForward >= 0.8F && foodLvlMet && !mc.thePlayer.isSprinting()) {
+            mc.thePlayer.setSprinting(true);
+        }
+        if (allowRotating.isToggled()) {
+            if (Keyboard.isKeyDown(208) && mc.thePlayer.rotationPitch < 90.0F) {
+                mc.thePlayer.rotationPitch += 6.0F;
+            }
+            if (Keyboard.isKeyDown(200) && mc.thePlayer.rotationPitch > -90.0F) {
+                mc.thePlayer.rotationPitch -= 6.0F;
+            }
+            if (Keyboard.isKeyDown(205)) {
+                mc.thePlayer.rotationYaw += 6.0F;
+            }
+            if (Keyboard.isKeyDown(203)) {
+                mc.thePlayer.rotationYaw -= 6.0F;
+            }
         }
     }
 
@@ -105,14 +130,62 @@ public class InvMove extends Module {
 
     @SubscribeEvent
     public void onSendPacket(SendPacketEvent e) {
-        if (e.getPacket() instanceof C0EPacketClickWindow && (modifyMotionPost.isToggled() || slowWhenNecessary.isToggled())) {
-            setMotion = true;
-            ticks = 0;
+        if (e.getPacket() instanceof C0EPacketClickWindow) {
+            if (modifyMotionPost.isToggled() || (slowWhenNecessary.isToggled() && !canBlink())) {
+                setMotion = true;
+                ticks = 0;
+            }
+            if (canBlink()) {
+                blinkedPackets.add(e.getPacket());
+                e.setCanceled(true);
+            }
+        }
+        else if (e.getPacket() instanceof C0DPacketCloseWindow) {
+            if (canBlink()) {
+                releasePackets();
+            }
         }
     }
 
     private void reset() {
         ticks = 0;
         setMotion = false;
+    }
+
+    private boolean guiCheck() {
+        if (mc.currentScreen == null) {
+            return false;
+        }
+        if (Settings.inInventory()) {
+            if (inventory.getInput() == 0) {
+                return false;
+            }
+        }
+        else if ((chestAndOthers.getInput() == 0 && !(mc.currentScreen instanceof ClickGui)) || (mc.currentScreen instanceof GuiChat)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean canBlink() {
+        if (mc.currentScreen == null) {
+            return false;
+        }
+        else if ((mc.currentScreen instanceof GuiInventory && inventory.getInput() == 2)) {
+            return true;
+        }
+        else if (chestAndOthers.getInput() == 2 && !(mc.currentScreen instanceof ClickGui) && !(mc.currentScreen instanceof GuiChat)) {
+            return true;
+        }
+        return false;
+    }
+
+    private void releasePackets() {
+        synchronized (blinkedPackets) {
+            for (Packet packet : blinkedPackets) {
+                PacketUtils.sendPacketNoEvent(packet);
+            }
+        }
+        blinkedPackets.clear();
     }
 }

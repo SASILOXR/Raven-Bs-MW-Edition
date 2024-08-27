@@ -24,7 +24,7 @@ public class Shaders extends Module {
             ex.printStackTrace();
             return;
         }
-        this.registerSetting(shader = new SliderSetting("Shader", shaderNames, 0));
+        this.registerSetting(shader = new SliderSetting("Shader", 0, shaderNames));
     }
 
     public void onUpdate() {

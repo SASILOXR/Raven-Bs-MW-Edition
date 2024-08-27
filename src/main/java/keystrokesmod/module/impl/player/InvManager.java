@@ -25,24 +25,22 @@ import java.util.Arrays;
 import java.util.List;
 
 public class InvManager extends Module {
-    private ButtonSetting autoArmor;
-    private SliderSetting autoArmorDelay;
-    private ButtonSetting autoSort;
-    private SliderSetting sortDelay;
-    private ButtonSetting stealChests;
+    private ButtonSetting closeChest;
+    private ButtonSetting closeInventory;
+    private ButtonSetting disableInLobby;
+    private SliderSetting autoArmor;
+    private SliderSetting autoSort;
     private ButtonSetting customChest;
-    private ButtonSetting autoClose;
-    private SliderSetting stealerDelay;
-    private ButtonSetting inventoryCleaner;
+    private SliderSetting chestStealer;
     private ButtonSetting middleClickToClean;
-    private SliderSetting cleanerDelay;
+    private SliderSetting inventoryCleaner;
     private SliderSetting swordSlot;
     private SliderSetting blocksSlot;
     private SliderSetting goldenAppleSlot;
     private SliderSetting projectileSlot;
     private SliderSetting speedPotionSlot;
     private SliderSetting pearlSlot;
-    private String[] ignoreItems = { "stick", "bed", "sapling", "pressureplate", "weightedplate", "book", "glassbottle", "reeds", "sugar", "expbottle", "flesh", "string", "cake", "mushroom", "flint", "compass", "dyePowder", "feather", "shears", "anvil", "torch", "seeds", "leather", "skull", "record", "flower", "minecart", "waterlily", "wheat", "sulphur", "boat", "dyepowder", "frame", "writingbook", "comparator", "banner", "diode", "item.redstone", "ghasttear", "goldnugget", "netherstalkseeds" };
+    private String[] trashItems = { "stick", "bed", "sapling", "pressureplate", "weightedplate", "book", "glassbottle", "reeds", "sugar", "expbottle", "flesh", "string", "cake", "mushroom", "flint", "compass", "dyePowder", "feather", "shears", "anvil", "torch", "seeds", "leather", "skull", "record", "flower", "minecart", "waterlily", "wheat", "sulphur", "boat", "dyepowder", "frame", "writingbook", "comparator", "banner", "diode", "item.redstone", "ghasttear", "goldnugget", "netherstalkseeds" };
     private int lastStole;
     private int lastSort;
     private int lastArmor;
@@ -51,23 +49,21 @@ public class InvManager extends Module {
 
     public InvManager() {
         super("InvManager", category.player);
-        this.registerSetting(autoArmor = new ButtonSetting("Auto armor", false));
-        this.registerSetting(autoArmorDelay = new SliderSetting("Auto armor delay", 3, 1, 20, 1));
-        this.registerSetting(autoSort = new ButtonSetting("Auto sort", false));
-        this.registerSetting(sortDelay = new SliderSetting("Sort delay", 3, 1, 20, 1));
-        this.registerSetting(stealChests = new ButtonSetting("Steal chests", false));
-        this.registerSetting(customChest = new ButtonSetting("Custom chest", false));
-        this.registerSetting(autoClose = new ButtonSetting("Close after stealing", false));
-        this.registerSetting(stealerDelay = new SliderSetting("Stealer delay", 3, 1, 20, 1));
-        this.registerSetting(inventoryCleaner = new ButtonSetting("Inventory cleaner", false));
+        this.registerSetting(closeChest = new ButtonSetting("Close chest", true));
+        this.registerSetting(closeInventory = new ButtonSetting("Close inventory", false));
+        this.registerSetting(disableInLobby = new ButtonSetting("Disable in lobby", true));
+        this.registerSetting(autoArmor = new SliderSetting("Auto armor", true, 3, 0, 20, 1));
+        this.registerSetting(autoSort = new SliderSetting("Auto sort", true,3, 0, 20, 1));
+        this.registerSetting(chestStealer = new SliderSetting("Chest stealer", true, 2, 0, 20, 1));
+        this.registerSetting(customChest = new ButtonSetting("Steal from custom chests", false));
+        this.registerSetting(inventoryCleaner = new SliderSetting("Inventory cleaner", true, 3, 0, 20, 1));
         this.registerSetting(middleClickToClean = new ButtonSetting("Middle click to clean", false));
-        this.registerSetting(cleanerDelay = new SliderSetting("Cleaner delay", 5, 1, 20, 1));
-        this.registerSetting(swordSlot = new SliderSetting("Sword slot", 0, 0, 9, 1));
-        this.registerSetting(blocksSlot = new SliderSetting("Blocks slot", 0, 0, 9, 1));
-        this.registerSetting(goldenAppleSlot = new SliderSetting("Golden apple slot", 0, 0, 9, 1));
-        this.registerSetting(projectileSlot = new SliderSetting("Projectile slot", 0, 0, 9, 1));
-        this.registerSetting(speedPotionSlot = new SliderSetting("Speed potion slot", 0, 0, 9, 1));
-        this.registerSetting(pearlSlot = new SliderSetting("Pearl slot", 0, 0, 9, 1));
+        this.registerSetting(swordSlot = new SliderSetting("Sword slot", true, -1, 1, 9, 1));
+        this.registerSetting(blocksSlot = new SliderSetting("Blocks slot", true, -1, 1, 9, 1));
+        this.registerSetting(goldenAppleSlot = new SliderSetting("Golden apple slot", true, -1, 1, 9, 1));
+        this.registerSetting(projectileSlot = new SliderSetting("Projectile slot", true,-1, 1, 9, 1));
+        this.registerSetting(speedPotionSlot = new SliderSetting("Speed potion slot", true,-1, 1, 9, 1));
+        this.registerSetting(pearlSlot = new SliderSetting("Pearl slot", true,-1, 1, 9, 1));
     }
 
     public void onEnable() {
@@ -76,8 +72,12 @@ public class InvManager extends Module {
     }
 
     public void onUpdate() {
+        if (disableInLobby.isToggled() && Utils.isLobby()) {
+            resetDelay();
+            return;
+        }
         if (Utils.inInventory()) {
-            if (autoArmor.isToggled() && lastArmor++ >= autoArmorDelay.getInput()) {
+            if (autoArmor.getInput() != -1 && lastArmor++ >= autoArmor.getInput()) {
                 for (int i = 0; i < 4; i++) {
                     int bestSlot = getBestArmor(i, null);
                     if (bestSlot == i + 5) {
@@ -94,49 +94,49 @@ public class InvManager extends Module {
                     }
                 }
             }
-            if (autoSort.isToggled() && ++lastSort >= sortDelay.getInput()) {
-                if (swordSlot.getInput() != 0) {
+            if (autoSort.getInput() != -1 && ++lastSort >= autoSort.getInput()) {
+                if (swordSlot.getInput() != -1) {
                     if (sort(getBestSword(null, (int) swordSlot.getInput()), (int) swordSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
-                if (goldenAppleSlot.getInput() != 0) {
+                if (goldenAppleSlot.getInput() != -1) {
                     if (sort(getBiggestStack(Items.golden_apple, (int) goldenAppleSlot.getInput()), (int) goldenAppleSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
-                if (blocksSlot.getInput() != 0) {
+                if (blocksSlot.getInput() != -1) {
                     if (sort(getMostBlocks(), (int) blocksSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
-                if (projectileSlot.getInput() != 0) {
+                if (projectileSlot.getInput() != -1) {
                     if (sort(getMostProjectiles((int) projectileSlot.getInput()), (int) projectileSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
-                if (pearlSlot.getInput() != 0) {
+                if (pearlSlot.getInput() != -1) {
                     if (sort(getBiggestStack(Items.ender_pearl, (int) pearlSlot.getInput()), (int) pearlSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
-                if (speedPotionSlot.getInput() != 0) {
+                if (speedPotionSlot.getInput() != -1) {
                     if (sort(getBestPotion((int) speedPotionSlot.getInput(), null), (int) speedPotionSlot.getInput())) {
                         lastSort = 0;
                         return;
                     }
                 }
             }
-            if (inventoryCleaner.isToggled()) {
+            if (inventoryCleaner.getInput() != -1) {
                 if (middleClickToClean.isToggled() && !Mouse.isButtonDown(2)) {
                     return;
                 }
-                if (++lastClean >= cleanerDelay.getInput()) {
+                if (++lastClean >= inventoryCleaner.getInput()) {
                     for (int i = 5; i < 45; i++) {
                         ItemStack stack = getItemStack(i);
                         if (stack == null) {
@@ -147,12 +147,17 @@ public class InvManager extends Module {
                         }
                         drop(i);
                         lastClean = 0;
-                        break;
+                        return;
                     }
                 }
             }
+            if ((lastClean > inventoryCleaner.getInput() || lastClean == 0) && (lastArmor > autoArmor.getInput() || lastArmor == 0) && (lastSort > autoSort.getInput() || lastSort == 0)) {
+                if (closeInventory.isToggled()) {
+                    mc.thePlayer.closeScreen();
+                }
+            }
         }
-        else if (stealChests.isToggled() && mc.thePlayer.openContainer instanceof ContainerChest) {
+        else if (chestStealer.getInput() != -1 && mc.thePlayer.openContainer instanceof ContainerChest) {
             ContainerChest chest = (ContainerChest) mc.thePlayer.openContainer;
             if (chest == null || inventoryFull()) {
                 autoClose();
@@ -170,7 +175,7 @@ public class InvManager extends Module {
                 if (item == null) {
                     continue;
                 }
-                if (Arrays.stream(ignoreItems).anyMatch(item.getUnlocalizedName().toLowerCase()::contains)) {
+                if (Arrays.stream(trashItems).anyMatch(item.getUnlocalizedName().toLowerCase()::contains)) {
                     continue;
                 }
                 IInventory inventory = chest.getLowerChestInventory();
@@ -179,8 +184,8 @@ public class InvManager extends Module {
                     if (getBestSword(inventory, (int) swordSlot.getInput()) != i) {
                         continue;
                     }
-                    if (++lastStole >= stealerDelay.getInput()) {
-                        if (swordSlot.getInput() != 0) {
+                    if (++lastStole >= chestStealer.getInput()) {
+                        if (swordSlot.getInput() != -1) {
                             mc.playerController.windowClick(chest.windowId, i, (int) swordSlot.getInput() - 1, 2, mc.thePlayer);
                         }
                         else {
@@ -194,15 +199,15 @@ public class InvManager extends Module {
                     if (!Utils.canBePlaced((ItemBlock) item.getItem())) {
                         continue;
                     }
-                    if (++lastStole >= stealerDelay.getInput()) {
+                    if (++lastStole >= chestStealer.getInput()) {
                         mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                         lastStole = 0;
                     }
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemAppleGold) {
-                    if (++lastStole >= stealerDelay.getInput()) {
-                        if (goldenAppleSlot.getInput() == 0) {
+                    if (++lastStole >= chestStealer.getInput()) {
+                        if (goldenAppleSlot.getInput() == -1) {
                             mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                         }
                         else {
@@ -213,8 +218,8 @@ public class InvManager extends Module {
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemSnowball || item.getItem() instanceof ItemEgg) {
-                    if (++lastStole >= stealerDelay.getInput()) {
-                        if (projectileSlot.getInput() == 0) {
+                    if (++lastStole >= chestStealer.getInput()) {
+                        if (projectileSlot.getInput() == -1) {
                             mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                         }
                         else {
@@ -225,8 +230,8 @@ public class InvManager extends Module {
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemEnderPearl) {
-                    if (++lastStole >= stealerDelay.getInput()) {
-                        if (pearlSlot.getInput() == 0) {
+                    if (++lastStole >= chestStealer.getInput()) {
+                        if (pearlSlot.getInput() == -1) {
                             mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                         }
                         else {
@@ -240,18 +245,18 @@ public class InvManager extends Module {
                     if (getBestArmor(((ItemArmor) item.getItem()).armorType, inventory) != i) {
                         continue;
                     }
-                    if (++lastStole >= stealerDelay.getInput()) {
+                    if (++lastStole >= chestStealer.getInput()) {
                         mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                         lastStole = 0;
                     }
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemPotion) {
-                    if (++lastStole >= stealerDelay.getInput()) {
+                    if (++lastStole >= chestStealer.getInput()) {
                         if (!isSpeedPot(item)) {
                             mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                         } else {
-                            if (getBestPotion((int) speedPotionSlot.getInput(), inventory) != i || speedPotionSlot.getInput() == 0) {
+                            if (getBestPotion((int) speedPotionSlot.getInput(), inventory) != i || speedPotionSlot.getInput() == -1) {
                                 mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                             }
                             else {
@@ -263,11 +268,11 @@ public class InvManager extends Module {
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemTool) {
-                    if (++lastStole >= stealerDelay.getInput()) {
+                    if (++lastStole >= chestStealer.getInput()) {
                         if (getBestTool(item, inventory) != i) {
                             continue;
                         }
-                        if (++lastStole >= stealerDelay.getInput()) {
+                        if (++lastStole >= chestStealer.getInput()) {
                             mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                             lastStole = 0;
                         }
@@ -275,11 +280,11 @@ public class InvManager extends Module {
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemBow) {
-                    if (++lastStole >= stealerDelay.getInput()) {
+                    if (++lastStole >= chestStealer.getInput()) {
                         if (getBestBow(inventory) != i) {
                             continue;
                         }
-                        if (++lastStole >= stealerDelay.getInput()) {
+                        if (++lastStole >= chestStealer.getInput()) {
                             mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                             lastStole = 0;
                         }
@@ -287,11 +292,11 @@ public class InvManager extends Module {
                     stolen = true;
                 }
                 else if (item.getItem() instanceof ItemFishingRod) {
-                    if (++lastStole >= stealerDelay.getInput()) {
+                    if (++lastStole >= chestStealer.getInput()) {
                         if (getBestRod(inventory) != i) {
                             continue;
                         }
-                        if (++lastStole >= stealerDelay.getInput()) {
+                        if (++lastStole >= chestStealer.getInput()) {
                             mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                             lastStole = 0;
                         }
@@ -299,7 +304,7 @@ public class InvManager extends Module {
                     stolen = true;
                 }
                 else {
-                    if (++lastStole >= stealerDelay.getInput()) {
+                    if (++lastStole >= chestStealer.getInput()) {
                         mc.playerController.windowClick(chest.windowId, i, 0, 1, mc.thePlayer);
                         lastStole = 0;
                     }
@@ -375,7 +380,7 @@ public class InvManager extends Module {
     }
 
     private void autoClose() {
-        if (autoClose.isToggled() && receivedInventoryData) {
+        if (closeChest.isToggled() && receivedInventoryData) {
             mc.thePlayer.closeScreen();
             receivedInventoryData = false;
         }
@@ -578,6 +583,7 @@ public class InvManager extends Module {
         int amplifier = -1;
         int bestPotion = -1;
         double amplifierInSlot = -1;
+        int biggestStack = 0;
         if (amplifierInSlot != -1) {
             ItemStack itemStackInSlot = getItemStack( desiredSlot + 35);
             if (itemStackInSlot != null && itemStackInSlot.getItem() instanceof ItemPotion) {
@@ -591,11 +597,13 @@ public class InvManager extends Module {
                 if (list == null) {
                     continue;
                 }
+                int size = item.stackSize;
                 for (PotionEffect effect : list) {
                     int score = effect.getAmplifier() + effect.getDuration();
-                    if (effect.getEffectName().equals("potion.moveSpeed") && score > amplifier && score > amplifierInSlot) {
+                    if (effect.getEffectName().equals("potion.moveSpeed") && score > amplifier && score > amplifierInSlot && size > biggestStack) {
                         bestPotion = i;
                         amplifier = score;
+                        biggestStack = size;
                     }
                 }
             }
@@ -654,7 +662,7 @@ public class InvManager extends Module {
     }
 
     private boolean canDrop(ItemStack itemStack, int slot) {
-        if (Arrays.stream(ignoreItems).anyMatch(itemStack.getUnlocalizedName().toLowerCase()::contains)) {
+        if (Arrays.stream(trashItems).anyMatch(itemStack.getUnlocalizedName().toLowerCase()::contains)) {
             return true;
         }
         if (dropPotion(itemStack)) {

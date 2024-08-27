@@ -13,16 +13,18 @@ import java.util.HashSet;
 
 public class Chams extends Module {
     private ButtonSetting ignoreBots;
+    private ButtonSetting renderSelf;
     private HashSet<Entity> bots = new HashSet<>();
 
     public Chams() {
         super("Chams", Module.category.render, 0);
         this.registerSetting(ignoreBots = new ButtonSetting("Ignore bots", false));
+        this.registerSetting(renderSelf = new ButtonSetting("Render self", false));
     }
 
     @SubscribeEvent
     public void r1(Pre e) {
-        if (e.entity == mc.thePlayer) {
+        if (e.entity == mc.thePlayer && !renderSelf.isToggled()) {
             return;
         }
         if (ignoreBots.isToggled()) {
@@ -32,12 +34,12 @@ public class Chams extends Module {
             this.bots.add(e.entity);
         }
         GL11.glEnable(32823);
-        GL11.glPolygonOffset(1.0f, -1000000.0f);
+        GL11.glPolygonOffset(1.0f, -2500000.0f);
     }
 
     @SubscribeEvent
     public void r2(Post e) {
-        if (e.entity == mc.thePlayer) {
+        if (e.entity == mc.thePlayer && !renderSelf.isToggled()) {
             return;
         }
         if (ignoreBots.isToggled()) {
@@ -46,8 +48,8 @@ public class Chams extends Module {
             }
             this.bots.remove(e.entity);
         }
-        GL11.glPolygonOffset(1.0f, 1000000.0f);
         GL11.glDisable(32823);
+        GL11.glPolygonOffset(1.0f, 2500000.0f);
     }
 
     public void onDisable() {

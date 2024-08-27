@@ -32,9 +32,10 @@ public class AutoWho extends Module {
         if (r.isEmpty()) {
             return;
         }
-        if (r.startsWith(Utils.getServerName() + " has joined (")) {
+        if (r.replace("!", "").trim().startsWith(Utils.getServerName()) && ((r.contains("(") && r.contains(")")) || r.contains("/"))) {
             this.artificial();
-        } else if (hideMessage.isToggled() && r.startsWith("ONLINE: ")) {
+        }
+        else if (hideMessage.isToggled() && r.startsWith("ONLINE: ")) {
             e.setCanceled(true);
             Utils.log.info("[CHAT] " + r);
         }

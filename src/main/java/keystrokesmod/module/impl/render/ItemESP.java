@@ -46,7 +46,7 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
                     continue;
                 }
                 int stackSize = entityItem.getEntityItem().stackSize;
-                double a = a(getItem, entity.posX, entity.posY, entity.posZ);
+                double a = getColorForItem(getItem, entity.posX, entity.posY, entity.posZ);
                 Integer n = hashMap2.get(a);
                 int n2;
                 if (n == null) {
@@ -85,7 +85,7 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
                     n3 = -14614644;
                 }
                 for (EntityItem entityItem2 : entry.getValue()) {
-                    double a2 = a(item, entityItem2.posX, entityItem2.posY, entityItem2.posZ);
+                    double a2 = getColorForItem(item, entityItem2.posX, entityItem2.posY, entityItem2.posZ);
                     double n5 = entityItem2.lastTickPosX + (entityItem2.posX - entityItem2.lastTickPosX) * renderPartialTicks;
                     double n6 = entityItem2.lastTickPosY + (entityItem2.posY - entityItem2.lastTickPosY) * renderPartialTicks;
                     double n7 = entityItem2.lastTickPosZ + (entityItem2.posZ - entityItem2.lastTickPosZ) * renderPartialTicks;
@@ -93,14 +93,14 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
                     double n9 = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * renderPartialTicks - n6;
                     double n10 = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * renderPartialTicks - n7;
                     GlStateManager.pushMatrix();
-                    c(n4, n3, hashMap2.get(a2), n5, n6, n7, MathHelper.sqrt_double(n8 * n8 + n9 * n9 + n10 * n10));
+                    drawBox(n4, n3, hashMap2.get(a2), n5, n6, n7, MathHelper.sqrt_double(n8 * n8 + n9 * n9 + n10 * n10));
                     GlStateManager.popMatrix();
                 }
             }
         }
     }
 
-    public static double c(double n, double n2, double n3) {
+    public double getColor(double n, double n2, double n3) {
         if (n == 0.0) {
             n = 1.0;
         }
@@ -113,8 +113,8 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
         return Math.round((n + 1.0) * Math.floor(n2) * (n3 + 2.0));
     }
 
-    private static double a(Item item, double n, double n2, double n3) {
-        double c = c(n, n2, n3);
+    private double getColorForItem(Item item, double n, double n2, double n3) {
+        double c = getColor(n, n2, n3);
         if (item == Items.iron_ingot) {
             c += 0.155;
         } else if (item == Items.gold_ingot) {
@@ -127,7 +127,7 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
         return c;
     }
 
-    public static void c(int n, int n2, int n3, double n4, double n5, double n6, double n7) {
+    public void drawBox(int n, int n2, int n3, double n4, double n5, double n6, double n7) {
         n4 -= mc.getRenderManager().viewerPosX;
         n5 -= mc.getRenderManager().viewerPosY;
         n6 -= mc.getRenderManager().viewerPosZ;

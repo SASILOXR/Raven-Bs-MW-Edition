@@ -11,34 +11,33 @@ import keystrokesmod.utility.Utils;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.network.play.server.S27PacketExplosion;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.lwjgl.input.Mouse;
 
 import java.util.List;
 
 public class AntiKnockback extends Module {
     private SliderSetting horizontal;
     private SliderSetting vertical;
+    private ButtonSetting disableInLobby;
     private ButtonSetting cancelBurning;
     private ButtonSetting cancelExplosion;
     private ButtonSetting cancelWhileFalling;
     private ButtonSetting cancelOffGround;
-    private ButtonSetting damageBoost;
     private SliderSetting boostMultiplier;
-    private ButtonSetting groundCheck;
-    private ButtonSetting lobbyCheck;
+    private ButtonSetting boostWithLMB;
 
     public AntiKnockback() {
         super("AntiKnockback", category.combat);
         this.registerSetting(new DescriptionSetting("Overrides Velocity."));
         this.registerSetting(horizontal = new SliderSetting("Horizontal", 0.0, 0.0, 100.0, 1.0));
         this.registerSetting(vertical = new SliderSetting("Vertical", 0.0, 0.0, 100.0, 1.0));
+        this.registerSetting(disableInLobby = new ButtonSetting("Disable in lobby", false));
         this.registerSetting(cancelBurning = new ButtonSetting("Cancel burning", true));
-        this.registerSetting(cancelExplosion = new ButtonSetting("Cancel explosion packet", true));
+        this.registerSetting(cancelExplosion = new ButtonSetting("Cancel explosion", true));
         this.registerSetting(cancelWhileFalling = new ButtonSetting("Cancel while falling", true));
         this.registerSetting(cancelOffGround = new ButtonSetting("Cancel off ground", true));
-        this.registerSetting(damageBoost = new ButtonSetting("Damage boost", false));
-        this.registerSetting(boostMultiplier = new SliderSetting("Boost multiplier", 2.0, 1.0, 8.0, 0.1));
-        this.registerSetting(groundCheck = new ButtonSetting("Ground check", false));
-        this.registerSetting(lobbyCheck = new ButtonSetting("Lobby check", false));
+        this.registerSetting(boostMultiplier = new SliderSetting("Damage boost", "x", 1, 0.5, 2.5, 0.01));
+        this.registerSetting(boostWithLMB = new ButtonSetting("Boost with LMB", false));
     }
 
     @SubscribeEvent
@@ -51,7 +50,7 @@ public class AntiKnockback extends Module {
                 if (!cancelBurning.isToggled() && mc.thePlayer.isBurning()) {
                     return;
                 }
-                if (lobbyCheck.isToggled() && isLobby()) {
+                if (disableInLobby.isToggled() && Utils.isLobby()) {
                     return;
                 }
                 e.setCanceled(true);
@@ -75,16 +74,16 @@ public class AntiKnockback extends Module {
                     mc.thePlayer.motionZ = ((double) s12PacketEntityVelocity.getMotionZ() / 8000) * horizontal.getInput()/100;
                 }
                 e.setCanceled(true);
-                if (damageBoost.isToggled()) {
-                    if (groundCheck.isToggled() && !mc.thePlayer.onGround) {
+                if (boostMultiplier.getInput() != 1) {
+                    if (boostWithLMB.isToggled() && !Mouse.isButtonDown(0)) {
                         return;
                     }
-                    Utils.setSpeed(Utils.getHorizontalSpeed() * boostMultiplier.getInput()); // from croat
+                    Utils.setSpeed(Utils.getHorizontalSpeed() * boostMultiplier.getInput());
                 }
             }
         }
         else if (e.getPacket() instanceof S27PacketExplosion) {
-            if (lobbyCheck.isToggled() && isLobby()) {
+            if (disableInLobby.isToggled() && Utils.isLobby()) {
                 return;
             }
             e.setCanceled(true);
@@ -123,19 +122,6 @@ public class AntiKnockback extends Module {
     @Override
     public int getInfoType() {
         return 1;
-    }
-
-    private boolean isLobby() {
-        if (Utils.isHypixel()) {
-            List<String> sidebarLines = Utils.getSidebarLines();
-            if (!sidebarLines.isEmpty()) {
-                String[] parts = Utils.stripColor(sidebarLines.get(1)).split("  ");
-                if (parts.length > 1 && parts[1].charAt(0) == 'L') {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private boolean cancelConditions() {

@@ -39,7 +39,7 @@ public class ChestESP extends Module {
                 if (disableIfOpened.isToggled() && ((TileEntityChest) tileEntity).lidAngle > 0.0f) {
                     continue;
                 }
-                RenderUtils.renderBlock(tileEntity.getPos(), rgb, outline.isToggled(), shade.isToggled());
+                RenderUtils.renderChest(tileEntity.getPos(), rgb, outline.isToggled(), shade.isToggled());
             } else {
                 if (!(tileEntity instanceof TileEntityEnderChest)) {
                     continue;
@@ -47,7 +47,7 @@ public class ChestESP extends Module {
                 if (disableIfOpened.isToggled() && ((TileEntityEnderChest) tileEntity).lidAngle > 0.0f) {
                     continue;
                 }
-                RenderUtils.renderBlock(tileEntity.getPos(), rgb, outline.isToggled(), shade.isToggled());
+                RenderUtils.renderChest(tileEntity.getPos(), rgb, outline.isToggled(), shade.isToggled());
             }
         }
     }

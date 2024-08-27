@@ -34,7 +34,7 @@ public class LongJump extends Module {
     private String[] modes = new String[]{"Fireball", "Fireball Auto"};
     public LongJump() {
         super("Long Jump", category.movement);
-        this.registerSetting(mode = new SliderSetting("Mode", modes, 0));
+        this.registerSetting(mode = new SliderSetting("Mode", 0, modes));
         this.registerSetting(horizontalBoost = new SliderSetting("Horizontal boost", 1.7, 0.0, 8.0, 0.1));
         this.registerSetting(verticalMotion = new SliderSetting("Vertical motion", 0, 0.0, 1.0, 0.01));
         this.registerSetting(motionTicks = new SliderSetting("Motion ticks", 10, 1, 40, 1));

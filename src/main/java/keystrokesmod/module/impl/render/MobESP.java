@@ -13,24 +13,29 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import java.awt.*;
 
 public class MobESP extends Module {
-    private static ButtonSetting blaze, creeper, enderman, ghast, silverfish, skeleton, slime, spider, zombie, zombiePigman;
+    private ButtonSetting healthBar;
+    private ButtonSetting blaze, creeper, enderman, ghast, silverfish, skeleton, slime, spider, zombie, zombiePigman;
 
     public MobESP() {
         super("MobESP", category.render);
-        this.registerSetting(blaze = new ButtonSetting("Blaze", true));
-        this.registerSetting(creeper = new ButtonSetting("Creeper", true));
-        this.registerSetting(enderman = new ButtonSetting("Enderman", true));
-        this.registerSetting(ghast = new ButtonSetting("Ghast", true));
-        this.registerSetting(silverfish = new ButtonSetting("Silverfish", true));
-        this.registerSetting(skeleton = new ButtonSetting("Skeleton", true));
-        this.registerSetting(slime = new ButtonSetting("Slime", true));
-        this.registerSetting(spider = new ButtonSetting("Spider", true));
-        this.registerSetting(zombie = new ButtonSetting("Zombie", true));
-        this.registerSetting(zombiePigman = new ButtonSetting("Zombie Pigman", true));
+        this.registerSetting(healthBar = new ButtonSetting("Health bar", false));
+        this.registerSetting(blaze = new ButtonSetting("Blaze §6Orange", true));
+        this.registerSetting(creeper = new ButtonSetting("Creeper §aGreen", true));
+        this.registerSetting(enderman = new ButtonSetting("Enderman §7Black", true));
+        this.registerSetting(ghast = new ButtonSetting("Ghast §fWhite", true));
+        this.registerSetting(silverfish = new ButtonSetting("Silverfish §7Gray", true));
+        this.registerSetting(skeleton = new ButtonSetting("Skeleton §fWhite", true));
+        this.registerSetting(slime = new ButtonSetting("Slime §aGreen", true));
+        this.registerSetting(spider = new ButtonSetting("Spider §7Black", true));
+        this.registerSetting(zombie = new ButtonSetting("Zombie §1Blue", true));
+        this.registerSetting(zombiePigman = new ButtonSetting("Zombie Pigman §dPink", true));
     }
 
     private void renderMob(Entity entity, int n) {
         RenderUtils.renderEntity(entity, 2, 0.0, 0.0, n, false);
+        if (healthBar.isToggled()) {
+            RenderUtils.renderEntity(entity, 4, 0.0, 0.0, n, false);
+        }
     }
 
     private void renderer(final Entity entity) {

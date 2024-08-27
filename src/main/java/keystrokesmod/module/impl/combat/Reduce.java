@@ -13,7 +13,8 @@ public class Reduce extends Module {
         super("Reduce", category.combat);
         this.registerSetting(new DescriptionSetting("Overrides KeepSprint."));
         this.registerSetting(reduction = new SliderSetting("Attack reduction %", 60.0, 60.0, 100.0, 0.5));
-        this.registerSetting(chance = new SliderSetting("Chance", 100.0, 0.0, 100.0, 1.0, "%"));
+        this.registerSetting(chance = new SliderSetting("Chance", "%", 100.0, 0.0, 100.0, 1.0));
+        this.closetModule = true;
     }
 
     public static void reduce(Entity entity) {

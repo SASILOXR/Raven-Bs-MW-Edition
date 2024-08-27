@@ -1,6 +1,7 @@
 package keystrokesmod.module.impl.render;
 
 import keystrokesmod.module.Module;
+import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.Reflection;
@@ -31,6 +32,7 @@ public class Indicators extends Module {
     private ButtonSetting renderPearls;
     private ButtonSetting renderFireballs;
     private ButtonSetting renderPlayers;
+    private SliderSetting arrow;
     private SliderSetting radius;
     private ButtonSetting itemColors;
     private ButtonSetting renderItem;
@@ -39,6 +41,7 @@ public class Indicators extends Module {
     private Map<String, String> lastHeldItems = new ConcurrentHashMap<>();
     private int pearlColor = new Color(173, 12, 255).getRGB();
     private int fireBallColor = new Color(255, 109, 0).getRGB();
+    private String[] arrowTypes = new String[] { "Caret", "Triangle" };
 
     public Indicators() {
         super("Indicators", category.render);
@@ -46,6 +49,7 @@ public class Indicators extends Module {
         this.registerSetting(renderPearls = new ButtonSetting("Render ender pearls", true));
         this.registerSetting(renderFireballs = new ButtonSetting("Render fireballs", true));
         this.registerSetting(renderPlayers = new ButtonSetting("Render players", true));
+        this.registerSetting(arrow = new SliderSetting("Arrow", 0, arrowTypes));
         this.registerSetting(radius = new SliderSetting("Circle radius", 50, 5, 250, 2));
         this.registerSetting(itemColors = new ButtonSetting("Item colors", true));
         this.registerSetting(renderItem = new ButtonSetting("Render item", true));
@@ -120,7 +124,14 @@ public class Indicators extends Module {
                 GL11.glPushMatrix();
                 GL11.glTranslated(x, y, 0.0);
                 GL11.glRotatef(yaw, 0.0f, 0.0f, 1.0f);
-                RenderUtils.drawArrow(-5f, (float) -radius.getInput() - 38, itemColors.isToggled() ? color : -1, 3, 5);
+                switch ((int) arrow.getInput()) {
+                    case 0:
+                        RenderUtils.drawCaret(-5f, (float) -radius.getInput() - 38, itemColors.isToggled() ? color : -1, 3, 5);
+                        break;
+                    case 1:
+                        RenderUtils.drawTriangle(-2.5, -radius.getInput() - 38, 10, 1.5, 1, itemColors.isToggled() ? color : -1);
+                        break;
+                }
                 GL11.glPopMatrix();
             }
         }
@@ -136,7 +147,8 @@ public class Indicators extends Module {
         }
         if (e.entity == mc.thePlayer) {
             this.threats.clear();
-        } else if (canRender(e.entity) && (mc.thePlayer.getDistanceSqToEntity(e.entity) > 16.0 || !threatsOnly.isToggled())) {
+        }
+        else if (canRender(e.entity) && (mc.thePlayer.getDistanceSqToEntity(e.entity) > 16.0 || !threatsOnly.isToggled())) {
             this.threats.add(e.entity);
         }
     }
@@ -152,7 +164,7 @@ public class Indicators extends Module {
             else if (entity instanceof EntityEnderPearl && renderPearls.isToggled()) {
                 return true;
             }
-            else if (entity instanceof EntityPlayer && renderPlayers.isToggled()) {
+            else if (entity instanceof EntityPlayer && renderPlayers.isToggled() && AntiBot.isBot(entity)) {
                 return true;
             }
         }
@@ -174,7 +186,8 @@ public class Indicators extends Module {
         float[] position = null;
         if (absAngle >= 0 && absAngle <= 90) {
             position = new float[]{(float) (Math.cos(Math.toRadians(90 - absAngle)) * radius), (float) (Math.sin(Math.toRadians(90 - absAngle)) * radius)};
-        } else if (absAngle > 90 && absAngle <= 180) {
+        }
+        else if (absAngle > 90 && absAngle <= 180) {
             position = new float[]{(float) (Math.cos(Math.toRadians(absAngle - 90)) * radius), (float) -(Math.sin(Math.toRadians(absAngle - 90)) * radius)};
         }
         if (position != null) {

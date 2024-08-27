@@ -66,7 +66,7 @@ public class WaterBucket extends Module {
         mc.getNetHandler().addToSendQueue(new C08PacketPlayerBlockPlacement(mc.thePlayer.getHeldItem()));
     }
 
-    private int fallDistance() {
-        return (int) Utils.getFallDistance(mc.thePlayer);
+    private double fallDistance() {
+        return (int) Utils.distanceToGround(mc.thePlayer);
     }
 }

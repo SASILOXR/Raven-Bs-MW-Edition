@@ -31,7 +31,7 @@ public class SumoFences extends Module {
         this.f = Blocks.oak_fence.getDefaultState();
         this.registerSetting(new DescriptionSetting("Fences for Hypixel sumo."));
         this.registerSetting(fenceHeight = new SliderSetting("Fence height", 4.0D, 1.0D, 6.0D, 1.0D));
-        this.registerSetting(blockType = new SliderSetting("Block type", mode, 0));
+        this.registerSetting(blockType = new SliderSetting("Block type", 0, mode));
     }
 
     public void onEnable() {

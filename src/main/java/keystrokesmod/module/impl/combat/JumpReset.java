@@ -14,8 +14,9 @@ public class JumpReset extends Module {
 
     public JumpReset() {
         super("Jump Reset", category.combat);
-        this.registerSetting(chance = new SliderSetting("Chance", 80, 0, 100, 1, "%"));
+        this.registerSetting(chance = new SliderSetting("Chance", "%", 80, 0, 100, 1));
         this.registerSetting(motion = new SliderSetting("Jump motion", 0.42, 0, 1, 0.01));
+        this.closetModule = true;
     }
 
     public void onDisable() {

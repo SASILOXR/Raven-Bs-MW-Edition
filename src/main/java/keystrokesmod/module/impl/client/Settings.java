@@ -5,7 +5,8 @@ import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiChat;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.util.ResourceLocation;
 
@@ -21,6 +22,7 @@ public class Settings extends Module {
     public static ButtonSetting weaponRod;
     public static ButtonSetting weaponStick;
     public static ButtonSetting middleClickFriends;
+    public static ButtonSetting setChatAsInventory;
     public static ButtonSetting rotateBody;
     public static ButtonSetting fullBody;
     public static ButtonSetting movementFix;
@@ -34,11 +36,12 @@ public class Settings extends Module {
     public Settings() {
         super("Settings", category.client, 0);
         this.registerSetting(new DescriptionSetting("General"));
-        this.registerSetting(customCapes = new SliderSetting("Custom cape", capes, 0));
+        this.registerSetting(customCapes = new SliderSetting("Custom cape", 0, capes));
         this.registerSetting(weaponAxe = new ButtonSetting("Set axe as weapon", false));
         this.registerSetting(weaponRod = new ButtonSetting("Set rod as weapon", false));
         this.registerSetting(weaponStick = new ButtonSetting("Set stick as weapon", false));
         this.registerSetting(middleClickFriends = new ButtonSetting("Middle click friends", false));
+        this.registerSetting(setChatAsInventory = new ButtonSetting("Set chat as inventory", false));
         this.registerSetting(new DescriptionSetting("Rotations"));
         this.registerSetting(rotateBody = new ButtonSetting("Rotate body", true));
         this.registerSetting(fullBody = new ButtonSetting("Full body", false));
@@ -65,11 +68,21 @@ public class Settings extends Module {
                     continue;
                 }
                 BufferedImage bufferedImage = ImageIO.read(stream);
-                loadedCapes.add(Minecraft.getMinecraft().renderEngine.getDynamicTextureLocation(name, new DynamicTexture(bufferedImage)));
+                loadedCapes.add(mc.renderEngine.getDynamicTextureLocation(name, new DynamicTexture(bufferedImage)));
             }
         }
         catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static boolean inInventory() {
+        if (mc.currentScreen instanceof GuiInventory) {
+            return true;
+        }
+        if (mc.currentScreen instanceof GuiChat && setChatAsInventory.isToggled()) {
+            return true;
+        }
+        return false;
     }
 }

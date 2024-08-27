@@ -1,6 +1,5 @@
 package keystrokesmod.module.impl.combat;
 
-import akka.actor.Kill;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.ButtonSetting;
@@ -54,13 +53,14 @@ public class AutoClicker extends Module {
         this.registerSetting(minCPS = new SliderSetting("Min CPS", 9.0, 1.0, 20.0, 0.5));
         this.registerSetting(maxCPS = new SliderSetting("Max CPS", 12.0, 1.0, 20.0, 0.5));
         this.registerSetting(jitter = new SliderSetting("Jitter", 0.0, 0.0, 3.0, 0.1));
-        this.registerSetting(blockHitChance = new SliderSetting("Block hit chance", 0.0, 0.0, 100.0, 1.0, "%"));
+        this.registerSetting(blockHitChance = new SliderSetting("Block hit chance", "%", 0.0, 0.0, 100.0, 1.0));
         this.registerSetting(leftClick = new ButtonSetting("Left click", true));
         this.registerSetting(rightClick = new ButtonSetting("Right click", false));
         this.registerSetting(breakBlocks = new ButtonSetting("Break blocks", false));
         this.registerSetting(inventoryFill = new ButtonSetting("Inventory fill", false));
         this.registerSetting(weaponOnly = new ButtonSetting("Weapon only", false));
         this.registerSetting(blocksOnly = new ButtonSetting("Blocks only", true));
+        this.closetModule = true;
 
         try {
             this.gs = GuiScreen.class.getDeclaredMethod("func_73864_a", Integer.TYPE, Integer.TYPE, Integer.TYPE);

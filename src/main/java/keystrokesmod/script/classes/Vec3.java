@@ -47,6 +47,14 @@ public class Vec3 {
         return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
     }
 
+    public static BlockPos getBlockPos(Vec3 blockPos) {
+        return new BlockPos(blockPos.x, blockPos.y, blockPos.z);
+    }
+
+    public static net.minecraft.util.Vec3 getVec3(Vec3 vec3) {
+        return new net.minecraft.util.Vec3(vec3.x, vec3.y, vec3.z);
+    }
+
     @Override
     public String toString() {
         return "Vec3(" + this.x + "," + this.y + "," + this.z + ")";

@@ -40,7 +40,7 @@ public class Anticheat extends Module {
     public Anticheat() {
         super("Anticheat", category.other);
         this.registerSetting(new DescriptionSetting("Tries to detect cheaters."));
-        this.registerSetting(interval = new SliderSetting("Flag interval", 20.0, 0.0, 60.0, 1.0, " second"));
+        this.registerSetting(interval = new SliderSetting("Flag interval", " second", 20.0, 0.0, 60.0, 1.0));
         this.registerSetting(enemyAdd = new ButtonSetting("Add cheaters as enemy", false));
         this.registerSetting(autoReport = new ButtonSetting("Auto report", false));
         this.registerSetting(ignoreTeammates = new ButtonSetting("Ignore teammates", false));
@@ -52,6 +52,7 @@ public class Anticheat extends Module {
         this.registerSetting(noSlow = new ButtonSetting("NoSlow", true));
         this.registerSetting(scaffold = new ButtonSetting("Scaffold", true));
         this.registerSetting(legitScaffold = new ButtonSetting("Legit scaffold", true));
+        this.closetModule = true;
     }
 
     private void alert(final EntityPlayer entityPlayer, ButtonSetting mode) {
@@ -171,7 +172,7 @@ public class Anticheat extends Module {
             double deltaY = playerData.serverPosY - serverPosY;
             double deltaZ = Math.abs(playerData.serverPosZ - serverPosZ);
             if (deltaY >= 5 && deltaX <= 10 && deltaZ <= 10 && deltaY <= 40) {
-                if (!Utils.overVoid(serverPosX, serverPosY, serverPosZ) && Utils.getFallDistance(entityPlayer) > 3 && !Utils.onLadder(entityPlayer) && !entityPlayer.isInWater() && !entityPlayer.isInLava()) {
+                if (!Utils.overVoid(serverPosX, serverPosY, serverPosZ) && Utils.distanceToGround(entityPlayer) > 3 && !Utils.onLadder(entityPlayer) && !entityPlayer.isInWater() && !entityPlayer.isInLava()) {
                     alert(entityPlayer, noFall);
                 }
             }

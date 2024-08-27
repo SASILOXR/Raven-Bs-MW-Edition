@@ -11,12 +11,15 @@ import keystrokesmod.module.impl.client.Gui;
 import keystrokesmod.utility.Commands;
 import keystrokesmod.utility.Timer;
 import keystrokesmod.utility.Utils;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraftforge.client.event.GuiScreenEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -39,6 +42,8 @@ public class ClickGui extends GuiScreen {
     private GuiButtonExt commandLineSend;
     private GuiTextField commandLineInput;
     public static ArrayList<CategoryComponent> categories;
+    public int originalScale;
+    private int blurBackground = new Color(0, 0, 0, 200).getRGB();
 
     public ClickGui() {
         categories = new ArrayList();
@@ -67,6 +72,7 @@ public class ClickGui extends GuiScreen {
         }
     }
 
+    @Override
     public void initGui() {
         super.initGui();
         this.sr = new ScaledResolution(this.mc);
@@ -76,9 +82,10 @@ public class ClickGui extends GuiScreen {
     }
 
     public void drawScreen(int x, int y, float p) {
-        drawRect(0, 0, this.width, this.height, (int) (this.aR.getValueFloat(0.0F, 0.7F, 2) * 255.0F) << 24);
+        if (Gui.darkBackground.isToggled()) {
+            drawRect(0, 0, this.width, this.height, (int) (this.aR.getValueFloat(0.0F, 0.7F, 2) * 255.0F) << 24);
+        }
         int r;
-
         if (!Gui.removeWatermark.isToggled()) {
             int h = this.height / 4;
             int wd = this.width / 2;
@@ -215,6 +222,22 @@ public class ClickGui extends GuiScreen {
         }
     }
 
+    @Override
+    public void setWorldAndResolution(Minecraft p_setWorldAndResolution_1_, final int p_setWorldAndResolution_2_, final int p_setWorldAndResolution_3_) {
+        this.mc = p_setWorldAndResolution_1_;
+        originalScale = this.mc.gameSettings.guiScale;
+        this.mc.gameSettings.guiScale = (int) Gui.guiScale.getInput() + 1;
+        this.itemRender = p_setWorldAndResolution_1_.getRenderItem();
+        this.fontRendererObj = p_setWorldAndResolution_1_.fontRendererObj;
+        final ScaledResolution scaledresolution = new ScaledResolution(this.mc);
+        this.width = scaledresolution.getScaledWidth();
+        this.height = scaledresolution.getScaledHeight();
+        if (!MinecraftForge.EVENT_BUS.post(new GuiScreenEvent.InitGuiEvent.Pre(this, this.buttonList))) {
+            this.buttonList.clear();
+            this.initGui();
+        }
+        MinecraftForge.EVENT_BUS.post(new GuiScreenEvent.InitGuiEvent.Post(this, this.buttonList));
+    }
 
     @Override
     public void keyTyped(char t, int k) {
@@ -250,6 +273,7 @@ public class ClickGui extends GuiScreen {
         }
     }
 
+    @Override
     public void onGuiClosed() {
         this.aL = null;
         if (this.sf != null) {
@@ -262,6 +286,7 @@ public class ClickGui extends GuiScreen {
                 m.onGuiClosed();
             }
         }
+        this.mc.gameSettings.guiScale = originalScale;
     }
 
     public boolean doesGuiPauseGame() {

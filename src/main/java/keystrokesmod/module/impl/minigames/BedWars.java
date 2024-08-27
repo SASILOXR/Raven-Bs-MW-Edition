@@ -3,12 +3,14 @@ package keystrokesmod.module.impl.minigames;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
+import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemEnderPearl;
+import net.minecraft.item.ItemFireball;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
@@ -24,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BedWars extends Module {
     public static ButtonSetting whitelistOwnBed;
     private ButtonSetting diamondArmor;
+    private ButtonSetting fireball;
     private ButtonSetting enderPearl;
     private ButtonSetting obsidian;
     private ButtonSetting shouldPing;
@@ -38,10 +41,13 @@ public class BedWars extends Module {
     public BedWars() {
         super("Bed Wars", category.minigames);
         this.registerSetting(whitelistOwnBed = new ButtonSetting("Whitelist own bed", true));
+        this.registerSetting(new DescriptionSetting("Game alerts"));
         this.registerSetting(diamondArmor = new ButtonSetting("Diamond armor", true));
-        this.registerSetting(enderPearl = new ButtonSetting("Ender pearl", true));
+        this.registerSetting(fireball = new ButtonSetting("Fireball", false));
         this.registerSetting(obsidian = new ButtonSetting("Obsidian", true));
+        this.registerSetting(enderPearl = new ButtonSetting("Ender pearl", true));
         this.registerSetting(shouldPing = new ButtonSetting("Should ping", true));
+        this.closetModule = true;
     }
 
     public void onEnable() {
@@ -165,6 +171,9 @@ public class BedWars extends Module {
         }
         else if (unlocalizedName.contains("tile.obsidian") && obsidian.isToggled()) {
             return "§dObsidian";
+        }
+        else if (item.getItem() instanceof ItemFireball && fireball.isToggled()) {
+            return "&7a §6Fireball";
         }
         return null;
     }

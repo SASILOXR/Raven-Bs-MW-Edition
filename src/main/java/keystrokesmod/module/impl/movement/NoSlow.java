@@ -1,10 +1,7 @@
 package keystrokesmod.module.impl.movement;
 
 import keystrokesmod.Raven;
-import keystrokesmod.event.JumpEvent;
-import keystrokesmod.event.PostMotionEvent;
-import keystrokesmod.event.PreMotionEvent;
-import keystrokesmod.event.SendPacketEvent;
+import keystrokesmod.event.*;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.ButtonSetting;
@@ -31,11 +28,12 @@ public class NoSlow extends Module {
     private boolean postPlace;
     private boolean canFloat;
     private boolean reSendConsume;
+    private int ticksOffStairs;
 
     public NoSlow() {
-        super("NoSlow", Module.category.movement, 0);
+        super("NoSlow", category.movement, 0);
         this.registerSetting(new DescriptionSetting("Default is 80% motion reduction."));
-        this.registerSetting(mode = new SliderSetting("Mode", modes, 0));
+        this.registerSetting(mode = new SliderSetting("Mode", 0, modes));
         this.registerSetting(slowed = new SliderSetting("Slow %", 80.0D, 0.0D, 80.0D, 1.0D));
         this.registerSetting(disableBow = new ButtonSetting("Disable bow", false));
         this.registerSetting(disablePotions = new ButtonSetting("Disable potions", false));
@@ -106,6 +104,12 @@ public class NoSlow extends Module {
             resetFloat();
             return;
         }
+        if (BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)) instanceof BlockStairs || BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)) instanceof BlockStairs) {
+            ticksOffStairs = 0;
+        }
+        else {
+            ticksOffStairs++;
+        }
         postPlace = false;
         if (vanillaSword.isToggled() && Utils.holdingSword()) {
             resetFloat();
@@ -116,7 +120,7 @@ public class NoSlow extends Module {
             resetFloat();
             return;
         }
-        if (canFloat && canFloat() && mc.thePlayer.onGround) {
+        if ((canFloat && canFloat() && mc.thePlayer.onGround && ticksOffStairs >= 30)) {
             e.setPosY(e.getPosY() + 1E-12);
         }
     }
@@ -124,6 +128,9 @@ public class NoSlow extends Module {
     @SubscribeEvent
     public void onPacketSend(SendPacketEvent e) {
         if (e.getPacket() instanceof C08PacketPlayerBlockPlacement && mode.getInput() == 4 && getSlowed() != 0.2f && holdingConsumable(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack()) && !lookingAtInteractable() && holdingEdible(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack())) {
+            if (ModuleManager.skyWars.isEnabled() && Utils.getSkyWarsStatus() == 1) {
+                return;
+            }
             if (!mc.thePlayer.onGround) {
                 canFloat = true;
             }
@@ -183,10 +190,7 @@ public class NoSlow extends Module {
     }
 
     private boolean canFloat() {
-        if (mc.thePlayer.isOnLadder()) {
-            return false;
-        }
-        if (BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)) instanceof BlockStairs || BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)) instanceof BlockStairs) {
+        if (mc.thePlayer.isOnLadder() || ticksOffStairs == 0) {
             return false;
         }
         return true;

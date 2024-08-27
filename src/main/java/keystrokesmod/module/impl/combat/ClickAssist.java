@@ -34,6 +34,7 @@ public class ClickAssist extends Module {
         this.registerSetting(chanceRight = new SliderSetting("Chance right", 80.0D, 0.0D, 100.0D, 1.0D));
         this.registerSetting(blocksOnly = new ButtonSetting("Blocks only", true));
         this.registerSetting(aboveCPS = new ButtonSetting("Above 5 cps", false));
+        this.closetModule = true;
     }
 
     public void onEnable() {

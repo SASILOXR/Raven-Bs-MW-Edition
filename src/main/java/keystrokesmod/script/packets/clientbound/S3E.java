@@ -5,15 +5,15 @@ import net.minecraft.network.play.server.S3EPacketTeams;
 import java.util.Collection;
 
 public class S3E extends SPacket {
-    private String name;
-    private String displayName;
-    private String prefix;
-    private String suffix;
-    private String nametagVisibility;
-    private Collection<String> playerList;
-    private int action;
-    private int friendlyFlags;
-    private int color;
+    public String name;
+    public String displayName;
+    public String prefix;
+    public String suffix;
+    public String nametagVisibility;
+    public Collection<String> playerList;
+    public int action;
+    public int friendlyFlags;
+    public int color;
     public S3E(S3EPacketTeams packet) {
         super(packet);
         this.name = packet.func_149312_c();

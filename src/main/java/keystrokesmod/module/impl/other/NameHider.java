@@ -7,13 +7,12 @@ import keystrokesmod.utility.Utils;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
 public class NameHider extends Module {
-    public static DescriptionSetting a;
     public static String n = "raven";
     public static ButtonSetting hideAllNames;
 
     public NameHider() {
         super("Name Hider", Module.category.other);
-        this.registerSetting(a = new DescriptionSetting(Utils.uf("command") + ": cname [name]"));
+        this.registerSetting(new DescriptionSetting("Command: '§ecname [name]§r'"));
         this.registerSetting(hideAllNames = new ButtonSetting("Hide all names", false));
     }
 

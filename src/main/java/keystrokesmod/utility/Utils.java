@@ -2,7 +2,6 @@ package keystrokesmod.utility;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.client.Settings;
@@ -49,7 +48,7 @@ public class Utils {
 
     public static boolean addEnemy(String name) {
         if (enemies.add(name.toLowerCase())) {
-            Utils.sendMessage("&7Added &cenemy&7: &b" + name);
+            Utils.sendMessage("&7Added enemy&7: &b" + name);
             return true;
         }
         return false;
@@ -57,7 +56,7 @@ public class Utils {
 
     public static boolean removeEnemy(String name) {
         if (enemies.remove(name.toLowerCase())) {
-            Utils.sendMessage("&Removed &cenemy&7: &b" + name);
+            Utils.sendMessage("&Removed enemy&7: &b" + name);
             return true;
         }
         return false;
@@ -78,24 +77,9 @@ public class Utils {
 
     public static List<NetworkPlayerInfo> getTablist() {
         final ArrayList<NetworkPlayerInfo> list = new ArrayList<>(mc.getNetHandler().getPlayerInfoMap());
-        removeDuplicates((ArrayList) list);
+        removeDuplicates(list);
         list.remove(mc.getNetHandler().getPlayerInfo(mc.thePlayer.getUniqueID()));
         return list;
-    }
-
-    public static double getFallDistance(Entity entity) {
-        double fallDist = -1;
-        Vec3 pos = new Vec3(entity.posX, entity.posY, entity.posZ);
-        int y = (int) Math.floor(pos.yCoord);
-        if (pos.yCoord % 1 == 0) y--;
-        for (int i = y; i > -1; i--) {
-            Block block = BlockUtils.getBlock(new BlockPos((int) Math.floor(pos.xCoord), i, (int) Math.floor(pos.zCoord)));
-            if (!(block instanceof BlockAir) && !(block instanceof BlockSign)) {
-                fallDist = y - i;
-                break;
-            }
-        }
-        return fallDist;
     }
 
     public static void removeDuplicates(final ArrayList list) {
@@ -161,6 +145,11 @@ public class Utils {
             String m = formatColor("&7[&dR&7]&r " + txt);
             mc.thePlayer.addChatMessage(new ChatComponentText(m));
         }
+    }
+
+    public static void sendMessage(Object object) {
+        String toString = String.valueOf(object);
+        sendMessage(toString);
     }
 
     public static void sendDebugMessage(String message) {
@@ -242,7 +231,7 @@ public class Utils {
     }
 
     public static String getColorForHealth(double n, double n2) {
-        double health = rnd(n2, 1);
+        double health = round(n2, 1);
         return ((n < 0.3) ? "§c" : ((n < 0.5) ? "§6" : ((n < 0.7) ? "§e" : "§a"))) + (isWholeNumber(health) ? (int) health + "": health);
     }
 
@@ -321,7 +310,7 @@ public class Utils {
                 }
             }
         }
-        return rnd((double)getCompleteHealth(entityPlayer) / (n * (1.0 - (n2 + 0.04 * Math.min(Math.ceil(Math.min(n3, 25.0) * 0.75), 20.0) * (1.0 - n2)))), 1);
+        return round((double)getCompleteHealth(entityPlayer) / (n * (1.0 - (n2 + 0.04 * Math.min(Math.ceil(Math.min(n3, 25.0) * 0.75), 20.0) * (1.0 - n2)))), 1);
     }
 
     public static float n() {
@@ -339,7 +328,7 @@ public class Utils {
         }
     }
 
-    public static int merge(int n, int n2) {
+    public static int mergeAlpha(int n, int n2) {
         return (n & 0xFFFFFF) | n2 << 24;
     }
 
@@ -389,6 +378,26 @@ public class Utils {
         return (mc.currentScreen != null) && (mc.thePlayer.inventoryContainer != null) && (mc.thePlayer.inventoryContainer instanceof ContainerPlayer) && (mc.currentScreen instanceof GuiInventory);
     }
 
+    public static int getSkyWarsStatus() {
+        List<String> sidebar = Utils.getSidebarLines();
+        if (sidebar == null || sidebar.isEmpty()) {
+            return -1;
+        }
+        if (Utils.stripColor(sidebar.get(0)).startsWith("SKYWARS")) {
+            for (String line : sidebar) {
+                line = Utils.stripColor(line);
+                if (line.equals("Waiting...") || line.startsWith("Starting in ")) {
+                    return 1;
+                }
+                else if (line.startsWith("Players left: ")) {
+                    return 2;
+                }
+            }
+            return 0;
+        }
+        return -1;
+    }
+
     public static int getBedwarsStatus() {
         if (!Utils.nullCheck()) {
             return -1;
@@ -408,9 +417,11 @@ public class Utils {
                 if (parts[1].startsWith("L")) {
                     return 0;
                 }
-            } else if (line.equals("Waiting...") || line.startsWith("Starting in")) {
+            }
+            else if (line.equals("Waiting...") || line.startsWith("Starting in")) {
                 return 1;
-            } else if (line.startsWith("R Red:") || line.startsWith("B Blue:")) {
+            }
+            else if (line.startsWith("R Red:") || line.startsWith("B Blue:")) {
                 return 2;
             }
         }
@@ -538,6 +549,42 @@ public class Utils {
         return Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode());
     }
 
+    public static double distanceToGround(Entity entity) {
+        if (entity.onGround) {
+            return 0;
+        }
+        double fallDistance = -1;
+        double y = entity.posY;
+        if (entity.posY % 1 == 0) {
+            y--;
+        }
+        for (int i = (int) Math.floor(y); i > -1; i--) {
+            if (!isPlaceable(new BlockPos(entity.posX, i, entity.posZ))) {
+                fallDistance = y - i;
+                break;
+            }
+        }
+        return fallDistance - 1;
+    }
+
+    public static double distanceToGroundPos(Entity entity, int groundPos) {
+        if (entity.onGround) {
+            return 0;
+        }
+        double fallDistance = -1;
+        double y = entity.posY;
+        if (entity.posY % 1 == 0) {
+            y--;
+        }
+        for (int i = (int) Math.floor(y); i > -1; i--) {
+            if (i == groundPos) {
+                fallDistance = y - i;
+                break;
+            }
+        }
+        return fallDistance - 1;
+    }
+
     public static float gd() {
         float yw = mc.thePlayer.rotationYaw;
         if (mc.thePlayer.moveForward < 0.0F) {
@@ -597,9 +644,15 @@ public class Utils {
         return mc.theWorld.getCollidingBoundingBoxes(entity, entity.getEntityBoundingBox().offset(entity.motionX / 3.0D, -1.0D, entity.motionZ / 3.0D)).isEmpty();
     }
 
-    public static boolean isDiagonal() {
-        float yaw = ((mc.thePlayer.rotationYaw % 360) + 360) % 360 > 180 ? ((mc.thePlayer.rotationYaw % 360) + 360) % 360 - 360 : ((mc.thePlayer.rotationYaw % 360) + 360) % 360;
-        return (yaw >= -170 && yaw <= 170) && !(yaw >= -10 && yaw <= 10) && !(yaw >= 80 && yaw <= 100) && !(yaw >= -100 && yaw <= -80) || Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
+    public static boolean isDiagonal(boolean strict) {
+        float yaw = ((mc.thePlayer.rotationYaw % 360) + 360) % 360;
+        yaw = yaw > 180 ? yaw - 360 : yaw;
+        boolean isYawDiagonal = inBetween(-170, 170, yaw) && !inBetween(-10, 10, yaw) && !inBetween(80, 100, yaw) && !inBetween(-100, -80, yaw);
+       if (strict) {
+           isYawDiagonal = inBetween(-178.5, 178.5, yaw) && !inBetween(-1.5, 1.5, yaw) && !inBetween(88.5, 91.5, yaw) && !inBetween(-91.5, -88.5, yaw);
+       }
+        boolean isStrafing = Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
+        return isYawDiagonal || isStrafing;
     }
 
     public static double gbps(Entity en, int d) {
@@ -609,7 +662,11 @@ public class Utils {
         if (d == 0) {
             return sp;
         }
-        return rnd(sp, d);
+        return round(sp, d);
+    }
+
+    public static boolean inBetween(double min, double max, double value) {
+        return value >= min && value <= max;
     }
 
     public static String removeFormatCodes(String str) {
@@ -692,7 +749,7 @@ public class Utils {
         return Color.getHSBColor((float) (time % (15000L / speed)) / (15000.0F / (float) speed), 1.0F, 1.0F).getRGB();
     }
 
-    public static double rnd(double n, int d) {
+    public static double round(double n, int d) {
         if (d == 0) {
             return (double) Math.round(n);
         } else {
@@ -780,7 +837,11 @@ public class Utils {
 
     public static boolean overPlaceable(double yOffset) {
         BlockPos playerPos = new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY + yOffset, mc.thePlayer.posZ);
-        return BlockUtils.replaceable(playerPos) || BlockUtils.isFluid(BlockUtils.getBlock(playerPos));
+        return isPlaceable(playerPos);
+    }
+
+    public static boolean isPlaceable(BlockPos blockPos) {
+        return BlockUtils.replaceable(blockPos) || BlockUtils.isFluid(BlockUtils.getBlock(blockPos));
     }
 
     public static boolean holdingWeapon() {
@@ -798,7 +859,10 @@ public class Utils {
         return mc.thePlayer.getHeldItem().getItem() instanceof ItemSword;
     }
 
-    public static double getDamage(final ItemStack itemStack) {
+    public static double getDamage(ItemStack itemStack) {
+        if (itemStack == null) {
+            return 0;
+        }
         double getAmount = 0;
         for (final Map.Entry<String, AttributeModifier> entry : itemStack.getAttributeModifiers().entries()) {
             if (entry.getKey().equals("generic.attackDamage")) {
@@ -809,6 +873,7 @@ public class Utils {
         return getAmount + EnchantmentHelper.getEnchantmentLevel(Enchantment.sharpness.effectId, itemStack) * 1.25;
     }
 
+
     public static boolean canBePlaced(ItemBlock itemBlock) {
         Block block = itemBlock.getBlock();
         if (block == null) {
@@ -818,5 +883,44 @@ public class Utils {
             return false;
         }
         return true;
+    }
+
+    public static <E extends Enum<E>> E getEnum(Class<E> enumClass, String value) {
+        for (E enumConstant : enumClass.getEnumConstants()) {
+            if (enumConstant.name().equals(value)) {
+                return enumConstant;
+            }
+        }
+        return null;
+    }
+
+    public static int getSpeedAmplifier() {
+        if (mc.thePlayer.isPotionActive(Potion.moveSpeed)) {
+            return 1 + mc.thePlayer.getActivePotionEffect(Potion.moveSpeed).getAmplifier();
+        }
+        return 0;
+    }
+
+    public static ItemStack getSpoofedItem(ItemStack original) {
+        if (ModuleManager.scaffold.isEnabled() && ModuleManager.scaffold.autoSwap.isToggled() && ModuleManager.autoSwap.spoofItem.isToggled()) {
+            return mc.thePlayer.inventory.getStackInSlot(ModuleManager.scaffold.lastSlot.get() == -1 ? mc.thePlayer.inventory.currentItem : ModuleManager.scaffold.lastSlot.get());
+        }
+        if (ModuleManager.autoTool.isEnabled() && ModuleManager.autoTool.toolSlot != -1 && ModuleManager.autoTool.previousSlot != -1 && ModuleManager.autoTool.spoofItem.isToggled()) {
+            return mc.thePlayer.inventory.getStackInSlot(ModuleManager.autoTool.previousSlot);
+        }
+        return original;
+    }
+
+    public static boolean isLobby() {
+        if (Utils.isHypixel()) {
+            List<String> sidebarLines = Utils.getSidebarLines();
+            if (!sidebarLines.isEmpty()) {
+                String[] parts = Utils.stripColor(sidebarLines.get(1)).split("  ");
+                if (parts.length > 1 && parts[1].charAt(0) == 'L') {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

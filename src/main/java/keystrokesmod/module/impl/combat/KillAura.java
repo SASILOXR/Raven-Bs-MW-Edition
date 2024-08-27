@@ -5,6 +5,7 @@ import keystrokesmod.Raven;
 import keystrokesmod.event.*;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.client.Settings;
 import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -14,6 +15,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.network.handshake.client.C00Handshake;
 import net.minecraft.network.login.client.C00PacketLoginStart;
@@ -84,19 +86,21 @@ public class KillAura extends Module {
     private boolean aiming;
     private ConcurrentLinkedQueue<Packet> blinkedPackets = new ConcurrentLinkedQueue<>();
     private float[] currentRotations;
+    private int blinkAutoBlockTicks;
+    private String[] swapBlacklist = { "compass", "snowball", "spawn", "skull" };
 
     public KillAura() {
         super("KillAura", category.combat);
         this.registerSetting(aps = new SliderSetting("APS", 16.0, 1.0, 20.0, 0.5));
-        this.registerSetting(autoBlockMode = new SliderSetting("Autoblock", autoBlockModes, 0));
+        this.registerSetting(autoBlockMode = new SliderSetting("Autoblock", 0, autoBlockModes));
         this.registerSetting(fov = new SliderSetting("FOV", 360.0, 30.0, 360.0, 4.0));
         this.registerSetting(attackRange = new SliderSetting("Range (attack)", 3.0, 3.0, 6.0, 0.05));
         this.registerSetting(swingRange = new SliderSetting("Range (swing)", 3.3, 3.0, 8.0, 0.05));
         this.registerSetting(blockRange = new SliderSetting("Range (block)", 6.0, 3.0, 12.0, 0.05));
-        this.registerSetting(rotationMode = new SliderSetting("Rotation mode", rotationModes, 0));
-        this.registerSetting(rotationSmoothing = new SliderSetting("Rotation smoothing", 0, 0, 15, 1));
-        this.registerSetting(sortMode = new SliderSetting("Sort mode", sortModes, 0.0));
-        this.registerSetting(switchDelay = new SliderSetting("Switch delay", 200.0, 50.0, 1000.0, 25.0, "ms"));
+        this.registerSetting(rotationMode = new SliderSetting("Rotation mode", 0, rotationModes));
+        this.registerSetting(rotationSmoothing = new SliderSetting("Rotation smoothing", 0, 0, 10, 0.1));
+        this.registerSetting(sortMode = new SliderSetting("Sort mode", 0, sortModes));
+        this.registerSetting(switchDelay = new SliderSetting("Switch delay", "ms", 200.0, 50.0, 1000.0, 25.0));
         this.registerSetting(targets = new SliderSetting("Targets", 3.0, 1.0, 10.0, 1.0));
         this.registerSetting(targetInvis = new ButtonSetting("Target invis", true));
         this.registerSetting(disableInInventory = new ButtonSetting("Disable in inventory", true));
@@ -117,7 +121,6 @@ public class KillAura extends Module {
 
     public void onDisable() {
         reset();
-
     }
 
     @SubscribeEvent
@@ -181,17 +184,21 @@ public class KillAura extends Module {
                 return;
             }
             setBlockState(block.get(), false, false);
+            blinkAutoBlockTicks++;
             switch ((int) autoBlockMode.getInput()) {
                 case 3:
                     if (lag) {
                         blinking.set(true);
-                        mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange( mc.thePlayer.inventory.currentItem % 8 + 1));
-                        Raven.badPacketsHandler.playerSlot.set(mc.thePlayer.inventory.currentItem % 8 + 1);
+                        int bestSwapSlot = getBestSwapSlot();
+                        mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange( bestSwapSlot));
+                        Raven.badPacketsHandler.playerSlot.set(bestSwapSlot);
                         swapped = true;
                         lag = false;
                     }
                     else {
-                        // check here for ghost later
+                        if (blinkAutoBlockTicks <= 0 && Raven.badPacketsHandler.delayAttack.get()) {
+                            return;
+                        }
                         mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
                         Raven.badPacketsHandler.playerSlot.set(mc.thePlayer.inventory.currentItem);
                         swapped = false;
@@ -351,6 +358,7 @@ public class KillAura extends Module {
         ModuleManager.targetHUD.renderEntity = null;
         startSmoothing = false;
         swing = false;
+        blinkAutoBlockTicks = 0;
         rmbDown = false;
         currentRotations = null;
         attack = false;
@@ -397,6 +405,39 @@ public class KillAura extends Module {
                 blocking = down;
                 break;
         }
+    }
+
+    private int getBestSwapSlot() {
+        int currentSlot = mc.thePlayer.inventory.currentItem;
+        int bestSlot = -1;
+        double bestDamage = -1;
+        for (int i = 0; i < 9; ++i) {
+            if (i == currentSlot) {
+                continue;
+            }
+            ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
+            double damage = Utils.getDamage(stack);
+            if (damage != 0) {
+                if (damage > bestDamage) {
+                    bestDamage = damage;
+                    bestSlot = i;
+                }
+            }
+        }
+        if (bestSlot == -1) {
+            for (int i = 0; i < 9; ++i) {
+                if (i == currentSlot) {
+                    continue;
+                }
+                ItemStack stack = mc.thePlayer.inventory.getStackInSlot(i);
+                if (stack == null || Arrays.stream(swapBlacklist).noneMatch(stack.getUnlocalizedName().toLowerCase()::contains)) {
+                    bestSlot = i;
+                    break;
+                }
+            }
+        }
+
+        return bestSlot;
     }
 
     private void setBlockState(boolean state, boolean sendBlock, boolean sendUnBlock) {
@@ -533,13 +574,13 @@ public class KillAura extends Module {
         if (!Mouse.isButtonDown(0) && requireMouseDown.isToggled()) {
             return false;
         }
-        else if (!Utils.holdingWeapon() && weaponOnly.isToggled()) {
+        else if (weaponOnly.isToggled() && !Utils.holdingWeapon()) {
             return false;
         }
-        else if (isMining() && disableWhileMining.isToggled()) {
+        else if (disableWhileMining.isToggled() && isMining()) {
             return false;
         }
-        else if (mc.currentScreen != null && disableInInventory.isToggled()) {
+        else if (disableInInventory.isToggled() && Settings.inInventory()) {
             return false;
         }
         return true;

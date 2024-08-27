@@ -6,14 +6,13 @@ import keystrokesmod.utility.Utils;
 import net.minecraft.util.ChatComponentText;
 
 public class FakeChat extends Module {
-    public static DescriptionSetting a;
     public static String msg = "&eThis is a fake chat message.";
     public static final String command = "fakechat";
     public static final String c4 = "&cInvalid message.";
 
     public FakeChat() {
         super("Fake Chat", Module.category.other, 0);
-        this.registerSetting(a = new DescriptionSetting(Utils.uf("command") + ": " + command + " [msg]"));
+        this.registerSetting(new DescriptionSetting("Command: '§e" + command + " [msg]§r'"));
     }
 
     public void onEnable() {

@@ -10,7 +10,6 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.handshake.client.C00Handshake;
 import net.minecraft.network.login.client.C00PacketLoginStart;
 import net.minecraft.network.login.client.C01PacketEncryptionResponse;
-import net.minecraft.network.play.client.C01PacketChatMessage;
 import net.minecraft.network.status.client.C00PacketServerQuery;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -26,7 +25,7 @@ public class FakeLag extends Module {
 
     public FakeLag() {
         super("Fake Lag", category.player);
-        this.registerSetting(packetDelay = new SliderSetting("Packet delay", 200, 25, 1000, 5, "ms"));
+        this.registerSetting(packetDelay = new SliderSetting("Packet delay", "ms", 200, 25, 1000, 5));
     }
 
     public String getInfo() {

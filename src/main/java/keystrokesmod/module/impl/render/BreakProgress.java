@@ -13,8 +13,7 @@ import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
-import java.awt.*;
+import org.lwjgl.opengl.GL11;
 
 public class BreakProgress extends Module {
     private SliderSetting mode;
@@ -28,7 +27,7 @@ public class BreakProgress extends Module {
 
     public BreakProgress() {
         super("BreakProgress", category.render);
-        this.registerSetting(mode = new SliderSetting("Mode", modes, 0));
+        this.registerSetting(mode = new SliderSetting("Mode", 0, modes));
         this.registerSetting(manual = new ButtonSetting("Show manual", true));
         this.registerSetting(bedAura = new ButtonSetting("Show BedAura", true));
         this.registerSetting(fadeIn = new ButtonSetting("Fade in", false));
@@ -49,11 +48,10 @@ public class BreakProgress extends Module {
         GlStateManager.scale(-0.02266667f, -0.02266667f, -0.02266667f);
         GlStateManager.depthMask(false);
         GlStateManager.disableDepth();
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        int colorAlpha = Utils.merge(-1, (int) (255 * progress));
+        GL11.glEnable(GL11.GL_BLEND);
+        int colorAlpha = Utils.mergeAlpha(-1, Math.max(10, (int) (255 * progress)));
         mc.fontRendererObj.drawString(this.progressStr, (float) (-mc.fontRendererObj.getStringWidth(this.progressStr) / 2), -3.0f, fadeIn.isToggled() ? colorAlpha : -1, true);
-        GlStateManager.disableBlend();
+        GL11.glDisable(GL11.GL_BLEND);
         GlStateManager.enableDepth();
         GlStateManager.depthMask(true);
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -67,12 +65,12 @@ public class BreakProgress extends Module {
                 break;
             }
             case 1: {
-                double timeLeft = Utils.rnd((double) ((1.0f - this.progress) / BlockUtils.getBlockHardness(BlockUtils.getBlock(this.block), mc.thePlayer.getHeldItem(), false, false)) / 20.0, 1);
+                double timeLeft = Utils.round((double) ((1.0f - this.progress) / BlockUtils.getBlockHardness(BlockUtils.getBlock(this.block), mc.thePlayer.getHeldItem(), false, false)) / 20.0, 1);
                 this.progressStr = timeLeft == 0 ? "0" : timeLeft + "s";
                 break;
             }
             case 2: {
-                this.progressStr = String.valueOf(Utils.rnd(this.progress, 2));
+                this.progressStr = String.valueOf(Utils.round(this.progress, 2));
                 break;
             }
         }

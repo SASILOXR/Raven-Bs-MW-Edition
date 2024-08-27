@@ -8,6 +8,8 @@ import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.RenderUtils;
+import keystrokesmod.utility.Timer;
+import keystrokesmod.utility.Utils;
 import keystrokesmod.utility.profile.Manager;
 import keystrokesmod.utility.profile.ProfileModule;
 import net.minecraft.client.Minecraft;
@@ -18,8 +20,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 public class ModuleComponent extends Component {
+    private int originalHoverAlpha = 120;
     private final int c2 = (new Color(154, 2, 255)).getRGB();
-    private final int hoverColor = (new Color(0, 0, 0, 110)).getRGB();
+    private final int hoverColor = (new Color(0, 0, 0, originalHoverAlpha)).getRGB();
     private final int unsavedColor = new Color(114, 188, 250).getRGB();
     private final int invalidColor = new Color(255, 80, 80).getRGB();
     private final int enabledColor = new Color(24, 154, 255).getRGB();
@@ -30,6 +33,7 @@ public class ModuleComponent extends Component {
     public ArrayList<Component> settings;
     public boolean isOpened;
     private boolean hovering;
+    private Timer hoverTimer;
 
     public ModuleComponent(Module mod, CategoryComponent p, int o) {
         this.mod = mod;
@@ -102,22 +106,18 @@ public class ModuleComponent extends Component {
         GL11.glEdgeFlag(true);
     }
 
-    public static void g(int h) {
-        float a = 0.0F;
-        float r = 0.0F;
-        float g = 0.0F;
-        float b = 0.0F;
-        GL11.glColor4f(r, g, b, a);
+    public static void g() {
+        GL11.glColor4f(0.0F, 0.0F, 0.0F, 0.0F);
     }
 
     public static void v(float x, float y, float x1, float y1, int t, int b) {
         e();
         GL11.glShadeModel(7425);
         GL11.glBegin(7);
-        g(t);
+        g();
         GL11.glVertex2f(x, y1);
         GL11.glVertex2f(x1, y1);
-        g(b);
+        g();
         GL11.glVertex2f(x1, y);
         GL11.glVertex2f(x, y);
         GL11.glEnd();
@@ -127,7 +127,12 @@ public class ModuleComponent extends Component {
 
     public void render() {
         if (hovering) {
-            RenderUtils.drawRoundedRectangle(this.categoryComponent.getX(), this.categoryComponent.getY() + o, this.categoryComponent.getX() + this.categoryComponent.getWidth(), this.categoryComponent.getY() + 16 + this.o, 8, hoverColor);
+            double hoverAlpha = hoverTimer == null ? originalHoverAlpha : originalHoverAlpha - hoverTimer.getValueFloat(0, originalHoverAlpha, 1);
+            if (hoverAlpha == 0) {
+                hoverTimer = null;
+                hovering = false;
+            }
+            RenderUtils.drawRoundedRectangle(this.categoryComponent.getX(), this.categoryComponent.getY() + o, this.categoryComponent.getX() + this.categoryComponent.getWidth(), this.categoryComponent.getY() + 16 + this.o, 8, Utils.mergeAlpha(hoverColor, (int) hoverAlpha));
         }
         v((float) this.categoryComponent.getX(), (float) (this.categoryComponent.getY() + this.o), (float) (this.categoryComponent.getX() + this.categoryComponent.getWidth()), (float) (this.categoryComponent.getY() + 15 + this.o), this.mod.isEnabled() ? this.c2 : -12829381, this.mod.isEnabled() ? this.c2 : -12302777);
         GL11.glPushMatrix();
@@ -150,7 +155,8 @@ public class ModuleComponent extends Component {
     public int getHeight() {
         if (!this.isOpened) {
             return 16;
-        } else {
+        }
+        else {
             int h = 16;
             Iterator var2 = this.settings.iterator();
 
@@ -159,7 +165,8 @@ public class ModuleComponent extends Component {
                     Component c = (Component) var2.next();
                     if (c instanceof SliderComponent) {
                         h += 16;
-                    } else if (c instanceof ButtonComponent || c instanceof BindComponent || c instanceof DescriptionComponent) {
+                    }
+                    else if (c instanceof ButtonComponent || c instanceof BindComponent || c instanceof DescriptionComponent) {
                         h += 12;
                     }
                 }
@@ -179,7 +186,14 @@ public class ModuleComponent extends Component {
             hovering = true;
         }
         else {
-            hovering = false;
+            if (hovering) {
+                if (hoverTimer == null) {
+                    (hoverTimer = new Timer(250)).start();
+                }
+            }
+            else {
+                hovering = false;
+            }
         }
     }
 

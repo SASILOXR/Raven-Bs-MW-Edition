@@ -48,7 +48,6 @@ public class CategoryComponent {
     private float big;
     private float bigSettings;
     private final int translucentBackground = new Color(0, 0, 0, 110).getRGB();
-    private final  int background = new Color(0, 0, 0, 255).getRGB();
     private final  int regularOutline = new Color(81, 99, 149).getRGB();
     private final  int regularOutline2 = new Color(97, 67, 133).getRGB();
     private final  int categoryNameColor = new Color(220, 220, 220).getRGB();
@@ -56,6 +55,7 @@ public class CategoryComponent {
     public int moduleY;
     private int lastModuleY;
     private int screenHeight;
+    private boolean scrolled;
 
     public CategoryComponent(Module.category category) {
         this.categoryName = category;
@@ -150,13 +150,14 @@ public class CategoryComponent {
         if (!hoveringOverCategory || !this.opened) {
             return;
         }
-
+        int scrollSpeed = (int) Gui.scrollSpeed.getInput();
         if (mouseScrollInput > 0) {
-            this.moduleY += 18;
+            this.moduleY += scrollSpeed;
         }
         else if (mouseScrollInput < 0) {
-            this.moduleY -= 18;
+            this.moduleY -= scrollSpeed;
         }
+        scrolled = true;
 
         (moduleSmoothTimer = new Timer(200)).start();
     }
@@ -174,14 +175,10 @@ public class CategoryComponent {
             while (iterator.hasNext()) {
                 ModuleComponent c = iterator.next();
                 settingsHeight += c.getHeight();
-                if (modulesHeight > this.screenHeight - 80) { // max category height
+                if (modulesHeight + c.getHeight() > this.screenHeight - 40) { // max category height
                     continue;
                 }
-                if (this.y + this.titleHeight + c.getHeight() + modulesHeight > this.y + this.titleHeight + (16 * this.modules.size())) {
-                    modulesHeight += c.getHeight();
-                    continue;
-                }
-                modulesHeight += 16;
+                modulesHeight += c.getHeight();
             }
             big = modulesHeight;
             bigSettings = settingsHeight;
@@ -206,11 +203,18 @@ public class CategoryComponent {
         if (!this.opened) {
             namePos = textTimer == null ? xPos : middlePos - textTimer.getValueFloat(0, this.width / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.categoryName.name()) / 2 - 12, 1);
         }
+        if (scrolled && lastModuleY != moduleY) {
+            moduleY = (int) moduleSmoothTimer.getValueFloat(lastModuleY, moduleY, 1);
+        }
+        else {
+            scrolled = false;
+            lastModuleY = moduleY;
+        }
         lastHeight = extra;
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         RenderUtils.scissor(0, this.y - 2, this.x + this.width + 4, extra - this.y + 4);
-        RenderUtils.drawRoundedGradientOutlinedRectangle(this.x - 2, this.y, this.x + this.width + 2, extra, 9, Gui.translucentBackground.isToggled() ? translucentBackground : background,
+        RenderUtils.drawRoundedGradientOutlinedRectangle(this.x - 2, this.y, this.x + this.width + 2, extra, 9, translucentBackground,
                 ((opened || hovering) && Gui.rainBowOutlines.isToggled()) ? RenderUtils.setAlpha(Utils.getChroma(2, 0), 0.5) : regularOutline, ((opened || hovering) && Gui.rainBowOutlines.isToggled()) ? RenderUtils.setAlpha(Utils.getChroma(2, 700), 0.5) : regularOutline2);
         renderItemForCategory(this.categoryName, this.x + 1, this.y + 4, opened || hovering);
         renderer.drawString(this.n4m ? this.pvp : this.categoryName.name(), namePos, (float) (this.y + 4), categoryNameColor, false);

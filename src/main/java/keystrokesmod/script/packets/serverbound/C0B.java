@@ -1,5 +1,6 @@
 package keystrokesmod.script.packets.serverbound;
 
+import keystrokesmod.utility.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C0BPacketEntityAction;
@@ -21,15 +22,6 @@ public class C0B extends CPacket {
 
     @Override
     public C0BPacketEntityAction convert() {
-        return new C0BPacketEntityAction(Minecraft.getMinecraft().thePlayer, getAction(), horsePower);
-    }
-
-    private C0BPacketEntityAction.Action getAction() {
-        for (C0BPacketEntityAction.Action action : C0BPacketEntityAction.Action.values()) {
-            if (action.name().equals(this.action)) {
-                return action;
-            }
-        }
-        return null;
+        return new C0BPacketEntityAction(Minecraft.getMinecraft().thePlayer, Utils.getEnum(C0BPacketEntityAction.Action.class, this.action), horsePower);
     }
 }

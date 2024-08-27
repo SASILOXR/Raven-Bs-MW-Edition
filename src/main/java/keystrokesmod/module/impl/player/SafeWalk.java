@@ -41,7 +41,8 @@ public class SafeWalk extends Module {
 
     public void onUpdate() {
         if (motion.getInput() != 1.0 && mc.thePlayer.onGround && Utils.isMoving() && (!pitchCheck.isToggled() || mc.thePlayer.rotationPitch >= 70.0f)) {
-            Utils.setSpeed(Utils.getHorizontalSpeed() * motion.getInput());
+            mc.thePlayer.motionX *= motion.getInput();
+            mc.thePlayer.motionZ *= motion.getInput();
         }
     }
 

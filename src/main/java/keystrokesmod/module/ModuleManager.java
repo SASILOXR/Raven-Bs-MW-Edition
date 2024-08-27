@@ -25,6 +25,8 @@ public class ModuleManager {
     public static Module nameHider;
     public static Module fastPlace;
     public static MurderMystery murderMystery;
+    public static InvMove invmove;
+    public static SkyWars skyWars;
     public static AntiFireball antiFireball;
     public static AutoSwap autoSwap;
     public static BedAura bedAura;
@@ -38,6 +40,7 @@ public class ModuleManager {
     public static Module hitBox;
     public static Module reach;
     public static BedESP bedESP;
+    public static Chams chams;
     public static HUD hud;
     public static Module timer;
     public static Module fly;
@@ -58,6 +61,8 @@ public class ModuleManager {
     public static BHop bHop;
     public static NoHurtCam noHurtCam;
     public static Scaffold scaffold;
+    public static AutoTool autoTool;
+    public static Sprint sprint;
 
     public void register() {
         this.addModule(autoClicker = new AutoClicker());
@@ -67,6 +72,7 @@ public class ModuleManager {
         this.addModule(new BurstClicker());
         this.addModule(new ClickAssist());
         this.addModule(tower = new Tower());
+        this.addModule(skyWars = new SkyWars());
         this.addModule(new DelayRemover());
         this.addModule(hitBox = new HitBox());
         this.addModule(new Radar());
@@ -78,13 +84,14 @@ public class ModuleManager {
         this.addModule(bHop = new BHop());
         this.addModule(invManager = new InvManager());
         this.addModule(scaffold = new Scaffold());
+        this.addModule(new AutoRequeue());
         this.addModule(new AntiAFK());
         this.addModule(new Boost());
-        this.addModule(new AutoTool());
+        this.addModule(autoTool = new AutoTool());
         this.addModule(noHurtCam = new NoHurtCam());
         this.addModule(new Teleport());
         this.addModule(fly = new Fly());
-        this.addModule(new InvMove());
+        this.addModule(invmove = new InvMove());
         this.addModule(new TPAura());
         this.addModule(new Trajectories());
         this.addModule(potions = new Potions());
@@ -96,7 +103,7 @@ public class ModuleManager {
         this.addModule(new Speed());
         this.addModule(new LatencyAlerts());
         this.addModule(noCameraClip = new NoCameraClip());
-        this.addModule(new Sprint());
+        this.addModule(sprint = new Sprint());
         this.addModule(new StopMotion());
         this.addModule(timer = new Timer());
         this.addModule(new VClip());
@@ -110,7 +117,7 @@ public class ModuleManager {
         this.addModule(antiKnockback = new AntiKnockback());
         this.addModule(antiBot = new AntiBot());
         this.addModule(antiShuffle = new AntiShuffle());
-        this.addModule(new Chams());
+        this.addModule(chams = new Chams());
         this.addModule(new ChestESP());
         this.addModule(new Nametags());
         this.addModule(playerESP = new PlayerESP());

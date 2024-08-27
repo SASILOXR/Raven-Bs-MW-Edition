@@ -9,6 +9,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
 public class Sprint extends Module {
     public Sprint() {
         super("Sprint", Module.category.movement, 0);
+        this.closetModule = true;
     }
 
     @SubscribeEvent

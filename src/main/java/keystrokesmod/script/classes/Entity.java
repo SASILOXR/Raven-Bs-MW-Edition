@@ -75,7 +75,7 @@ public class Entity {
     }
 
     public double distanceToGround() {
-        return 0; // does not work
+        return Utils.distanceToGround(entity);
     }
 
     public float getAbsorption() {
@@ -108,11 +108,22 @@ public class Entity {
         return Utils.gbps(this.entity, 0);
     }
 
+    public String getFacing() {
+        return this.entity.getHorizontalFacing().name();
+    }
+
     public float getHealth() {
         if (!(entity instanceof EntityLivingBase)) {
             return -1;
         }
         return ((EntityLivingBase) entity).getHealth();
+    }
+
+    public boolean isSleeping() {
+        if (this.isPlayer) {
+            return ((EntityPlayer) this.entity).isPlayerSleeping();
+        }
+        return false;
     }
 
     public float getEyeHeight() {
@@ -150,6 +161,10 @@ public class Entity {
             return -1;
         }
         return ((EntityLivingBase) entity).hurtTime;
+    }
+
+    public boolean isConsuming() {
+        return this.entity.isEating();
     }
 
     public Vec3 getLastPosition() {
@@ -275,13 +290,17 @@ public class Entity {
         return entity.isInLava();
     }
 
+    public boolean isInLiquid() {
+        return !this.entity.isOffsetPositionInLiquid(0, 0, 0);
+    }
+
     public boolean isOnLadder() {
-        int posX = MathHelper.floor_double(entity.posX);
-        int posY = MathHelper.floor_double(entity.posY - 0.20000000298023224D);
-        int posZ = MathHelper.floor_double(entity.posZ);
-        BlockPos blockpos = new BlockPos(posX, posY, posZ);
-        Block block1 = Minecraft.getMinecraft().theWorld.getBlockState(blockpos).getBlock();
-        return block1 instanceof BlockLadder && !entity.onGround;
+        if (this.isLiving) {
+            if (((EntityLivingBase) this.entity).isOnLadder()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean isOnEdge() {
@@ -292,7 +311,7 @@ public class Entity {
         return entity.isSprinting();
     }
 
-    public boolean isSneak() {
+    public boolean isSneaking() {
         return entity.isSneaking();
     }
 

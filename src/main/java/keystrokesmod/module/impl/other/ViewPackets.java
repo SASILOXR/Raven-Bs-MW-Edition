@@ -159,7 +159,7 @@ public class ViewPackets extends Module {
     }
 
     private static double round(final double n) {
-        return Utils.rnd(n, 3);
+        return Utils.round(n, 3);
     }
 
     @SubscribeEvent

@@ -1,6 +1,7 @@
 package keystrokesmod.script.packets.serverbound;
 
 import keystrokesmod.script.classes.Vec3;
+import keystrokesmod.utility.Utils;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
@@ -26,24 +27,6 @@ public class C07 extends CPacket {
 
     @Override
     public C07PacketPlayerDigging convert() {
-        return new C07PacketPlayerDigging(getAction(), new BlockPos(this.pos.x, this.pos.y, this.pos.z), getEnumFacing());
-    }
-
-    private C07PacketPlayerDigging.Action getAction() {
-        for (C07PacketPlayerDigging.Action action : C07PacketPlayerDigging.Action.values()) {
-            if (action.name().equals(this.status)) {
-                return action;
-            }
-        }
-        return null;
-    }
-
-    private EnumFacing getEnumFacing() {
-        for (EnumFacing enumFacing : EnumFacing.values()) {
-            if (enumFacing.name().equals(this.facing)) {
-                return enumFacing;
-            }
-        }
-        return null;
+        return new C07PacketPlayerDigging(Utils.getEnum(C07PacketPlayerDigging.Action.class, this.status), new BlockPos(this.pos.x, this.pos.y, this.pos.z), Utils.getEnum(EnumFacing.class, this.facing));
     }
 }

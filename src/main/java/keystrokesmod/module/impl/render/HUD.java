@@ -26,6 +26,9 @@ public class HUD extends Module {
     public static ButtonSetting alphabeticalSort;
     private static ButtonSetting alignRight;
     private static ButtonSetting lowercase;
+    private ButtonSetting removeCloset;
+    private ButtonSetting removeRender;
+    private ButtonSetting removeScripts;
     public static ButtonSetting showInfo;
     public static int hudX = 5;
     public static int hudY = 70;
@@ -35,7 +38,7 @@ public class HUD extends Module {
     public HUD() {
         super("HUD", Module.category.render);
         this.registerSetting(new DescriptionSetting("Right click bind to hide modules."));
-        this.registerSetting(theme = new SliderSetting("Theme", Theme.themes, 0));
+        this.registerSetting(theme = new SliderSetting("Theme", 0, Theme.themes));
         this.registerSetting(new ButtonSetting("Edit position", () -> {
             mc.displayGuiScreen(new EditScreen());
         }));
@@ -43,6 +46,9 @@ public class HUD extends Module {
         this.registerSetting(alphabeticalSort = new ButtonSetting("Alphabetical sort", false));
         this.registerSetting(dropShadow = new ButtonSetting("Drop shadow", true));
         this.registerSetting(lowercase = new ButtonSetting("Lowercase", false));
+        this.registerSetting(removeCloset = new ButtonSetting("Remove closet modules", false));
+        this.registerSetting(removeRender = new ButtonSetting("Remove render modules", false));
+        this.registerSetting(removeScripts = new ButtonSetting("Remove scripts", false));
         this.registerSetting(showInfo = new ButtonSetting("Show module info", true));
     }
 
@@ -83,9 +89,18 @@ public class HUD extends Module {
                     if (module == ModuleManager.commandLine) {
                         continue;
                     }
+                    if (removeRender.isToggled() && module.moduleCategory() == category.render) {
+                        continue;
+                    }
+                    if (removeScripts.isToggled() && module.moduleCategory() == category.scripts) {
+                        continue;
+                    }
+                    if (removeCloset.isToggled() && module.closetModule) {
+                        continue;
+                    }
                     String moduleName = module.getName();
                     if (showInfo.isToggled() && !module.getInfo().isEmpty()) {
-                        moduleName += (module.getInfoType() == 0 ? " §7" : " §b") + module.getInfo();
+                        moduleName += " §7" + module.getInfo();
                     }
                     if (lowercase.isToggled()) {
                         moduleName = moduleName.toLowerCase();
@@ -149,7 +164,7 @@ public class HUD extends Module {
 
         public void initGui() {
             super.initGui();
-            this.buttonList.add(this.resetPosition = new GuiButtonExt(1, this.width - 90, 5, 85, 20, "Reset position"));
+            this.buttonList.add(this.resetPosition = new GuiButtonExt(1, this.width - 90, this.height - 25, 85, 20, "Reset position"));
             this.aX = HUD.hudX;
             this.aY = HUD.hudY;
         }
@@ -178,7 +193,7 @@ public class HUD extends Module {
             ScaledResolution res = new ScaledResolution(this.mc);
             int x = res.getScaledWidth() / 2 - 84;
             int y = res.getScaledHeight() / 2 - 20;
-            RenderUtils.dct("Edit the HUD position by dragging.", '-', x, y, 2L, 0L, true, this.mc.fontRendererObj);
+            RenderUtils.drawColoredString("Edit the HUD position by dragging.", '-', x, y, 2L, 0L, true, this.mc.fontRendererObj);
 
             try {
                 this.handleInput();

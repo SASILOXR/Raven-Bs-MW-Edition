@@ -8,18 +8,22 @@ import keystrokesmod.utility.Utils;
 
 public class Gui extends Module {
     public static SliderSetting guiScale;
+    public static SliderSetting backgroundBlur;
+    public static SliderSetting scrollSpeed;
     public static ButtonSetting removePlayerModel;
-    public static ButtonSetting translucentBackground;
+    public static ButtonSetting darkBackground;
     public static ButtonSetting removeWatermark;
     public static ButtonSetting rainBowOutlines;
 
     public Gui() {
         super("Gui", category.client, 54);
-        //this.registerSetting(guiScale = new SliderSetting("Gui scale", 1, 0.5, 2, 0.01));
+        this.registerSetting(guiScale = new SliderSetting("Gui scale", 2, new String[]{ "Small", "Normal", "Large" }));
+        //this.registerSetting(backgroundBlur = new SliderSetting("Background blur", "%", 50, 0, 100, 1));
+        this.registerSetting(scrollSpeed = new SliderSetting("Scroll speed", 50, 0, 90, 1));
+        this.registerSetting(darkBackground = new ButtonSetting("Dark background", true));
         this.registerSetting(rainBowOutlines = new ButtonSetting("Rainbow outlines", true));
         this.registerSetting(removePlayerModel = new ButtonSetting("Remove player model", false));
         this.registerSetting(removeWatermark = new ButtonSetting("Remove watermark", false));
-        this.registerSetting(translucentBackground = new ButtonSetting("Translucent background", true));
     }
 
     public void onEnable() {

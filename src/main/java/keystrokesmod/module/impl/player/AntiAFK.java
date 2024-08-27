@@ -27,12 +27,12 @@ public class AntiAFK extends Module {
     public boolean stop = false;
     public AntiAFK() {
         super("AntiAFK", category.player);
-        this.registerSetting(afk = new SliderSetting("AFK", afkModes, 0));
+        this.registerSetting(afk = new SliderSetting("AFK", 0, afkModes));
         this.registerSetting(jump = new ButtonSetting("Jump", false));
         this.registerSetting(jumpWhenCollided = new ButtonSetting("Jump only when collided", false));
         this.registerSetting(randomClicks = new ButtonSetting("Random clicks", false));
         this.registerSetting(swapItem = new ButtonSetting("Swap item", false));
-        this.registerSetting(spin = new SliderSetting("Spin", spinModes, 0));
+        this.registerSetting(spin = new SliderSetting("Spin", 0, spinModes));
         this.registerSetting(randomizeDelta = new ButtonSetting("Randomize delta", true));
         this.registerSetting(randomizePitch = new ButtonSetting("Randomize pitch", true));
         this.registerSetting(minDelay = new SliderSetting("Minimum delay ticks", 10.0, 4.0, 160.0, 2.0));

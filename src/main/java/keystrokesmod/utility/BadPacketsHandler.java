@@ -109,4 +109,11 @@ public class BadPacketsHandler {
             C0A.set(true);
         }
     }
+
+    public boolean sent() {
+        if (C02.get() || C08.get() || C09.get() || C07.get() || C0A.get()) {
+            return true;
+        }
+        return false;
+    }
 }

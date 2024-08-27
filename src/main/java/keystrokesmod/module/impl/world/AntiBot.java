@@ -18,28 +18,27 @@ import java.util.List;
 
 public class AntiBot extends Module {
     private static final HashMap<EntityPlayer, Long> entities = new HashMap();
-    private static ButtonSetting entitySpawnDelay;
-    private SliderSetting delay;
-    private static ButtonSetting pitSpawn;
+    private static SliderSetting delay;
+    private static SliderSetting pitSpawn;
     private static ButtonSetting tablist;
 
     public AntiBot() {
         super("AntiBot", Module.category.world, 0);
-        this.registerSetting(entitySpawnDelay = new ButtonSetting("Entity spawn delay", false));
-        this.registerSetting(delay = new SliderSetting("Delay", 7.0, 0.5, 15.0, 0.5, " second"));
-        this.registerSetting(pitSpawn = new ButtonSetting("Pit spawn", false));
+        this.registerSetting(delay = new SliderSetting("Delay", " second", true, -1, 0.5, 15.0, 0.5));
+        this.registerSetting(pitSpawn = new SliderSetting("Pit spawn", true, -1, 70, 120, 1));
         this.registerSetting(tablist = new ButtonSetting("Tab list", false));
+        this.closetModule = true;
     }
 
     @SubscribeEvent
     public void c(final EntityJoinWorldEvent entityJoinWorldEvent) {
-        if (entitySpawnDelay.isToggled() && entityJoinWorldEvent.entity instanceof EntityPlayer && entityJoinWorldEvent.entity != mc.thePlayer) {
+        if (delay.getInput() != -1 && entityJoinWorldEvent.entity instanceof EntityPlayer && entityJoinWorldEvent.entity != mc.thePlayer) {
             entities.put((EntityPlayer) entityJoinWorldEvent.entity, System.currentTimeMillis());
         }
     }
 
     public void onUpdate() {
-        if (entitySpawnDelay.isToggled() && !entities.isEmpty()) {
+        if (delay.getInput() != -1 && !entities.isEmpty()) {
             entities.values().removeIf(n -> n < System.currentTimeMillis() - delay.getInput());
         }
     }
@@ -59,7 +58,7 @@ public class AntiBot extends Module {
             return true;
         }
         final EntityPlayer entityPlayer = (EntityPlayer) entity;
-        if (entitySpawnDelay.isToggled() && !entities.isEmpty() && entities.containsKey(entityPlayer)) {
+        if (delay.getInput() != -1 && !entities.isEmpty() && entities.containsKey(entityPlayer)) {
             return true;
         }
         if (entityPlayer.isDead) {
@@ -74,7 +73,7 @@ public class AntiBot extends Module {
         if (entityPlayer.getHealth() != 20.0f && entityPlayer.getName().startsWith("§c")) {
             return true;
         }
-        if (pitSpawn.isToggled() && entityPlayer.posY >= 114 && entityPlayer.posY <= 130 && entityPlayer.getDistance(0, 114, 0) <= 25) {
+        if (pitSpawn.getInput() != -1 && entityPlayer.posY >= pitSpawn.getInput() && entityPlayer.posY <= 130 && entityPlayer.getDistance(0, 114, 0) <= 25) {
             if (Utils.isHypixel()) {
                 List<String> sidebarLines = Utils.getSidebarLines();
                 if (!sidebarLines.isEmpty() && Utils.stripColor(sidebarLines.get(0)).contains("THE HYPIXEL PIT")) {

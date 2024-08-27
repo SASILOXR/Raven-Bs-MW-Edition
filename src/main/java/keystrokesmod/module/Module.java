@@ -3,6 +3,7 @@ package keystrokesmod.module;
 import keystrokesmod.Raven;
 import keystrokesmod.module.setting.Setting;
 import keystrokesmod.module.setting.impl.ButtonSetting;
+import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.script.Script;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.Minecraft;
@@ -25,6 +26,7 @@ public class Module {
     public boolean ignoreOnSave = false;
     public boolean hidden = false;
     public Script script = null;
+    public boolean closetModule = false;
 
     public Module(String moduleName, Module.category moduleCategory, int keycode) {
         this.moduleName = moduleName;
@@ -183,14 +185,13 @@ public class Module {
 
     }
 
-    public void onUpdate() {
-    }
+    public void onUpdate() {}
 
-    public void guiUpdate() {
-    }
+    public void guiUpdate() {}
 
-    public void guiButtonToggled(ButtonSetting b) {
-    }
+    public void guiButtonToggled(ButtonSetting b) {}
+
+    public void onSlide(SliderSetting setting) {}
 
     public int getKeycode() {
         return this.keycode;
