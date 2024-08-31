@@ -69,8 +69,8 @@ public class MixinRenderGlobal {
         if (entityIn == viewer && this.mc.gameSettings.thirdPersonView == 0 && !flag) {
             return false;
         }
-        else if (shouldRender() && !AntiBot.isBot(entityIn)) {
-            return entityIn != viewer || ModuleManager.playerESP.renderSelf.isToggled();
+        else if (shouldRender()) {
+            return (entityIn != viewer && !AntiBot.isBot(entityIn)) || (entityIn == viewer && ModuleManager.playerESP.renderSelf.isToggled());
         }
         else {
             if (this.mc.thePlayer.isSpectator() && this.mc.gameSettings.keyBindSpectatorOutlines.isKeyDown() && entityIn instanceof EntityPlayer) {
