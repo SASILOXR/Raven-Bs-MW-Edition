@@ -31,10 +31,11 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
     }
 
     @Redirect(method = "doRender(Lnet/minecraft/entity/EntityLivingBase;DDDFF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/RendererLivingEntity;setScoreTeamColor(Lnet/minecraft/entity/EntityLivingBase;)Z"))
-    private boolean setScoreTeamColor(RendererLivingEntity instance, T entityLivingBaseIn) {
+    private boolean setOutlineColor(RendererLivingEntity instance, T entityLivingBaseIn) {
         int i = 16777215;
+        boolean drawOutline = ModuleManager.playerESP != null && ModuleManager.playerESP.isEnabled() && ModuleManager.playerESP.outline.isToggled();
 
-        if (ModuleManager.playerESP.teamColor.isToggled())
+        if (!drawOutline || ModuleManager.playerESP.teamColor.isToggled())
         {
             if (entityLivingBaseIn instanceof EntityPlayer)
             {
@@ -58,7 +59,7 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
             i = (new Color((int) ModuleManager.playerESP.red.getInput(), (int) ModuleManager.playerESP.green.getInput(), (int) ModuleManager.playerESP.blue.getInput())).getRGB();
         }
 
-        if (ModuleManager.playerESP.redOnDamage.isToggled() && entityLivingBaseIn.hurtTime != 0) {
+        if (drawOutline && ModuleManager.playerESP.redOnDamage.isToggled() && entityLivingBaseIn.hurtTime != 0) {
             i = Color.RED.getRGB();
         }
 
