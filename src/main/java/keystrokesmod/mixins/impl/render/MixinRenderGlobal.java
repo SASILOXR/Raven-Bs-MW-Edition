@@ -1,6 +1,7 @@
 package keystrokesmod.mixins.impl.render;
 
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.world.AntiBot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.renderer.RenderGlobal;
@@ -68,7 +69,7 @@ public class MixinRenderGlobal {
         if (entityIn == viewer && this.mc.gameSettings.thirdPersonView == 0 && !flag) {
             return false;
         }
-        else if (shouldRender()) {
+        else if (shouldRender() && !AntiBot.isBot(entityIn)) {
             return entityIn != viewer || ModuleManager.playerESP.renderSelf.isToggled();
         }
         else {

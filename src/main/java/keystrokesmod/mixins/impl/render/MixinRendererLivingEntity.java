@@ -1,6 +1,7 @@
 package keystrokesmod.mixins.impl.render;
 
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.model.ModelBase;
@@ -33,7 +34,7 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
     @Redirect(method = "doRender(Lnet/minecraft/entity/EntityLivingBase;DDDFF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/RendererLivingEntity;setScoreTeamColor(Lnet/minecraft/entity/EntityLivingBase;)Z"))
     private boolean setOutlineColor(RendererLivingEntity instance, T entityLivingBaseIn) {
         int i = 16777215;
-        boolean drawOutline = ModuleManager.playerESP != null && ModuleManager.playerESP.isEnabled() && ModuleManager.playerESP.outline.isToggled();
+        boolean drawOutline = ModuleManager.playerESP != null && ModuleManager.playerESP.isEnabled() && ModuleManager.playerESP.outline.isToggled() && !AntiBot.isBot(entityLivingBaseIn);
 
         if (!drawOutline || ModuleManager.playerESP.teamColor.isToggled())
         {
