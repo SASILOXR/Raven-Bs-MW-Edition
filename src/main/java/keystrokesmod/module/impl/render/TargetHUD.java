@@ -35,8 +35,8 @@ public class TargetHUD extends Module {
     private double lastHealth;
     private float lastHealthBar;
     public EntityLivingBase renderEntity;
-    public int xPos = 70;
-    public int yPos = 30;
+    public int posX = 70;
+    public int posY = 30;
     private String[] modes = new String[]{ "Modern", "Legacy" };
 
     public TargetHUD() {
@@ -113,8 +113,8 @@ public class TargetHUD extends Module {
         final ScaledResolution scaledResolution = new ScaledResolution(mc);
         final int n2 = 8;
         final int n3 = mc.fontRendererObj.getStringWidth(string) + n2;
-        final int x = (scaledResolution.getScaledWidth() / 2 - n3 / 2) + xPos;
-        final int y = (scaledResolution.getScaledHeight() / 2 + 15) + yPos;
+        final int x = (scaledResolution.getScaledWidth() / 2 - n3 / 2) + posX;
+        final int y = (scaledResolution.getScaledHeight() / 2 + 15) + posY;
         final int n6 = x - n2;
         final int n7 = y - n2;
         final int n8 = x + n3;
@@ -206,8 +206,8 @@ public class TargetHUD extends Module {
         public void initGui() {
             super.initGui();
             this.buttonList.add(this.resetPosition = new GuiButtonExt(1, this.width - 90, this.height - 25, 85, 20, "Reset position"));
-            this.aX = xPos;
-            this.aY = yPos;
+            this.aX = posX;
+            this.aY = posY;
         }
 
         public void drawScreen(int mX, int mY, float pt) {
@@ -234,8 +234,8 @@ public class TargetHUD extends Module {
             this.maX = maX;
             this.maY = maY;
             this.clickMinX = miX;
-            xPos = miX;
-            yPos = miY;
+            posX = miX;
+            posY = miY;
             String edit = "Edit the HUD position by dragging.";
             int x = res.getScaledWidth() / 2 - fontRendererObj.getStringWidth(edit) / 2;
             int y = res.getScaledHeight() / 2 - 20;
@@ -278,8 +278,8 @@ public class TargetHUD extends Module {
 
         public void actionPerformed(GuiButton b) {
             if (b == this.resetPosition) {
-                this.aX = xPos = 70;
-                this.aY = yPos = 30;
+                this.aX = posX = 70;
+                this.aY = posY = 30;
             }
 
         }

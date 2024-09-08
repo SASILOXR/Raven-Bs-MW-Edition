@@ -2,6 +2,7 @@ package keystrokesmod.utility;
 
 import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
+import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.client.Settings;
 import keystrokesmod.module.impl.combat.Velocity;
 import keystrokesmod.module.impl.minigames.DuelsStats;
@@ -146,7 +147,8 @@ public class Commands {
                     }
 
                 });
-            } else if (cm.startsWith("setspeed")) {
+            }
+            else if (cm.startsWith("setspeed")) {
                 if (!hasArgs) {
                     print(invSyn, 1);
                     return;
@@ -233,16 +235,24 @@ public class Commands {
             else if (cm.startsWith("ping")) {
                 Ping.checkPing();
             }
+            else if (cm.startsWith("sprint")) {
+                if (!hasArgs || args.length != 2) {
+                    print(invSyn, 1);
+                    return;
+                }
+                String text = args[1];
+                if (text.trim().isEmpty()) {
+                    print("&cInvalid message.", 1);
+                    return;
+                }
+                ModuleManager.sprint.text = text;
+                print("&aSprint text updated!", 1);
+            }
             else if (cm.startsWith("clear")) {
                 rs.clear();
             }
             else if (cm.startsWith("hide")) {
-                if (!hasArgs) {
-                    print(invSyn, 1);
-                    return;
-                }
-
-                if (args.length != 2) {
+                if (!hasArgs || args.length != 2) {
                     print(invSyn, 1);
                     return;
                 }
@@ -419,6 +429,7 @@ public class Commands {
                 print("2 " + FakeChat.command + " [msg]", 0);
                 print("3 setspeed [fly/bhop/speed] [value]", 0);
                 print("4 setvelocity [h/v] [value]", 0);
+                print("5 sprint [text]", 0);
             }
 
         }
@@ -433,7 +444,6 @@ public class Commands {
         if (t == 2 || t == 3) {
             rs.add("");
         }
-
     }
 
     public static void rc(FontRenderer fr, int h, int w, double s) {

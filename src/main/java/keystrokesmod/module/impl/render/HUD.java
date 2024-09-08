@@ -22,29 +22,33 @@ import java.io.IOException;
 
 public class HUD extends Module {
     public static SliderSetting theme;
-    public static ButtonSetting dropShadow;
+    private static SliderSetting outline;
     public static ButtonSetting alphabeticalSort;
+    private static ButtonSetting drawBackground;
     private static ButtonSetting alignRight;
     private static ButtonSetting lowercase;
-    private ButtonSetting removeCloset;
-    private ButtonSetting removeRender;
-    private ButtonSetting removeScripts;
+    private static ButtonSetting removeCloset;
+    private static ButtonSetting removeRender;
+    private static ButtonSetting removeScripts;
     public static ButtonSetting showInfo;
-    public static int hudX = 5;
-    public static int hudY = 70;
+    public static int posX = 5;
+    public static int posY = 70;
     private boolean isAlphabeticalSort;
     private boolean canShowInfo;
+    private String[] outlineModes = new String[] { "Disabled", "Full", "Side" };
+    private static int backGroundColor = new Color(0, 0, 0, 110).getRGB();
 
     public HUD() {
         super("HUD", Module.category.render);
         this.registerSetting(new DescriptionSetting("Right click bind to hide modules."));
         this.registerSetting(theme = new SliderSetting("Theme", 0, Theme.themes));
+        this.registerSetting(outline = new SliderSetting("Outline", 0, outlineModes));
         this.registerSetting(new ButtonSetting("Edit position", () -> {
             mc.displayGuiScreen(new EditScreen());
         }));
         this.registerSetting(alignRight = new ButtonSetting("Align right", false));
         this.registerSetting(alphabeticalSort = new ButtonSetting("Alphabetical sort", false));
-        this.registerSetting(dropShadow = new ButtonSetting("Drop shadow", true));
+        this.registerSetting(drawBackground = new ButtonSetting("Draw background", false));
         this.registerSetting(lowercase = new ButtonSetting("Lowercase", false));
         this.registerSetting(removeCloset = new ButtonSetting("Remove closet modules", false));
         this.registerSetting(removeRender = new ButtonSetting("Remove render modules", false));
@@ -78,8 +82,10 @@ public class HUD extends Module {
         if (mc.currentScreen != null || mc.gameSettings.showDebugInfo) {
             return;
         }
-        int n = hudY;
+        int yPos = posY;
         double n2 = 0.0;
+        String previousModule = "";
+        int lastXPos = 0;
         try {
             for (Module module : ModuleManager.organizedModules) {
                 if (module.isEnabled() && module != this) {
@@ -105,24 +111,60 @@ public class HUD extends Module {
                     if (lowercase.isToggled()) {
                         moduleName = moduleName.toLowerCase();
                     }
-                    int e = Theme.getGradient((int) theme.getInput(), n2);
+                    int color = Theme.getGradient((int) theme.getInput(), n2);
+                    int xPos = posX;
+                    if (alignRight.isToggled()) {
+                        xPos -= mc.fontRendererObj.getStringWidth(moduleName);
+                    }
+                    if (drawBackground.isToggled()) {
+                        RenderUtils.drawRect(xPos - 1, yPos - 1, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, yPos + mc.fontRendererObj.FONT_HEIGHT + 1, backGroundColor);
+                    }
+                    if (outline.getInput() == 1 && n2 == 0.0) { // top
+                        RenderUtils.drawRect(xPos - 2, yPos - 2, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 1.5, yPos - 1, color);
+                    }
                     if (theme.getInput() == 0) {
                         n2 -= 120;
                     } else {
                         n2 -= 12;
                     }
-                    int n3 = hudX;
-                    if (alignRight.isToggled()) {
-                        n3 -= mc.fontRendererObj.getStringWidth(moduleName);
+                    if (n2 != 0 && outline.getInput() == 1) { // between
+                        double difference = mc.fontRendererObj.getStringWidth(previousModule) - mc.fontRendererObj.getStringWidth(moduleName);
+                        if (alphabeticalSort.isToggled() && difference < 0) {
+                            RenderUtils.drawRect(xPos - 2, yPos - 2, xPos - difference - 2, yPos - 1, color);
+                        }
+                        else {
+                            RenderUtils.drawRect(xPos - difference - 2, yPos - 2, xPos - 1, yPos - 1, color);
+                        }
                     }
-                    mc.fontRendererObj.drawString(moduleName, n3, (float) n, e, dropShadow.isToggled());
-                    n += mc.fontRendererObj.FONT_HEIGHT + 2;
+                    if (outline.getInput() > 0) { // sides
+                        if (alignRight.isToggled()) {
+                            RenderUtils.drawRect(xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, yPos - 1, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 1.5, yPos + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                        }
+                        else {
+                            RenderUtils.drawRect(xPos - 2, yPos - 1, xPos - 1, yPos + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                        }
+                    }
+                    if (outline.getInput() == 1) {
+                        if (alignRight.isToggled()) {
+                            RenderUtils.drawRect(xPos - 2, yPos - 1, xPos - 1, yPos + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                        }
+                        else {
+                            RenderUtils.drawRect(xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, yPos - 1, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 1.5, yPos + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                        }
+                    }
+                    mc.fontRendererObj.drawString(moduleName, xPos, (float) yPos, color, true);
+                    previousModule = moduleName;
+                    lastXPos = xPos;
+                    yPos += mc.fontRendererObj.FONT_HEIGHT + 2;
                 }
             }
         }
         catch (Exception e) {
             Utils.sendMessage("&cAn error occurred rendering HUD. check your logs");
             e.printStackTrace();
+        }
+        if (outline.getInput() == 1) { // bottom
+            RenderUtils.drawRect(lastXPos - 2, yPos - 1, lastXPos + mc.fontRendererObj.getStringWidth(previousModule) + 1.5, yPos, Theme.getGradient((int) theme.getInput(), n2));
         }
     }
 
@@ -165,8 +207,8 @@ public class HUD extends Module {
         public void initGui() {
             super.initGui();
             this.buttonList.add(this.resetPosition = new GuiButtonExt(1, this.width - 90, this.height - 25, 85, 20, "Reset position"));
-            this.aX = HUD.hudX;
-            this.aY = HUD.hudY;
+            this.aX = HUD.posX;
+            this.aY = HUD.posY;
         }
 
         public void drawScreen(int mX, int mY, float pt) {
@@ -188,8 +230,8 @@ public class HUD extends Module {
                 this.maY = clickPos[1];
                 this.clickMinX = clickPos[2];
             }
-            HUD.hudX = miX;
-            HUD.hudY = miY;
+            HUD.posX = miX;
+            HUD.posY = miY;
             ScaledResolution res = new ScaledResolution(this.mc);
             int x = res.getScaledWidth() / 2 - 84;
             int y = res.getScaledHeight() / 2 - 20;
@@ -213,7 +255,7 @@ public class HUD extends Module {
                     if (HUD.alignRight.isToggled()) {
                         x += mc.fontRendererObj.getStringWidth(var5[0]) - mc.fontRendererObj.getStringWidth(s);
                     }
-                    fr.drawString(s, (float) x, (float) y, Color.white.getRGB(), HUD.dropShadow.isToggled());
+                    fr.drawString(s, (float) x, (float) y, Color.white.getRGB(), true);
                     y += fr.FONT_HEIGHT + 2;
                 }
             }
@@ -221,35 +263,82 @@ public class HUD extends Module {
                 int longestModule = getLongestModule(mc.fontRendererObj);
                 int n = this.miY;
                 double n2 = 0.0;
-                for (Module module : ModuleManager.organizedModules) {
-                    if (module.isEnabled() && !module.getName().equals("HUD")) {
-                        if (module.isHidden()) {
-                            continue;
+                String previousModule = "";
+                int lastXPos = 0;
+                try {
+                    for (Module module : ModuleManager.organizedModules) {
+                        if (module.isEnabled() && !(module instanceof HUD)) {
+                            if (module.isHidden()) {
+                                continue;
+                            }
+                            if (module == ModuleManager.commandLine) {
+                                continue;
+                            }
+                            if (removeRender.isToggled() && module.moduleCategory() == category.render) {
+                                continue;
+                            }
+                            if (removeScripts.isToggled() && module.moduleCategory() == category.scripts) {
+                                continue;
+                            }
+                            if (removeCloset.isToggled() && module.closetModule) {
+                                continue;
+                            }
+                            String moduleName = module.getName();
+                            if (showInfo.isToggled() && !module.getInfo().isEmpty()) {
+                                moduleName += " §7" + module.getInfo();
+                            }
+                            if (lowercase.isToggled()) {
+                                moduleName = moduleName.toLowerCase();
+                            }
+                            int color = Theme.getGradient((int) theme.getInput(), n2);
+                            int xPos = posX;
+                            if (alignRight.isToggled()) {
+                                xPos -= mc.fontRendererObj.getStringWidth(moduleName);
+                            }
+                            if (outline.getInput() == 1 && n2 == 0.0) { // top
+                                RenderUtils.drawRect(xPos - 2, n - 2, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 1.5, n - 1, color);
+                            }
+                            if (n2 != 0 && outline.getInput() == 1) { // between
+                                double difference = mc.fontRendererObj.getStringWidth(previousModule) - mc.fontRendererObj.getStringWidth(moduleName);
+                                RenderUtils.drawRect(xPos - difference - 2, n - 2, xPos - 1, n - 1, color);
+                            }
+                            if (theme.getInput() == 0) {
+                                n2 -= 120;
+                            } else {
+                                n2 -= 12;
+                            }
+                            if (drawBackground.isToggled()) {
+                                RenderUtils.drawRect(xPos - 1, n - 1, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, n + mc.fontRendererObj.FONT_HEIGHT + 1, backGroundColor);
+                            }
+                            if (outline.getInput() > 0) { // sides
+                                if (alignRight.isToggled()) {
+                                    RenderUtils.drawRect(xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, n - 1, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 1.5, n + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                                }
+                                else {
+                                    RenderUtils.drawRect(xPos - 2, n - 1, xPos - 1, n + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                                }
+                            }
+                            if (outline.getInput() == 1) {
+                                if (alignRight.isToggled()) {
+                                    RenderUtils.drawRect(xPos - 2, n - 1, xPos - 1, n + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                                }
+                                else {
+                                    RenderUtils.drawRect(xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, n - 1, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 1.5, n + mc.fontRendererObj.FONT_HEIGHT + 1, color);
+                                }
+                            }
+                            mc.fontRendererObj.drawString(moduleName, xPos, (float) n, color, true);
+                            previousModule = moduleName;
+                            lastXPos = xPos;
+                            n += mc.fontRendererObj.FONT_HEIGHT + 2;
                         }
-                        if (module == ModuleManager.commandLine) {
-                            continue;
-                        }
-                        String moduleName = module.getName();
-                        if (showInfo.isToggled() && !module.getInfo().isEmpty()) {
-                            moduleName += " §7" + module.getInfo();
-                        }
-                        if (lowercase.isToggled()) {
-                            moduleName = moduleName.toLowerCase();
-                        }
-                        int e = Theme.getGradient((int) theme.getInput(), n2);
-                        if (theme.getInput() == 0) {
-                            n2 -= 120;
-                        }
-                        else {
-                            n2 -= 12;
-                        }
-                        int n3 = this.miX;
-                        if (alignRight.isToggled()) {
-                            n3 -= mc.fontRendererObj.getStringWidth(moduleName);
-                        }
-                        mc.fontRendererObj.drawString(moduleName, n3, (float) n, e, dropShadow.isToggled());
-                        n += mc.fontRendererObj.FONT_HEIGHT + 2;
                     }
+                }
+                catch (Exception e) {
+                    Utils.sendMessage("&cAn error occurred rendering HUD. check your logs");
+                    e.printStackTrace();
+                }
+                if (outline.getInput() == 1) { // bottom
+                    RenderUtils.drawRect(lastXPos - 2, n - 1, lastXPos + mc.fontRendererObj.getStringWidth(previousModule) + 1.5, n, Theme.getGradient((int) theme.getInput(), n2));
                 }
                 return new int[]{this.miX + longestModule, n, this.miX - longestModule};
             }
@@ -283,8 +372,8 @@ public class HUD extends Module {
 
         public void actionPerformed(GuiButton b) {
             if (b == this.resetPosition) {
-                this.aX = HUD.hudX = 5;
-                this.aY = HUD.hudY = 70;
+                this.aX = HUD.posX = 5;
+                this.aY = HUD.posY = 70;
             }
 
         }

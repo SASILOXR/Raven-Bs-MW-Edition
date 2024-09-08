@@ -9,6 +9,7 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.MathHelper;
@@ -76,6 +77,13 @@ public class Entity {
 
     public double distanceToGround() {
         return Utils.distanceToGround(entity);
+    }
+
+    public boolean isHoldingBlock() {
+        if (this.isLiving) {
+            return ((EntityLivingBase) this.entity).getHeldItem() != null && ((EntityLivingBase) this.entity).getHeldItem().getItem() instanceof ItemBlock;
+        }
+        return false;
     }
 
     public float getAbsorption() {

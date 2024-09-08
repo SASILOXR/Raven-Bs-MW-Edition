@@ -51,9 +51,6 @@ public class BedWars extends Module {
     }
 
     public void onEnable() {
-        armoredPlayer.clear();
-        lastHeldMap.clear();
-        obsidianPos.clear();
         check = false;
         outsideSpawn = true;
     }
@@ -91,6 +88,7 @@ public class BedWars extends Module {
         if (e.entity == mc.thePlayer) {
             armoredPlayer.clear();
             lastHeldMap.clear();
+            obsidianPos.clear();
         }
     }
 

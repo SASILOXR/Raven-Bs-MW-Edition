@@ -13,8 +13,6 @@ import net.minecraft.network.play.server.S27PacketExplosion;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Mouse;
 
-import java.util.List;
-
 public class AntiKnockback extends Module {
     private SliderSetting horizontal;
     private SliderSetting vertical;
@@ -62,16 +60,16 @@ public class AntiKnockback extends Module {
                 }
                 S12PacketEntityVelocity s12PacketEntityVelocity = (S12PacketEntityVelocity) e.getPacket();
                 if (horizontal.getInput() == 0 && vertical.getInput() > 0) {
-                    mc.thePlayer.motionY = ((double) s12PacketEntityVelocity.getMotionY() / 8000) * vertical.getInput()/100;
+                    mc.thePlayer.motionY = ((double) s12PacketEntityVelocity.getMotionY() / 8000) * vertical.getInput() / 100.0;
                 }
                 else if (horizontal.getInput() > 0 && vertical.getInput() == 0) {
-                    mc.thePlayer.motionX = ((double) s12PacketEntityVelocity.getMotionX() / 8000) * horizontal.getInput()/100;
-                    mc.thePlayer.motionZ = ((double) s12PacketEntityVelocity.getMotionZ() / 8000) * horizontal.getInput()/100;
+                    mc.thePlayer.motionX = ((double) s12PacketEntityVelocity.getMotionX() / 8000) * horizontal.getInput() / 100.0;
+                    mc.thePlayer.motionZ = ((double) s12PacketEntityVelocity.getMotionZ() / 8000) * horizontal.getInput() / 100.0;
                 }
                 else {
-                    mc.thePlayer.motionX = ((double) s12PacketEntityVelocity.getMotionX() / 8000) * horizontal.getInput()/100;
-                    mc.thePlayer.motionY = ((double) s12PacketEntityVelocity.getMotionY() / 8000) * vertical.getInput()/100;
-                    mc.thePlayer.motionZ = ((double) s12PacketEntityVelocity.getMotionZ() / 8000) * horizontal.getInput()/100;
+                    mc.thePlayer.motionX = ((double) s12PacketEntityVelocity.getMotionX() / 8000) * horizontal.getInput() / 100.0;
+                    mc.thePlayer.motionY = ((double) s12PacketEntityVelocity.getMotionY() / 8000) * vertical.getInput() / 100.0;
+                    mc.thePlayer.motionZ = ((double) s12PacketEntityVelocity.getMotionZ() / 8000) * horizontal.getInput() / 100.0;
                 }
                 e.setCanceled(true);
                 if (boostMultiplier.getInput() != 1) {
@@ -95,16 +93,16 @@ public class AntiKnockback extends Module {
             }
             S27PacketExplosion s27PacketExplosion = (S27PacketExplosion) e.getPacket();
             if (horizontal.getInput() == 0 && vertical.getInput() > 0) {
-                mc.thePlayer.motionY += s27PacketExplosion.func_149144_d() * vertical.getInput()/100;
+                mc.thePlayer.motionY += s27PacketExplosion.func_149144_d() * vertical.getInput() / 100.0;
             }
             else if (horizontal.getInput() > 0 && vertical.getInput() == 0) {
-                mc.thePlayer.motionX += s27PacketExplosion.func_149149_c() * horizontal.getInput()/100;
-                mc.thePlayer.motionZ += s27PacketExplosion.func_149147_e() * horizontal.getInput()/100;
+                mc.thePlayer.motionX += s27PacketExplosion.func_149149_c() * horizontal.getInput() / 100.0;
+                mc.thePlayer.motionZ += s27PacketExplosion.func_149147_e() * horizontal.getInput() / 100.0;
             }
             else {
-                mc.thePlayer.motionX += s27PacketExplosion.func_149149_c() * horizontal.getInput()/100;
-                mc.thePlayer.motionY += s27PacketExplosion.func_149144_d() * vertical.getInput()/100;
-                mc.thePlayer.motionZ += s27PacketExplosion.func_149147_e() * horizontal.getInput()/100;
+                mc.thePlayer.motionX += s27PacketExplosion.func_149149_c() * horizontal.getInput() / 100.0;
+                mc.thePlayer.motionY += s27PacketExplosion.func_149144_d() * vertical.getInput() / 100.0;
+                mc.thePlayer.motionZ += s27PacketExplosion.func_149147_e() * horizontal.getInput() / 100.0;
             }
             e.setCanceled(true);
         }
@@ -116,7 +114,7 @@ public class AntiKnockback extends Module {
 
     @Override
     public String getInfo() {
-        return (horizontal.getInput() == 100 ? "" : (int) horizontal.getInput() + "h") + (horizontal.getInput() != 100 && vertical.getInput() != 100 ? " " : "") + (vertical.getInput() == 100 ? "" : (int) vertical.getInput() + "v");
+        return (int) horizontal.getInput() + "%" + " " + (int) vertical.getInput() + "%";
     }
 
     @Override

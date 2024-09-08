@@ -51,7 +51,6 @@ public class ScriptDefaults {
     private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 
     public static class client {
-        public static final String colorSymbol = "§";
         public static boolean allowFlying() {
             return mc.thePlayer.capabilities.allowFlying;
         }
@@ -66,10 +65,6 @@ public class ScriptDefaults {
 
         public static void async(Runnable method) {
             executor.execute(method);
-        }
-
-        public static int getSlot() {
-            return mc.thePlayer.inventory.currentItem;
         }
 
         public static int getFPS() {
@@ -91,10 +86,6 @@ public class ScriptDefaults {
 
         public static boolean isHoldingWeapon() {
             return Utils.holdingWeapon();
-        }
-
-        public static boolean isHoldingBlock() {
-            return mc.thePlayer.getHeldItem() != null && mc.thePlayer.getHeldItem().getItem() instanceof ItemBlock;
         }
 
         public static void setTimer(float timer) {
@@ -646,6 +637,10 @@ public class ScriptDefaults {
             RenderUtils.renderBlock(new BlockPos(position.x, position.y, position.z), color, outline, shade);
         }
 
+        public static void entityGui(Entity en, int x, int y, float mouseX, float mouseY, int scale) {
+            GuiInventory.drawEntityOnScreen(x, y, scale, mouseX, mouseY, (EntityLivingBase) en.entity);
+        }
+
         public static void text(String text, float x, float y, int color, boolean shadow) {
             mc.fontRendererObj.drawString(text, x, y, color, shadow);
         }
@@ -744,6 +739,10 @@ public class ScriptDefaults {
     }
 
     public static class inventory {
+
+        public static int getSlot() {
+            return mc.thePlayer.inventory.currentItem;
+        }
 
         public static void setSlot(int slot) {
             mc.thePlayer.inventory.currentItem = slot;
@@ -896,6 +895,8 @@ public class ScriptDefaults {
     }
 
     public static class util {
+        public static final String colorSymbol = "§";
+
         public static String color(String message) {
             return Utils.formatColor(message);
         }

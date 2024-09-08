@@ -83,6 +83,7 @@ public class ModuleManager {
         this.addModule(new Velocity());
         this.addModule(bHop = new BHop());
         this.addModule(invManager = new InvManager());
+        this.addModule(new ChatBypass());
         this.addModule(scaffold = new Scaffold());
         this.addModule(new AutoRequeue());
         this.addModule(new AntiAFK());

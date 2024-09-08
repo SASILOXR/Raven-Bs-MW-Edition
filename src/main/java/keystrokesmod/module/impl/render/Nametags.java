@@ -29,6 +29,7 @@ public class Nametags extends Module {
     private SliderSetting scale;
     private ButtonSetting autoScale;
     private ButtonSetting drawBackground;
+    private ButtonSetting onlyRenderName;
     private ButtonSetting dropShadow;
     private ButtonSetting showDistance;
     private ButtonSetting showHealth;
@@ -50,6 +51,7 @@ public class Nametags extends Module {
         this.registerSetting(scale = new SliderSetting("Scale", 1.0, 0.5, 5.0, 0.1));
         this.registerSetting(autoScale = new ButtonSetting("Auto-scale", true));
         this.registerSetting(drawBackground = new ButtonSetting("Draw background", true));
+        this.registerSetting(onlyRenderName = new ButtonSetting("Only render name", false));
         this.registerSetting(renderSelf = new ButtonSetting("Render self", false));
         this.registerSetting(dropShadow = new ButtonSetting("Drop shadow", true));
         this.registerSetting(showDistance = new ButtonSetting("Show distance", false));
@@ -72,6 +74,9 @@ public class Nametags extends Module {
         if (ev.type != RenderGameOverlayEvent.ElementType.ALL) {
             return;
         }
+        if (removeTags.isToggled()) {
+            return;
+        }
         GlStateManager.pushMatrix();
         ScaledResolution scaledRes = new ScaledResolution(mc);
         double twoDScale = scaledRes.getScaleFactor() / Math.pow(scaledRes.getScaleFactor(), 2.0D);
@@ -79,7 +84,7 @@ public class Nametags extends Module {
         for (EntityPlayer entityPlayer : entityPositions.keySet()) {
             GlStateManager.pushMatrix();
             String name;
-            if (removeTags.isToggled()) {
+            if (onlyRenderName.isToggled()) {
                 name = entityPlayer.getName();
             }
             else {
@@ -173,6 +178,9 @@ public class Nametags extends Module {
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent renderWorldLastEvent) {
         if (!Utils.nullCheck()) {
+            return;
+        }
+        if (removeTags.isToggled()) {
             return;
         }
         updatePositions();

@@ -92,7 +92,8 @@ public class Raven {
                 for (Module module : getModuleManager().getModules()) {
                     if (mc.currentScreen == null && module.canBeEnabled()) {
                         module.keybind();
-                    } else if (mc.currentScreen instanceof ClickGui) {
+                    }
+                    else if (mc.currentScreen instanceof ClickGui) {
                         module.guiUpdate();
                     }
 
@@ -100,13 +101,11 @@ public class Raven {
                         module.onUpdate();
                     }
                 }
-                for (Profile profile : Raven.profileManager.profiles) {
-                    if (mc.currentScreen == null) {
+                if (mc.currentScreen == null) {
+                    for (Profile profile : Raven.profileManager.profiles) {
                         profile.getModule().keybind();
                     }
-                }
-                for (Module module : Raven.scriptManager.scripts.values()) {
-                    if (mc.currentScreen == null) {
+                    for (Module module : Raven.scriptManager.scripts.values()) {
                         module.keybind();
                     }
                 }

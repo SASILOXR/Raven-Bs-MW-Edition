@@ -5,6 +5,7 @@ import keystrokesmod.Raven;
 import keystrokesmod.clickgui.components.impl.CategoryComponent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.movement.Sprint;
 import keystrokesmod.module.impl.render.HUD;
 import keystrokesmod.module.impl.render.TargetHUD;
 import keystrokesmod.module.setting.Setting;
@@ -79,12 +80,17 @@ public class ProfileManager {
             moduleInformation.addProperty("keybind", module.getKeycode());
         }
         if (module instanceof HUD) {
-            moduleInformation.addProperty("posX", HUD.hudX);
-            moduleInformation.addProperty("posY", HUD.hudY);
+            moduleInformation.addProperty("posX", HUD.posX);
+            moduleInformation.addProperty("posY", HUD.posY);
         }
         else if (module instanceof TargetHUD) {
-            moduleInformation.addProperty("posX", ModuleManager.targetHUD.xPos);
-            moduleInformation.addProperty("posY", ModuleManager.targetHUD.xPos);
+            moduleInformation.addProperty("posX", ModuleManager.targetHUD.posX);
+            moduleInformation.addProperty("posY", ModuleManager.targetHUD.posY);
+        }
+        else if (module instanceof Sprint) {
+            moduleInformation.addProperty("posX", ModuleManager.sprint.posX);
+            moduleInformation.addProperty("posY", ModuleManager.sprint.posY);
+            moduleInformation.addProperty("text", ModuleManager.sprint.text);
         }
         for (Setting setting : module.getSettings()) {
             if (setting instanceof ButtonSetting && !((ButtonSetting) setting).isMethodButton) {
@@ -175,21 +181,35 @@ public class ProfileManager {
                     if (module.getName().equals("HUD")) {
                         if (moduleInformation.has("posX")) {
                             int hudX = moduleInformation.get("posX").getAsInt();
-                            HUD.hudX = hudX;
+                            HUD.posX = hudX;
                         }
                         if (moduleInformation.has("posY")) {
                             int hudY = moduleInformation.get("posY").getAsInt();
-                            HUD.hudY = hudY;
+                            HUD.posY = hudY;
                         }
                     }
                     else if (module.getName().equals("TargetHUD")) {
                         if (moduleInformation.has("posX")) {
                             int posX = moduleInformation.get("posX").getAsInt();
-                            ModuleManager.targetHUD.xPos = posX;
+                            ModuleManager.targetHUD.posX = posX;
                         }
                         if (moduleInformation.has("posY")) {
                             int posY = moduleInformation.get("posY").getAsInt();
-                            ModuleManager.targetHUD.yPos = posY;
+                            ModuleManager.targetHUD.posY = posY;
+                        }
+                    }
+                    else if (module.getName().equals("Sprint")) {
+                        if (moduleInformation.has("posX")) {
+                            float posX = moduleInformation.get("posX").getAsFloat();
+                            ModuleManager.sprint.posX = posX;
+                        }
+                        if (moduleInformation.has("posY")) {
+                            float posY = moduleInformation.get("posY").getAsFloat();
+                            ModuleManager.sprint.posY = posY;
+                        }
+                        if (moduleInformation.has("text")) {
+                            String text = moduleInformation.get("text").getAsString();
+                            ModuleManager.sprint.text = text;
                         }
                     }
 

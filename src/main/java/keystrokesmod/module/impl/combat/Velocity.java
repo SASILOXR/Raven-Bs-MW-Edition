@@ -29,7 +29,7 @@ public class Velocity extends Module {
 
     @Override
     public String getInfo() {
-        return (horizontal.getInput() == 100 ? "" : (int) horizontal.getInput() + "h") + (horizontal.getInput() != 100 && vertical.getInput() != 100 ? " " : "") + (vertical.getInput() == 100 ? "" : (int) vertical.getInput() + "v");
+        return (int) horizontal.getInput() + "%" + " " + (int) vertical.getInput() + "%";
     }
 
     @Override

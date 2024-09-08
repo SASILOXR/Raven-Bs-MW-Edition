@@ -16,6 +16,11 @@ public class Timer extends Module {
         this.registerSetting(strafeOnly = new ButtonSetting("Strafe only", false));
     }
 
+    @Override
+    public String getInfo() {
+        return Utils.isWholeNumber(speed.getInput()) ? (int) speed.getInput() + "" : speed.getInput() + "";
+    }
+
     public void onUpdate() {
         if (!(mc.currentScreen instanceof ClickGui)) {
             if (strafeOnly.isToggled() && mc.thePlayer.moveStrafing == 0) {
@@ -27,7 +32,6 @@ public class Timer extends Module {
         else {
             Utils.resetTimer();
         }
-
     }
 
     public void onDisable() {

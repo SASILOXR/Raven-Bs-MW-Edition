@@ -17,6 +17,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.inventory.*;
 import net.minecraft.item.ItemFood;
+import net.minecraft.network.play.client.C01PacketChatMessage;
 import net.minecraft.network.play.client.C02PacketUseEntity;
 import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
@@ -61,6 +62,7 @@ public class Reflection {
     public static Field thirdPersonDistance;
     public static Field alwaysEdible;
     public static Field mcGuiInGame;
+    public static Field C01PacketChatMessageMessage;
     public static HashMap<Class, Field> containerInventoryPlayer = new HashMap<>();
     private static List<Class> containerClasses = Arrays.asList(GuiFurnace.class, GuiBrewingStand.class, GuiEnchantment.class, ContainerHopper.class, GuiDispenser.class, ContainerWorkbench.class, ContainerMerchant.class, ContainerHorseInventory.class);
     public static boolean sendMessage = false;
@@ -88,6 +90,12 @@ public class Reflection {
 
             if (rightClickDelayTimerField != null) {
                 rightClickDelayTimerField.setAccessible(true);
+            }
+
+            C01PacketChatMessageMessage = ReflectionHelper.findField(C01PacketChatMessage.class, "field_149440_a", "message");
+
+            if (C01PacketChatMessageMessage != null) {
+                C01PacketChatMessageMessage.setAccessible(true);
             }
 
             curBlockDamageMP = ReflectionHelper.findField(PlayerControllerMP.class, "field_78770_f", "curBlockDamageMP"); // fastmine and mining related stuff

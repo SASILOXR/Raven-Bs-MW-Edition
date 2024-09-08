@@ -29,23 +29,24 @@ public class InvMove extends Module {
     private ButtonSetting modifyMotionPost;
     private ButtonSetting slowWhenNecessary;
     private ButtonSetting allowJumping;
+    private ButtonSetting allowSprinting;
     public ButtonSetting invManagerOnly;
     private ButtonSetting allowRotating;
     public int ticks;
     public boolean setMotion;
-    //private String[] inventoryModes = new String[] { "Disabled", "Vanilla", "Blink", "Close" };
-    private String[] chestAndOtherModes = new String[] { "Disabled", "Vanilla", "Blink" };
+    private String[] modes = new String[] { "Disabled", "Vanilla", "Blink" };
     private ConcurrentLinkedQueue<Packet> blinkedPackets = new ConcurrentLinkedQueue<>();
 
     public InvMove() {
         super("InvMove", Module.category.movement);
-        this.registerSetting(inventory = new SliderSetting("Inventory", 1, chestAndOtherModes));
-        this.registerSetting(chestAndOthers = new SliderSetting("Chest & others", 1, chestAndOtherModes));
+        this.registerSetting(inventory = new SliderSetting("Inventory", 1, modes));
+        this.registerSetting(chestAndOthers = new SliderSetting("Chest & others", 1, modes));
         this.registerSetting(motion = new SliderSetting("Motion", "x", 1, 0.05, 1, 0.01));
         this.registerSetting(modifyMotionPost = new ButtonSetting("Modify motion after click", false));
         this.registerSetting(slowWhenNecessary = new ButtonSetting("Slow motion when necessary", false));
         this.registerSetting(allowJumping = new ButtonSetting("Allow jumping", true));
-        this.registerSetting(allowRotating = new ButtonSetting("Allow rotating", false));
+        this.registerSetting(allowRotating = new ButtonSetting("Allow rotating", true));
+        this.registerSetting(allowSprinting = new ButtonSetting("Allow sprinting", true));
         this.registerSetting(invManagerOnly = new ButtonSetting("Only with inventory manager", false));
     }
 
@@ -102,8 +103,11 @@ public class InvMove extends Module {
         KeyBinding.setKeyBindState(mc.gameSettings.keyBindJump.getKeyCode(), Utils.jumpDown());
         KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()));
         boolean foodLvlMet = (float)mc.thePlayer.getFoodStats().getFoodLevel() > 6.0F || mc.thePlayer.capabilities.allowFlying; // from mc
-        if ((Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()) || ModuleManager.sprint.isEnabled()) && mc.thePlayer.movementInput.moveForward >= 0.8F && foodLvlMet && !mc.thePlayer.isSprinting()) {
+        if (((Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()) || ModuleManager.sprint.isEnabled()) && mc.thePlayer.movementInput.moveForward >= 0.8F && foodLvlMet && !mc.thePlayer.isSprinting()) && allowSprinting.isToggled()) {
             mc.thePlayer.setSprinting(true);
+        }
+        if (!allowSprinting.isToggled()) {
+            mc.thePlayer.setSprinting(false);
         }
         if (allowRotating.isToggled()) {
             if (Keyboard.isKeyDown(208) && mc.thePlayer.rotationPitch < 90.0F) {
@@ -171,7 +175,7 @@ public class InvMove extends Module {
         if (mc.currentScreen == null) {
             return false;
         }
-        else if ((mc.currentScreen instanceof GuiInventory && inventory.getInput() == 2)) {
+        else if (mc.currentScreen instanceof GuiInventory && inventory.getInput() == 2) {
             return true;
         }
         else if (chestAndOthers.getInput() == 2 && !(mc.currentScreen instanceof ClickGui) && !(mc.currentScreen instanceof GuiChat)) {

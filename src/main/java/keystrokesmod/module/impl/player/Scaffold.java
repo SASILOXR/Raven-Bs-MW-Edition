@@ -36,6 +36,7 @@ public class Scaffold extends Module {
     private SliderSetting motion;
     private SliderSetting rotation;
     private SliderSetting fastScaffold;
+    private SliderSetting fastScaffoldMotion;
     private SliderSetting precision;
     private SliderSetting multiPlace;
     public ButtonSetting autoSwap;
@@ -78,9 +79,10 @@ public class Scaffold extends Module {
         this.registerSetting(motion = new SliderSetting("Motion", "x", 1.0, 0.5, 1.2, 0.01));
         this.registerSetting(rotation = new SliderSetting("Rotation", 1, rotationModes));
         this.registerSetting(fastScaffold = new SliderSetting("Fast scaffold", 0, fastScaffoldModes));
+        this.registerSetting(fastScaffoldMotion = new SliderSetting("Fast scaffold motion", "x", 1.0, 0.5, 1.2, 0.01));
         this.registerSetting(precision = new SliderSetting("Precision", 4, precisionModes));
         this.registerSetting(multiPlace = new SliderSetting("Multi-place", 0, multiPlaceModes));
-        this.registerSetting(autoSwap = new ButtonSetting("AutoSwap", true));
+        this.registerSetting(autoSwap = new ButtonSetting("Auto swap", true));
         this.registerSetting(cancelKnockBack = new ButtonSetting("Cancel knockback", false));
         this.registerSetting(delayOnJump = new ButtonSetting("Delay on jump", true));
         this.registerSetting(fastOnRMB = new ButtonSetting("Fast on RMB", false));
@@ -149,7 +151,7 @@ public class Scaffold extends Module {
 
     @SubscribeEvent
     public void onPreUpdate(PreUpdateEvent e) {
-        if (autoSwap.isToggled() && ModuleManager.autoSwap.spoofItem.isToggled() && lastSlot.get() != mc.thePlayer.inventory.currentItem) {
+        if (autoSwap.isToggled() && ModuleManager.autoSwap.spoofItem.isToggled() && lastSlot.get() != mc.thePlayer.inventory.currentItem && totalBlocks() > 0) {
             ((IMixinItemRenderer) mc.getItemRenderer()).setCancelUpdate(true);
             ((IMixinItemRenderer) mc.getItemRenderer()).setCancelReset(true);
         }
@@ -159,7 +161,7 @@ public class Scaffold extends Module {
         }
         ItemStack heldItem = mc.thePlayer.getHeldItem();
         if (!autoSwap.isToggled() || getSlot() == -1) {
-            if (heldItem == null || !(heldItem.getItem() instanceof ItemBlock)) {
+            if (heldItem == null || !(heldItem.getItem() instanceof ItemBlock) || !Utils.canBePlaced((ItemBlock) heldItem.getItem())) {
                 return;
             }
         }
@@ -192,7 +194,7 @@ public class Scaffold extends Module {
                 original++;
             }
         }
-        double motionSetting = motion.getInput();
+        double motionSetting = sprint() ? fastScaffoldMotion.getInput() : motion.getInput();
         if (mc.thePlayer.onGround && Utils.isMoving() && motionSetting != 1) {
             final int speedAmplifier = Utils.getSpeedAmplifier();
             switch (speedAmplifier) {
@@ -255,7 +257,7 @@ public class Scaffold extends Module {
         double closestCombinedDistance = Double.MAX_VALUE;
         double offsetWeight = 0.2D;
         for (int i = 0; i < 2; i++) {
-            if (i == 1 && rayCasted == null && (Utils.overPlaceable(-1) || keepYPosition())) {
+            if (i == 1 && rayCasted == null && (Utils.overPlaceable(-1) || keepYPosition()) && precision.getInput() != 4) {
                 searchYaw = 180;
                 searchPitch = new float[]{65, 25};
             }
@@ -555,7 +557,7 @@ public class Scaffold extends Module {
 
     private void place(MovingObjectPosition block, boolean extra) {
         ItemStack heldItem = mc.thePlayer.getHeldItem();
-        if (heldItem == null || !(heldItem.getItem() instanceof ItemBlock)) {
+        if (heldItem == null || !(heldItem.getItem() instanceof ItemBlock) || !Utils.canBePlaced((ItemBlock) heldItem.getItem())) {
             return;
         }
         if (!extra && mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, heldItem, block.getBlockPos(), block.sideHit, block.hitVec)) {
@@ -603,8 +605,8 @@ public class Scaffold extends Module {
                 if (itemStack != null && heldItem != null && (heldItem.getItem() instanceof ItemBlock) && Utils.canBePlaced((ItemBlock) heldItem.getItem()) && ModuleManager.autoSwap.sameType.isToggled() && !(itemStack.getItem().getClass().equals(heldItem.getItem().getClass()))) {
                     continue;
                 }
-                if (mc.thePlayer.inventory.mainInventory[i].stackSize > highestStack) {
-                    highestStack = mc.thePlayer.inventory.mainInventory[i].stackSize;
+                if (itemStack.stackSize > highestStack) {
+                    highestStack = itemStack.stackSize;
                     slot = i;
                 }
             }
