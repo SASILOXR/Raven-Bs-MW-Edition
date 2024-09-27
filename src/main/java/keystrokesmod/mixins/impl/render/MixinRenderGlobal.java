@@ -18,11 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(RenderGlobal.class)
-<<<<<<< HEAD
 public class MixinRenderGlobal { // credit: pablolnmak
-=======
-public class MixinRenderGlobal {
->>>>>>> Raven/master
     @Shadow
     @Final
     private Minecraft mc;
@@ -85,8 +81,4 @@ public class MixinRenderGlobal {
             }
         }
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> Raven/master
