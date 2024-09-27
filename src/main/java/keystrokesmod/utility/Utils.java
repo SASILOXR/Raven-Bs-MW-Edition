@@ -905,8 +905,8 @@ public class Utils {
         if (ModuleManager.scaffold.isEnabled() && ModuleManager.scaffold.autoSwap.isToggled() && ModuleManager.autoSwap.spoofItem.isToggled()) {
             return mc.thePlayer.inventory.getStackInSlot(ModuleManager.scaffold.lastSlot.get() == -1 ? mc.thePlayer.inventory.currentItem : ModuleManager.scaffold.lastSlot.get());
         }
-        if (ModuleManager.autoTool.isEnabled() && ModuleManager.autoTool.toolSlot != -1 && ModuleManager.autoTool.previousSlot != -1 && ModuleManager.autoTool.spoofItem.isToggled()) {
-            return mc.thePlayer.inventory.getStackInSlot(ModuleManager.autoTool.previousSlot);
+        if (ModuleManager.autoTool.isEnabled() && ModuleManager.autoTool.spoofItem.isToggled()) {
+            return mc.thePlayer.inventory.getStackInSlot(ModuleManager.autoTool.previousSlot == -1 ? mc.thePlayer.inventory.currentItem : ModuleManager.autoTool.previousSlot);
         }
         return original;
     }
@@ -920,6 +920,24 @@ public class Utils {
                     return true;
                 }
             }
+        }
+        return false;
+    }
+
+    public static boolean isBedwarsPractice() {
+        if (Utils.isHypixel()) {
+            if (!Utils.nullCheck()) {
+                return false;
+            }
+            final Scoreboard scoreboard = mc.theWorld.getScoreboard();
+            if (scoreboard == null) {
+                return false;
+            }
+            final ScoreObjective objective = scoreboard.getObjectiveInDisplaySlot(1);
+            if (objective == null || !stripString(objective.getDisplayName()).contains("BED WARS PRACTICE")) {
+                return false;
+            }
+            return true;
         }
         return false;
     }

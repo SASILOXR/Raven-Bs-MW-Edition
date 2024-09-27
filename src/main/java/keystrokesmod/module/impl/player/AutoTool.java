@@ -20,7 +20,6 @@ public class AutoTool extends Module {
     public int previousSlot = -1;
     private int ticksHovered;
     private BlockPos currentBlock;
-    public int toolSlot = -1;
     public AutoTool() {
         super("AutoTool", category.player);
         this.registerSetting(hoverDelay = new SliderSetting("Hover delay", 0.0, 0.0, 20.0, 1.0));
@@ -44,7 +43,10 @@ public class AutoTool extends Module {
     }
 
     public void onUpdate() {
-        toolSlot = -1;
+        if (spoofItem.isToggled() && previousSlot != mc.thePlayer.inventory.currentItem && previousSlot != -1) {
+            ((IMixinItemRenderer) mc.getItemRenderer()).setCancelUpdate(true);
+            ((IMixinItemRenderer) mc.getItemRenderer()).setCancelReset(true);
+        }
         if (!mc.inGameHasFocus || mc.currentScreen != null || (rightDisable.isToggled() && Mouse.isButtonDown(1)) || !mc.thePlayer.capabilities.allowEdit || (requireCrouch.isToggled() && !mc.thePlayer.isSneaking())) {
             resetVariables();
             return;
@@ -71,15 +73,10 @@ public class AutoTool extends Module {
             if (slot == -1) {
                 return;
             }
-            if (spoofItem.isToggled() && mc.thePlayer.inventory.currentItem != slot) {
-                ((IMixinItemRenderer) mc.getItemRenderer()).setCancelUpdate(true);
-                ((IMixinItemRenderer) mc.getItemRenderer()).setCancelReset(true);
-            }
             if (previousSlot == -1) {
                 previousSlot = mc.thePlayer.inventory.currentItem;
             }
             setSlot(slot);
-            toolSlot = slot;
         }
     }
 
@@ -87,15 +84,10 @@ public class AutoTool extends Module {
         ticksHovered = 0;
         resetSlot();
         previousSlot = -1;
-        toolSlot = -1;
     }
 
     private void resetSlot() {
         if (previousSlot == -1 || !swap.isToggled()) {
-            return;
-        }
-        if (mc.thePlayer.inventory.currentItem != toolSlot && toolSlot != -1) {
-            previousSlot = -1;
             return;
         }
         setSlot(previousSlot);

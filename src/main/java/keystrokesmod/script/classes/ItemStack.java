@@ -37,8 +37,8 @@ public class ItemStack {
     }
 
     public List<String> getToolTip() {
-        if (this.itemStack == null || Minecraft.getMinecraft().thePlayer == null) {
-            return null;
+        if (this.itemStack == null) {
+            return new ArrayList<>();
         }
         return this.itemStack.getTooltip(Minecraft.getMinecraft().thePlayer, false);
     }

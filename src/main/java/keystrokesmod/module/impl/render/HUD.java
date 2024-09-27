@@ -2,6 +2,7 @@ package keystrokesmod.module.impl.render;
 
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.combat.AntiKnockback;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -105,6 +106,9 @@ public class HUD extends Module {
                         continue;
                     }
                     String moduleName = module.getName();
+                    if (module instanceof AntiKnockback) {
+                        moduleName = "Velocity";
+                    }
                     if (showInfo.isToggled() && !module.getInfo().isEmpty()) {
                         moduleName += " §7" + module.getInfo();
                     }

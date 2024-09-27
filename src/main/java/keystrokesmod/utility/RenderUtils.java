@@ -22,6 +22,9 @@ import org.lwjgl.util.glu.GLU;
 import java.awt.*;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.lwjgl.opengl.GL11.*;
 
 public class RenderUtils {
@@ -460,6 +463,29 @@ public class RenderUtils {
             }
         }
 
+    }
+
+    public static void d2p(double x, double y, int radius, int sides, int color) {
+        float a = (float) (color >> 24 & 255) / 255.0F;
+        float r = (float) (color >> 16 & 255) / 255.0F;
+        float g = (float) (color >> 8 & 255) / 255.0F;
+        float b = (float) (color & 255) / 255.0F;
+        Tessellator tessellator = Tessellator.getInstance();
+        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GlStateManager.color(r, g, b, a);
+        worldrenderer.begin(6, DefaultVertexFormats.POSITION);
+
+        for (int i = 0; i < sides; ++i) {
+            double angle = 6.283185307179586D * (double) i / (double) sides + Math.toRadians(180.0D);
+            worldrenderer.pos(x + Math.sin(angle) * (double) radius, y + Math.cos(angle) * (double) radius, 0.0D).endVertex();
+        }
+
+        tessellator.draw();
+        GlStateManager.enableTexture2D();
+        GlStateManager.disableBlend();
     }
 
     public static void d3p(double x, double y, double z, double radius, int sides, float lineWidth, int color, boolean chroma) {

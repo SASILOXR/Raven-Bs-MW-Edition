@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.Raven;
 import keystrokesmod.event.JumpEvent;
 import keystrokesmod.event.PreMotionEvent;
 import keystrokesmod.event.PreUpdateEvent;
@@ -43,8 +44,10 @@ public class Scaffold extends Module {
     private ButtonSetting cancelKnockBack;
     private ButtonSetting fastOnRMB;
     private ButtonSetting highlightBlocks;
+    private ButtonSetting jumpFacingForward;
     public ButtonSetting safeWalk;
     public ButtonSetting showBlockCount;
+    private ButtonSetting slowOnEnable;
     private ButtonSetting delayOnJump;
     private ButtonSetting silentSwing;
     public ButtonSetting tower;
@@ -87,9 +90,11 @@ public class Scaffold extends Module {
         this.registerSetting(delayOnJump = new ButtonSetting("Delay on jump", true));
         this.registerSetting(fastOnRMB = new ButtonSetting("Fast on RMB", false));
         this.registerSetting(highlightBlocks = new ButtonSetting("Highlight blocks", true));
+        this.registerSetting(jumpFacingForward = new ButtonSetting("Jump facing forward", false));
         this.registerSetting(safeWalk = new ButtonSetting("Safewalk", true));
         this.registerSetting(showBlockCount = new ButtonSetting("Show block count", true));
         this.registerSetting(silentSwing = new ButtonSetting("Silent swing", false));
+        this.registerSetting(slowOnEnable = new ButtonSetting("Slow on enable", false));
         this.registerSetting(tower = new ButtonSetting("Tower", false));
     }
 
@@ -124,6 +129,9 @@ public class Scaffold extends Module {
         placePitch = 85;
         previousRotation = null;
         placeYaw = 2000;
+        if (slowOnEnable.isToggled()) {
+            Utils.setSpeed(0.0);
+        }
     }
 
     @SubscribeEvent
@@ -131,15 +139,21 @@ public class Scaffold extends Module {
         if (!Utils.nullCheck()) {
             return;
         }
-        if (rotation.getInput() > 0) {
-            if (((rotation.getInput() == 2 && forceStrict) || rotation.getInput() == 3) && placeYaw != 2000) {
-                event.setYaw(placeYaw);
-                event.setPitch(placePitch);
+
+        int rotationInput = (int) rotation.getInput();
+        if (rotationInput > 0) {
+            boolean usePlaceYaw = ((rotationInput == 2 && forceStrict) || rotationInput == 3) && placeYaw != 2000;
+            float yaw = usePlaceYaw ? placeYaw : getYaw();
+            float pitch = usePlaceYaw ? placePitch : 85;
+
+            if (jumpFacingForward.isToggled() && mc.thePlayer.onGround && keepYPosition()) {
+                yaw = mc.thePlayer.rotationYaw;
+                pitch = (float) (0 + getRandom());
+                delay = true;
             }
-            else {
-                event.setYaw(getYaw());
-                event.setPitch(85);
-            }
+
+            event.setYaw(yaw);
+            event.setPitch(pitch);
         }
         place = true;
     }
@@ -154,10 +168,6 @@ public class Scaffold extends Module {
         if (autoSwap.isToggled() && ModuleManager.autoSwap.spoofItem.isToggled() && lastSlot.get() != mc.thePlayer.inventory.currentItem && totalBlocks() > 0) {
             ((IMixinItemRenderer) mc.getItemRenderer()).setCancelUpdate(true);
             ((IMixinItemRenderer) mc.getItemRenderer()).setCancelReset(true);
-        }
-        if (delay && delayOnJump.isToggled()) {
-            delay = false;
-            return;
         }
         ItemStack heldItem = mc.thePlayer.getHeldItem();
         if (!autoSwap.isToggled() || getSlot() == -1) {
@@ -225,16 +235,20 @@ public class Scaffold extends Module {
             blockSlot = -1;
             return;
         }
+        if (delay && (delayOnJump.isToggled() || jumpFacingForward.isToggled())) {
+            delay = false;
+            return;
+        }
+
         MovingObjectPosition rayCasted = null;
-        float searchYaw = 35;
-        switch ((int) precision.getInput()) {
+        int precisionInput = (int) precision.getInput();
+        float searchYaw;
+        switch (precisionInput) {
             case 4:
                 searchYaw = 90;
                 break;
             case 3:
                 searchYaw = 65;
-                break;
-            case 2:
                 break;
             case 1:
                 searchYaw = 20;
@@ -242,71 +256,87 @@ public class Scaffold extends Module {
             case 0:
                 searchYaw = 6;
                 break;
+            case 2:
+            default:
+                searchYaw = 35;
+                break;
         }
 
-        BlockPos targetPos = new BlockPos(mc.thePlayer.posX, keepYPosition() ? original - 1 : mc.thePlayer.posY - 1, mc.thePlayer.posZ);
-        PlaceData placeData = getBlockData(targetPos);
+        double playerY = mc.thePlayer.posY;
+        double targetY = keepYPosition() ? original - 1 : playerY - 1;
+        BlockPos targetPos = new BlockPos(mc.thePlayer.posX, targetY, mc.thePlayer.posZ);
 
+        PlaceData placeData = getBlockData(targetPos);
         if (placeData == null || placeData.blockPos == null || placeData.enumFacing == null) {
             return;
         }
 
         float[] targetRotation = RotationUtils.getRotations(placeData.blockPos);
         Vec3 bestVec = getVec3(placeData.enumFacing);
-        float searchPitch[] = new float[]{78, 12};
+        float[] initialSearchPitch = {78, 12};
+        float[] searchPitch = initialSearchPitch.clone();
+        final double OFFSET_WEIGHT = 0.2D;
         double closestCombinedDistance = Double.MAX_VALUE;
-        double offsetWeight = 0.2D;
+
+        float playerYaw = getYaw();
+        float previousRotationYaw = (previousRotation != null) ? previousRotation[0] : 0f;
+
         for (int i = 0; i < 2; i++) {
-            if (i == 1 && rayCasted == null && (Utils.overPlaceable(-1) || keepYPosition()) && precision.getInput() != 4) {
-                searchYaw = 180;
-                searchPitch = new float[]{65, 25};
+            if (i == 1) {
+                if (rayCasted == null && (Utils.overPlaceable(-1) || keepYPosition()) && precisionInput != 4) {
+                    searchYaw = 180;
+                    searchPitch = new float[]{65, 25};
+                }
+                else {
+                    break;
+                }
             }
-            else if (i == 1) {
-                break;
-            }
+
             float[] yawSearchList = generateSearchSequence(searchYaw);
             float[] pitchSearchList = generateSearchSequence(searchPitch[1]);
+
             for (float checkYaw : yawSearchList) {
-                float playerYaw = getYaw();
                 float fixedYaw = (float) (playerYaw + checkYaw + getRandom());
+
                 if (!Utils.overPlaceable(-1) && !keepYPosition()) {
                     continue;
                 }
+
                 for (float checkPitch : pitchSearchList) {
                     float fixedPitch = RotationUtils.clampTo90((float) (targetRotation[1] + checkPitch + getRandom()));
+
                     MovingObjectPosition raycast = RotationUtils.rayCast(mc.playerController.getBlockReachDistance(), fixedYaw, fixedPitch);
-                    if (raycast != null) {
-                        if (raycast.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
-                            if (raycast.getBlockPos().equals(placeData.blockPos) && raycast.sideHit == placeData.getEnumFacing()) {
-                                if (((ItemBlock) heldItem.getItem()).canPlaceBlockOnSide(mc.theWorld, raycast.getBlockPos(), raycast.sideHit, mc.thePlayer, heldItem)) {
-                                    double offSetX = raycast.hitVec.xCoord - raycast.getBlockPos().getX();
-                                    double offSetY = raycast.hitVec.yCoord - raycast.getBlockPos().getY();
-                                    double offSetZ = raycast.hitVec.zCoord - raycast.getBlockPos().getZ();
-                                    Vec3 offset = new Vec3(offSetX, offSetY, offSetZ);
+                    if (raycast == null || raycast.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
+                        continue;
+                    }
+                    if (!raycast.getBlockPos().equals(placeData.blockPos) || raycast.sideHit != placeData.enumFacing) {
+                        continue;
+                    }
+                    if (!(heldItem.getItem() instanceof ItemBlock)) {
+                        continue;
+                    }
+                    ItemBlock itemBlock = (ItemBlock) heldItem.getItem();
+                    if (!itemBlock.canPlaceBlockOnSide(mc.theWorld, raycast.getBlockPos(), raycast.sideHit, mc.thePlayer, heldItem)) {
+                        continue;
+                    }
 
-                                    double distanceToCenter = offset.distanceTo(bestVec);
-                                    double distanceToPreviousRotation = previousRotation != null ? Math.abs(fixedYaw - previousRotation[0]) : 0;
-                                    double combinedDistance = offsetWeight * distanceToCenter + distanceToPreviousRotation / 360;
+                    Vec3 hitVec = raycast.hitVec;
+                    Vec3 offset = new Vec3(hitVec.xCoord - raycast.getBlockPos().getX(), hitVec.yCoord - raycast.getBlockPos().getY(), hitVec.zCoord - raycast.getBlockPos().getZ());
 
-                                    if (rayCasted == null || combinedDistance < closestCombinedDistance) {
-                                        closestCombinedDistance = combinedDistance;
-                                        rayCasted = raycast;
-                                        placeYaw = fixedYaw;
-                                        placePitch = fixedPitch;
+                    double distanceToCenter = offset.distanceTo(bestVec);
+                    double distanceToPreviousRotation = Math.abs(fixedYaw - previousRotationYaw);
+                    double combinedDistance = OFFSET_WEIGHT * distanceToCenter + (distanceToPreviousRotation / 360.0);
 
-                                        if ((forceStrict(checkYaw)) && i == 1) {
-                                            forceStrict = true;
-                                        }
-                                        else {
-                                            forceStrict = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    if (rayCasted == null || combinedDistance < closestCombinedDistance) {
+                        closestCombinedDistance = combinedDistance;
+                        rayCasted = raycast;
+                        placeYaw = fixedYaw;
+                        placePitch = fixedPitch;
+                        forceStrict = forceStrict(checkYaw) && i == 1;
                     }
                 }
             }
+
             if (rayCasted != null) {
                 break;
             }

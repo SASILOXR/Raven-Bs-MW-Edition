@@ -15,6 +15,7 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.*;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.MathHelper;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
@@ -77,11 +78,14 @@ public class Nametags extends Module {
         if (removeTags.isToggled()) {
             return;
         }
+
         GlStateManager.pushMatrix();
         ScaledResolution scaledRes = new ScaledResolution(mc);
         double twoDScale = scaledRes.getScaleFactor() / Math.pow(scaledRes.getScaleFactor(), 2.0D);
         GlStateManager.scale(twoDScale, twoDScale, twoDScale);
-        for (EntityPlayer entityPlayer : entityPositions.keySet()) {
+        for (Map.Entry<EntityPlayer, double[]> entry : entityPositions.entrySet()) {
+            EntityPlayer entityPlayer = entry.getKey();
+
             GlStateManager.pushMatrix();
             String name;
             if (onlyRenderName.isToggled()) {
@@ -123,7 +127,7 @@ public class Nametags extends Module {
                 String strengthInfo = "§4" + (Utils.isWholeNumber(strengthRemaining) ? (int) strengthRemaining + "" : strengthRemaining) + "s§r ";
                 name = strengthInfo + name;
             }
-            double[] renderPositions = entityPositions.get(entityPlayer);
+            double[] renderPositions = entry.getValue();
             GlStateManager.translate(renderPositions[0], renderPositions[1], 0);
             int strWidth = mc.fontRendererObj.getStringWidth(name) / 2;
             GlStateManager.color(0.0F, 0.0F, 0.0F);
@@ -169,7 +173,7 @@ public class Nametags extends Module {
             if (showArmor.isToggled()) {
                 renderArmor(entityPlayer);
             }
-            GlStateManager.color(1.0F, 1.0F, 1.0F);
+
             GlStateManager.popMatrix();
         }
         GlStateManager.popMatrix();
@@ -189,7 +193,7 @@ public class Nametags extends Module {
     @SubscribeEvent
     public void onRenderLiving(RenderLivingEvent.Specials.Pre e) {
         if (e.entity instanceof EntityPlayer && (e.entity != mc.thePlayer || renderSelf.isToggled()) && e.entity.deathTime == 0) {
-            final EntityPlayer entityPlayer = (EntityPlayer) e.entity;
+            EntityPlayer entityPlayer = (EntityPlayer) e.entity;
             if (!showInvis.isToggled() && entityPlayer.isInvisible()) {
                 return;
             }
@@ -278,123 +282,77 @@ public class Nametags extends Module {
 
     private void renderText(ItemStack stack, int xPos, int yPos) {
         int newYPos = yPos - 24;
-        int remainingDurability = stack.getMaxDamage() - stack.getItemDamage();
         if (showDurability.isToggled() && stack.getItem() instanceof ItemArmor) {
+            int remainingDurability = stack.getMaxDamage() - stack.getItemDamage();
             mc.fontRendererObj.drawString(String.valueOf(remainingDurability), (float) (xPos * 2), (float) yPos, 16777215, dropShadow.isToggled());
         }
-        if (stack.getEnchantmentTagList() != null && stack.getEnchantmentTagList().tagCount() < 6 && showEnchants.isToggled()) {
-            if (stack.getItem() instanceof ItemArmor) {
-                int protection = EnchantmentHelper.getEnchantmentLevel(Enchantment.protection.effectId, stack);
-                int projectileProtection = EnchantmentHelper.getEnchantmentLevel(Enchantment.projectileProtection.effectId, stack);
-                int blastProtectionLvL = EnchantmentHelper.getEnchantmentLevel(Enchantment.blastProtection.effectId, stack);
-                int fireProtection = EnchantmentHelper.getEnchantmentLevel(Enchantment.fireProtection.effectId, stack);
-                int thornsLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.thorns.effectId, stack);
-                int unbreakingLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.unbreaking.effectId, stack);
-
-                if (protection > 0) {
-                    mc.fontRendererObj.drawString("prot" + protection, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (projectileProtection > 0) {
-                    mc.fontRendererObj.drawString("proj" + projectileProtection, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (blastProtectionLvL > 0) {
-                    mc.fontRendererObj.drawString("bp" + blastProtectionLvL, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (fireProtection > 0) {
-                    mc.fontRendererObj.drawString("frp" + fireProtection, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (thornsLvl > 0) {
-                    mc.fontRendererObj.drawString("th" + thornsLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (unbreakingLvl > 0) {
-                    mc.fontRendererObj.drawString("ub" + unbreakingLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                }
-            }
-            else if (stack.getItem() instanceof ItemBow) {
-                int powerLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.power.effectId, stack);
-                int punchLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.punch.effectId, stack);
-                int flameLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.flame.effectId, stack);
-                int unbreakingLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.unbreaking.effectId, stack);
-                if (powerLvl > 0) {
-                    mc.fontRendererObj.drawString("pow" + powerLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (punchLvl > 0) {
-                    mc.fontRendererObj.drawString("pun" + punchLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (flameLvl > 0) {
-                    mc.fontRendererObj.drawString("flame" + flameLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (unbreakingLvl > 0) {
-                    mc.fontRendererObj.drawString("ub" + unbreakingLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                }
-            }
-            else if (stack.getItem() instanceof ItemSword) {
-                int sharpnessLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.sharpness.effectId, stack);
-                int knockbackLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.knockback.effectId, stack);
-                int fireAspectLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.fireAspect.effectId, stack);
-                int unbreakingLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.unbreaking.effectId, stack);
-                if (sharpnessLvl > 0) {
-                    mc.fontRendererObj.drawString("sh" + sharpnessLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (knockbackLvl > 0) {
-                    mc.fontRendererObj.drawString("kb" + knockbackLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (fireAspectLvl > 0) {
-                    mc.fontRendererObj.drawString("fire" + fireAspectLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (unbreakingLvl > 0) {
-                    mc.fontRendererObj.drawString("ub" + unbreakingLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                }
-            }
-            else if (stack.getItem() instanceof ItemTool) {
-                int unbreakingLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.unbreaking.effectId, stack);
-                int efficiencyLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.efficiency.effectId, stack);
-                int fortuneLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.fortune.effectId, stack);
-                int silkTouchLvl = EnchantmentHelper.getEnchantmentLevel(Enchantment.silkTouch.effectId, stack);
-                if (efficiencyLvl > 0) {
-                    mc.fontRendererObj.drawString("eff" + efficiencyLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (fortuneLvl > 0) {
-                    mc.fontRendererObj.drawString("fo" + fortuneLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (silkTouchLvl > 0) {
-                    mc.fontRendererObj.drawString("silk" + silkTouchLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
-                    newYPos += 8;
-                }
-
-                if (unbreakingLvl > 0) {
-                    mc.fontRendererObj.drawString("ub" + unbreakingLvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
+        if (showEnchants.isToggled() && stack.getEnchantmentTagList() != null && stack.getEnchantmentTagList().tagCount() < 6) {
+            if (stack.getItem() instanceof ItemTool || stack.getItem() instanceof ItemSword || stack.getItem() instanceof ItemBow || stack.getItem() instanceof ItemArmor) {
+                NBTTagList nbttaglist = stack.getEnchantmentTagList();
+                for(int i = 0; i < nbttaglist.tagCount(); ++i) {
+                    int id = nbttaglist.getCompoundTagAt(i).getShort("id");
+                    int lvl = nbttaglist.getCompoundTagAt(i).getShort("lvl");
+                    if (lvl > 0) {
+                        String abbreviated = getEnchantmentAbbreviated(id);
+                        mc.fontRendererObj.drawString(abbreviated + lvl, (float) (xPos * 2), (float) newYPos, -1, dropShadow.isToggled());
+                        newYPos += 8;
+                    }
                 }
             }
         }
         if (showStackSize.isToggled() && !(stack.getItem() instanceof ItemSword) && !(stack.getItem() instanceof ItemBow) && !(stack.getItem() instanceof ItemTool) && !(stack.getItem() instanceof ItemArmor)) {
             mc.fontRendererObj.drawString(stack.stackSize + "x", (float) (xPos * 2), (float) yPos, -1, dropShadow.isToggled());
+        }
+    }
+
+    private String getEnchantmentAbbreviated(int id) {
+        switch (id) {
+            case 0:
+                return "pt";   // Protection
+            case 1:
+                return "frp";   // Fire Protection
+            case 2:
+                return "ff";    // Feather Falling
+            case 3:
+                return "blp";   // Blast Protection
+            case 4:
+                return "prp";   // Projectile Protection
+            case 5:
+                return "thr";   // Thorns
+            case 6:
+                return "res";   // Respiration
+            case 7:
+                return "aa";    // Aqua Affinity
+            case 16:
+                return "sh";   // Sharpness
+            case 17:
+                return "smt";   // Smite
+            case 18:
+                return "ban";   // Bane of Arthropods
+            case 19:
+                return "kb";    // Knockback
+            case 20:
+                return "fa";    // Fire Aspect
+            case 21:
+                return "lot";  // Looting
+            case 32:
+                return "eff";   // Efficiency
+            case 33:
+                return "sil";   // Silk Touch
+            case 34:
+                return "ub";   // Unbreaking
+            case 35:
+                return "for";   // Fortune
+            case 48:
+                return "pow";   // Power
+            case 49:
+                return "pun";   // Punch
+            case 50:
+                return "flm";   // Flame
+            case 51:
+                return "inf";   // Infinity
+            default:
+                return null;
         }
     }
 }

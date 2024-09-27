@@ -30,7 +30,6 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.network.Packet;
 import net.minecraft.util.*;
 import org.lwjgl.input.Keyboard;
@@ -413,6 +412,14 @@ public class ScriptDefaults {
                 return null;
             }
             return new Vec3(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+        }
+
+        public boolean isHidden(String moduleName) {
+            Module module = getModule(moduleName);
+            if (module != null) {
+                return module.isHidden();
+            }
+            return false;
         }
 
         public float[] getBedAuraProgress() {

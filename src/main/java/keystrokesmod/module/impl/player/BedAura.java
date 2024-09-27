@@ -56,7 +56,7 @@ public class BedAura extends Module {
     private long lastCheck = 0;
     public boolean stopAutoblock;
     private int outlineColor = new Color(226, 65, 65).getRGB();
-    private int breakTickDelay = 5;
+    private int breakTickDelay = 2;
     private int ticksAfterBreak = 0;
     private boolean delayStart;
     private BlockPos nearestBlock;
@@ -103,6 +103,9 @@ public class BedAura extends Module {
         }
         if (ModuleManager.bedwars != null && ModuleManager.bedwars.isEnabled() && BedWars.whitelistOwnBed.isToggled() && !BedWars.outsideSpawn) {
             reset(true);
+            return;
+        }
+        if (Utils.isBedwarsPractice()) {
             return;
         }
         if (!mc.thePlayer.capabilities.allowEdit || mc.thePlayer.isSpectator()) {

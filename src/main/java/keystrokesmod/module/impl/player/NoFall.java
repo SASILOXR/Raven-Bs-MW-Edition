@@ -38,6 +38,9 @@ public class NoFall extends Module {
         if (ignoreVoid.isToggled() && isVoid()) {
             return;
         }
+        if (Utils.isBedwarsPractice()) {
+            return;
+        }
         if (((double) mc.thePlayer.fallDistance > minFallDistance.getInput() || minFallDistance.getInput() == 0) || mode.getInput() == 2) {
             switch ((int) mode.getInput()) {
                 case 0:

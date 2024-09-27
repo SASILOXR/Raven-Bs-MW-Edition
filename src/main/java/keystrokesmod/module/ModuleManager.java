@@ -63,6 +63,7 @@ public class ModuleManager {
     public static Scaffold scaffold;
     public static AutoTool autoTool;
     public static Sprint sprint;
+    public static Weather weather;
 
     public void register() {
         this.addModule(autoClicker = new AutoClicker());
@@ -70,6 +71,7 @@ public class ModuleManager {
         this.addModule(new AimAssist());
         this.addModule(new Blink());
         this.addModule(new BurstClicker());
+        this.addModule(weather = new Weather());
         this.addModule(new ClickAssist());
         this.addModule(tower = new Tower());
         this.addModule(skyWars = new SkyWars());

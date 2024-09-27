@@ -38,6 +38,7 @@ public class TargetHUD extends Module {
     public int posX = 70;
     public int posY = 30;
     private String[] modes = new String[]{ "Modern", "Legacy" };
+    private int bloomShadow = new Color(0, 0, 0, 190).getRGB();
 
     public TargetHUD() {
         super("TargetHUD", category.render);
@@ -123,7 +124,6 @@ public class TargetHUD extends Module {
         if (n10 > 0) {
             final int n11 = (n10 > 110) ? 110 : n10;
             final int n12 = (n10 > 210) ? 210 : n10;
-            final int blurFade = (int) (n10 * 0.09019607843);
             final int[] array = Theme.getGradients((int) theme.getInput());
             switch ((int) mode.getInput()) { // outline & background
                 case 0:
