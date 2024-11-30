@@ -231,7 +231,7 @@ public class Entity {
             return potionEffects;
         }
         for (PotionEffect potionEffect : ((EntityLivingBase) entity).getActivePotionEffects()) {
-            Object[] potionData = new Object[]{potionEffect.getEffectName(), potionEffect.getAmplifier(), potionEffect.getDuration()};
+            Object[] potionData = new Object[]{potionEffect.getPotionID(), potionEffect.getEffectName(), potionEffect.getAmplifier(), potionEffect.getDuration()};
             potionEffects.add(potionData);
         }
         return potionEffects;

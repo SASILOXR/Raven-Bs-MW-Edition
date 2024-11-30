@@ -112,7 +112,7 @@ public class Tower extends Module {
         offGroundTicks = 0;
     }
 
-    private boolean canTower() {
+    public boolean canTower() {
         if (!Utils.nullCheck() || !Utils.jumpDown()) {
             return false;
         }

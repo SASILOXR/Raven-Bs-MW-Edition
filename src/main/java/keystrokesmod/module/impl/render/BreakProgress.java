@@ -44,7 +44,7 @@ public class BreakProgress extends Module {
         GlStateManager.pushMatrix();
         GlStateManager.translate((float) n, (float) n2, (float) n3);
         GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0f, 1.0f, 0.0f);
-        GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0f, 0.0f, 0.0f);
+        GlStateManager.rotate((mc.gameSettings.thirdPersonView == 2 ? -1 : 1) * mc.getRenderManager().playerViewX, 1.0f, 0.0f, 0.0f);
         GlStateManager.scale(-0.02266667f, -0.02266667f, -0.02266667f);
         GlStateManager.depthMask(false);
         GlStateManager.disableDepth();

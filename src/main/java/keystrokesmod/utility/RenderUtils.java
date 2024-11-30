@@ -22,8 +22,6 @@ import org.lwjgl.util.glu.GLU;
 import java.awt.*;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -439,6 +437,26 @@ public class RenderUtils {
     public static void db(int w, int h, int r) {
         int c = r == -1 ? -1089466352 : r;
         net.minecraft.client.gui.Gui.drawRect(0, 0, w, h, c);
+    }
+
+    public static void drawRectangleGL(float x, float y, float x2, float y2, final int color) {
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+
+        glColor(color);
+
+        GL11.glBegin(GL11.GL_QUADS);
+        GL11.glVertex2f(x, y);
+        GL11.glVertex2f(x, y2);
+        GL11.glVertex2f(x2, y2);
+        GL11.glVertex2f(x2, y);
+        GL11.glEnd();
+
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_BLEND);
+
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     public static void drawColoredString(String text, char lineSplit, int x, int y, long s, long shift, boolean rect, FontRenderer fontRenderer) {

@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.render;
 
+import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -14,9 +15,9 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Xray extends Module {
     private SliderSetting range;
@@ -30,7 +31,7 @@ public class Xray extends Module {
     private ButtonSetting coal;
     private ButtonSetting spawner;
     private ButtonSetting obsidian;
-    private List<BlockPos> blocks = new ArrayList<>();
+    private Set<BlockPos> blocks = ConcurrentHashMap.newKeySet();
     private long lastCheck = 0;
 
     public Xray() {
@@ -57,21 +58,25 @@ public class Xray extends Module {
             return;
         }
         lastCheck = System.currentTimeMillis();
-        int i;
-        for (int n = i = (int) range.getInput(); i >= -n; --i) {
-            for (int j = -n; j <= n; ++j) {
-                for (int k = -n; k <= n; ++k) {
-                    BlockPos blockPos = new BlockPos(mc.thePlayer.posX + j, mc.thePlayer.posY + i, mc.thePlayer.posZ + k);
-                    if (blocks.contains(blockPos)) {
-                        continue;
-                    }
-                    Block blockState = BlockUtils.getBlock(blockPos);
-                    if (blockState != null && canBreak(blockState)) {
-                        blocks.add(blockPos);
+        Raven.getExecutor().execute(() -> {
+            synchronized (blocks) {
+                int i;
+                for (int n = i = (int) range.getInput(); i >= -n; --i) {
+                    for (int j = -n; j <= n; ++j) {
+                        for (int k = -n; k <= n; ++k) {
+                            BlockPos blockPos = new BlockPos(mc.thePlayer.posX + j, mc.thePlayer.posY + i, mc.thePlayer.posZ + k);
+                            if (blocks.contains(blockPos)) {
+                                continue;
+                            }
+                            Block blockState = BlockUtils.getBlock(blockPos);
+                            if (blockState != null && canBreak(blockState)) {
+                                blocks.add(blockPos);
+                            }
+                        }
                     }
                 }
             }
-        }
+        });
     }
 
     @SubscribeEvent
@@ -86,16 +91,18 @@ public class Xray extends Module {
         if (!Utils.nullCheck()) {
             return;
         }
-        if (!this.blocks.isEmpty()) {
-            Iterator iterator = blocks.iterator();
-            while (iterator.hasNext()) {
-                BlockPos blockPos = (BlockPos) iterator.next();
-                Block block = BlockUtils.getBlock(blockPos);
-                if (block == null || !canBreak(block)) {
-                    iterator.remove();
-                    continue;
+        synchronized (blocks) {
+            if (!this.blocks.isEmpty()) {
+                Iterator<BlockPos> iterator = blocks.iterator();
+                while (iterator.hasNext()) {
+                    BlockPos blockPos = iterator.next();
+                    Block block = BlockUtils.getBlock(blockPos);
+                    if (block == null || !canBreak(block)) {
+                        iterator.remove();
+                        continue;
+                    }
+                    this.drawBox(blockPos);
                 }
-                this.drawBox(blockPos);
             }
         }
     }
@@ -118,21 +125,27 @@ public class Xray extends Module {
             red = 255;
             green = 255;
             blue = 255;
-        } else if (b.equals(Blocks.gold_ore)) {
+        }
+        else if (b.equals(Blocks.gold_ore)) {
             red = 255;
             green = 255;
-        } else if (b.equals(Blocks.diamond_ore)) {
+        }
+        else if (b.equals(Blocks.diamond_ore)) {
             green = 220;
             blue = 255;
-        } else if (b.equals(Blocks.emerald_ore)) {
+        }
+        else if (b.equals(Blocks.emerald_ore)) {
             red = 35;
             green = 255;
-        } else if (b.equals(Blocks.lapis_ore)) {
+        }
+        else if (b.equals(Blocks.lapis_ore)) {
             green = 50;
             blue = 255;
-        } else if (b.equals(Blocks.redstone_ore)) {
+        }
+        else if (b.equals(Blocks.redstone_ore)) {
             red = 255;
-        } else if (b.equals(Blocks.mob_spawner)) {
+        }
+        else if (b.equals(Blocks.mob_spawner)) {
             red = 30;
             blue = 135;
         }

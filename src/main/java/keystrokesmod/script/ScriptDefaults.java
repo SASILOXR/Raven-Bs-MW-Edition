@@ -17,7 +17,6 @@ import keystrokesmod.script.packets.serverbound.CPacket;
 import keystrokesmod.script.packets.serverbound.PacketHandler;
 import keystrokesmod.utility.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.*;
@@ -54,6 +53,17 @@ public class ScriptDefaults {
             return mc.thePlayer.capabilities.allowFlying;
         }
 
+        public static void removePotionEffect(int id) {
+            if (mc.thePlayer == null) {
+                return;
+            }
+            mc.thePlayer.removePotionEffectClient(id);
+        }
+
+        public static int getUID() {
+            return 8;
+        }
+
         public static void addEnemy(String username) {
             Utils.addEnemy(username);
         }
@@ -81,6 +91,10 @@ public class ScriptDefaults {
         public static void print(Object object) {
             String s = String.valueOf(object);
             Utils.sendRawMessage(s);
+        }
+
+        public static boolean isDiagonal() {
+            return Utils.isDiagonal(false);
         }
 
         public static boolean isHoldingWeapon() {
@@ -133,6 +147,10 @@ public class ScriptDefaults {
 
         public static long getFreeMemory() {
             return Runtime.getRuntime().freeMemory();
+        }
+
+        public static long getMaxMemory() {
+            return Runtime.getRuntime().maxMemory();
         }
 
         public static void jump() {
@@ -286,7 +304,7 @@ public class ScriptDefaults {
 
         public static int[] getDisplaySize() {
             final ScaledResolution scaledResolution = new ScaledResolution(mc);
-            return new int[]{scaledResolution.getScaledWidth(), scaledResolution.getScaledHeight()};
+            return new int[]{scaledResolution.getScaledWidth(), scaledResolution.getScaledHeight(), scaledResolution.getScaleFactor()};
         }
 
         public static boolean placeBlock(Vec3 targetPos, String side, Vec3 hitVec) {
@@ -412,6 +430,14 @@ public class ScriptDefaults {
                 return null;
             }
             return new Vec3(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+        }
+
+        public boolean isScaffolding() {
+            return ModuleManager.scaffold.isEnabled() && ModuleManager.scaffold.tower.isToggled();
+        }
+
+        public boolean isTowering() {
+            return ModuleManager.tower.canTower();
         }
 
         public boolean isHidden(String moduleName) {
@@ -719,8 +745,8 @@ public class ScriptDefaults {
             }
         }
 
-        public static void rect(int startX, int startY, int endX, int endY, int color) {
-            Gui.drawRect(startX, startY, endX, endY, color);
+        public static void rect(float startX, float startY, float endX, float endY, int color) {
+            RenderUtils.drawRectangleGL(startX, startY, endX, endY, color);
         }
 
         public static void line2D(double startX, double startY, double endX, double endY, float lineWidth, int color) {

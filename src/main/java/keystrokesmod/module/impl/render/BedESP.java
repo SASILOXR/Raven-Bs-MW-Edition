@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.render;
 
+import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -19,9 +20,9 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BedESP extends Module {
     public SliderSetting theme;
@@ -30,13 +31,13 @@ public class BedESP extends Module {
     private ButtonSetting firstBed;
     private ButtonSetting renderFullBlock;
     private BlockPos[] bed = null;
-    private List<BlockPos[]> beds = new ArrayList<>();
+    private Set<BlockPos[]> beds = ConcurrentHashMap.newKeySet();
     private long lastCheck = 0;
 
     public BedESP() {
         super("BedESP", category.render);
         this.registerSetting(theme = new SliderSetting("Theme", 0, Theme.themes));
-        this.registerSetting(range = new SliderSetting("Range", 10.0, 2.0, 30.0, 2.0));
+        this.registerSetting(range = new SliderSetting("Range", 10.0, 2.0, 200.0, 2.0));
         this.registerSetting(rate = new SliderSetting("Rate", " second", 0.4, 0.1, 3.0, 0.1));
         this.registerSetting(firstBed = new ButtonSetting("Only render first bed", false));
         this.registerSetting(renderFullBlock = new ButtonSetting("Render full block", false));
@@ -47,32 +48,35 @@ public class BedESP extends Module {
             return;
         }
         lastCheck = System.currentTimeMillis();
-        int i;
-        priorityLoop:
-        for (int n = i = (int) range.getInput(); i >= -n; --i) {
-            for (int j = -n; j <= n; ++j) {
-                for (int k = -n; k <= n; ++k) {
-                    final BlockPos blockPos = new BlockPos(mc.thePlayer.posX + j, mc.thePlayer.posY + i, mc.thePlayer.posZ + k);
-                    final IBlockState getBlockState = mc.theWorld.getBlockState(blockPos);
-                    if (getBlockState.getBlock() == Blocks.bed && getBlockState.getValue((IProperty) BlockBed.PART) == BlockBed.EnumPartType.FOOT) {
-                        if (firstBed.isToggled()) {
-                            if (this.bed != null && BlockUtils.isSamePos(blockPos, this.bed[0])) {
+        Raven.getExecutor().execute(() -> {
+            int i;
+            priorityLoop:
+            for (int n = i = (int) range.getInput(); i >= -n; --i) {
+                for (int j = -n; j <= n; ++j) {
+                    for (int k = -n; k <= n; ++k) {
+                        final BlockPos blockPos = new BlockPos(mc.thePlayer.posX + j, mc.thePlayer.posY + i, mc.thePlayer.posZ + k);
+                        final IBlockState getBlockState = mc.theWorld.getBlockState(blockPos);
+                        if (getBlockState.getBlock() == Blocks.bed && getBlockState.getValue((IProperty) BlockBed.PART) == BlockBed.EnumPartType.FOOT) {
+                            if (firstBed.isToggled()) {
+                                if (this.bed != null && BlockUtils.isSamePos(blockPos, this.bed[0])) {
+                                    return;
+                                }
+                                this.bed = new BlockPos[]{blockPos, blockPos.offset((EnumFacing) getBlockState.getValue((IProperty) BlockBed.FACING))};
                                 return;
                             }
-                            this.bed = new BlockPos[]{blockPos, blockPos.offset((EnumFacing) getBlockState.getValue((IProperty) BlockBed.FACING))};
-                            return;
-                        } else {
-                            for (int l = 0; l < this.beds.size(); ++l) {
-                                if (BlockUtils.isSamePos(blockPos, ((BlockPos[]) this.beds.get(l))[0])) {
-                                    continue priorityLoop;
+                            else {
+                                for (BlockPos[] pos : beds) {
+                                    if (BlockUtils.isSamePos(blockPos, pos[0])) {
+                                        continue priorityLoop;
+                                    }
                                 }
+                                this.beds.add(new BlockPos[]{blockPos, blockPos.offset((EnumFacing) getBlockState.getValue((IProperty) BlockBed.FACING))});
                             }
-                            this.beds.add(new BlockPos[]{blockPos, blockPos.offset((EnumFacing) getBlockState.getValue((IProperty) BlockBed.FACING))});
                         }
                     }
                 }
             }
-        }
+        });
     }
 
     @SubscribeEvent

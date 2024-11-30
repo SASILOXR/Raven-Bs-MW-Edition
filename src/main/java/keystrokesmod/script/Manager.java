@@ -15,6 +15,7 @@ import java.net.URI;
 public class Manager extends Module {
     private long lastLoad;
     public final String documentationURL = "https://blowsy.gitbook.io/raven";
+
     public Manager() {
         super("Manager", category.scripts);
         this.registerSetting(new ButtonSetting("Load scripts", () -> {
@@ -30,7 +31,8 @@ public class Manager extends Module {
                         Utils.sendMessage("&7No scripts found.");
                     }
                     else {
-                        Utils.sendMessage("&7Loaded &b" + Raven.scriptManager.scripts.size() + " &7script" + ((Raven.scriptManager.scripts.size() == 1) ? "." : "s."));
+                        double timeTaken = Utils.round((System.currentTimeMillis() - currentTimeMillis) / 1000.0, 1);
+                        Utils.sendMessage("&7Loaded &b" + Raven.scriptManager.scripts.size() + " &7script" + ((Raven.scriptManager.scripts.size() == 1) ? "" : "s") + " in &b" + (Utils.isWholeNumber(timeTaken) ? (int) timeTaken + "" : timeTaken) + "&7s.");
                     }
                     Entity.clearCache();
                     if (Raven.currentProfile != null && Raven.currentProfile.getModule() != null) {
