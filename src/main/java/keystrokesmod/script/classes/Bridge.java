@@ -4,11 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Bridge {
-    private final Map<String, Object> map;
-
-    public Bridge() {
-        map = new HashMap<>();
-    }
+    private static final Map<String, Object> map = new HashMap<>();;
 
     public void add(String key, Object value) {
         map.put(key, value);
@@ -27,7 +23,10 @@ public class Bridge {
     }
 
     public Object get(String key) {
-        return map.get(key);
+        if (!map.containsKey(key)) {
+            return null;
+        }
+        return map.getOrDefault(key, null);
     }
 
     public void clear() {

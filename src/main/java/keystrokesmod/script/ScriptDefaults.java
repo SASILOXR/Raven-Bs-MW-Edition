@@ -43,9 +43,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ScriptDefaults {
-    private static Minecraft mc = Minecraft.getMinecraft();
-    private static World world = new World();
-    public final Bridge bridge = new Bridge();
+    private static final Minecraft mc = Minecraft.getMinecraft();
+    private static final World world = new World();
+    public static final Bridge bridge = new Bridge();
     private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 
     public static class client {
