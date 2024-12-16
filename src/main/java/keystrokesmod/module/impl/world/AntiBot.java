@@ -21,19 +21,26 @@ public class AntiBot extends Module {
     private static SliderSetting delay;
     private static SliderSetting pitSpawn;
     private static ButtonSetting tablist;
+    private ButtonSetting printWorldJoin;
 
     public AntiBot() {
         super("AntiBot", Module.category.world, 0);
         this.registerSetting(delay = new SliderSetting("Delay", " second", true, -1, 0.5, 15.0, 0.5));
         this.registerSetting(pitSpawn = new SliderSetting("Pit spawn", true, -1, 70, 120, 1));
         this.registerSetting(tablist = new ButtonSetting("Tab list", false));
+        this.registerSetting(printWorldJoin = new ButtonSetting("Print world join", false));
         this.closetModule = true;
     }
 
     @SubscribeEvent
-    public void c(final EntityJoinWorldEvent entityJoinWorldEvent) {
-        if (delay.getInput() != -1 && entityJoinWorldEvent.entity instanceof EntityPlayer && entityJoinWorldEvent.entity != mc.thePlayer) {
-            entities.put((EntityPlayer) entityJoinWorldEvent.entity, System.currentTimeMillis());
+    public void c(final EntityJoinWorldEvent e) {
+        if (e.entity instanceof EntityPlayer && e.entity != mc.thePlayer) {
+            if (delay.getInput() != -1) {
+                entities.put((EntityPlayer) e.entity, System.currentTimeMillis());
+            }
+            if (printWorldJoin.isToggled()) {
+                Utils.sendMessage("&7Entity &b" + e.entity.getEntityId() + " &7joined: &r" + e.entity.getDisplayName().getFormattedText());
+            }
         }
     }
 

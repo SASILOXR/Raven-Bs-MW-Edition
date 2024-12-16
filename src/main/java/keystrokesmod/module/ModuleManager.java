@@ -1,5 +1,6 @@
 package keystrokesmod.module;
 
+import keystrokesmod.module.impl.client.ChatCommands;
 import keystrokesmod.module.impl.client.CommandLine;
 import keystrokesmod.module.impl.client.Gui;
 import keystrokesmod.module.impl.client.Settings;
@@ -20,7 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class ModuleManager {
-    static List<Module> modules = new ArrayList<>();
+    public static List<Module> modules = new ArrayList<>();
     public static List<Module> organizedModules = new ArrayList<>();
     public static Module nameHider;
     public static Module fastPlace;
@@ -64,6 +65,7 @@ public class ModuleManager {
     public static AutoTool autoTool;
     public static Sprint sprint;
     public static Weather weather;
+    public static ChatCommands chatCommands;
 
     public void register() {
         this.addModule(autoClicker = new AutoClicker());
@@ -72,6 +74,7 @@ public class ModuleManager {
         this.addModule(new Blink());
         this.addModule(new BurstClicker());
         this.addModule(weather = new Weather());
+        this.addModule(chatCommands = new ChatCommands());
         this.addModule(new ClickAssist());
         this.addModule(tower = new Tower());
         this.addModule(skyWars = new SkyWars());
@@ -92,6 +95,7 @@ public class ModuleManager {
         this.addModule(new Boost());
         this.addModule(autoTool = new AutoTool());
         this.addModule(noHurtCam = new NoHurtCam());
+        this.addModule(new SpeedBuilders());
         this.addModule(new Teleport());
         this.addModule(fly = new Fly());
         this.addModule(invmove = new InvMove());
@@ -207,5 +211,13 @@ public class ModuleManager {
         } else {
             organizedModules.sort((o1, o2) -> Utils.mc.fontRendererObj.getStringWidth(o2.getName() + ((HUD.showInfo.isToggled() && !o2.getInfo().isEmpty()) ? " " + o2.getInfo() : "")) - Utils.mc.fontRendererObj.getStringWidth(o1.getName() + (HUD.showInfo.isToggled() && !o1.getInfo().isEmpty() ? " " + o1.getInfo() : "")));
         }
+    }
+
+    public static boolean canExecuteChatCommand() {
+        return ModuleManager.chatCommands != null && ModuleManager.chatCommands.isEnabled();
+    }
+
+    public static boolean lowercaseChatCommands() {
+        return ModuleManager.chatCommands != null && ModuleManager.chatCommands.isEnabled() && ModuleManager.chatCommands.lowercase();
     }
 }

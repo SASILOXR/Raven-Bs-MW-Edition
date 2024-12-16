@@ -14,45 +14,57 @@ import java.util.HashSet;
 public class Chams extends Module {
     private ButtonSetting ignoreBots;
     private ButtonSetting renderSelf;
+    private ButtonSetting hidePlayers;
     private HashSet<Entity> bots = new HashSet<>();
 
     public Chams() {
         super("Chams", Module.category.render, 0);
         this.registerSetting(ignoreBots = new ButtonSetting("Ignore bots", false));
+        this.registerSetting(hidePlayers = new ButtonSetting("Hide players", false));
         this.registerSetting(renderSelf = new ButtonSetting("Render self", false));
     }
 
     @SubscribeEvent
-    public void r1(Pre e) {
-        if (e.entity == mc.thePlayer && !renderSelf.isToggled()) {
+    public void onPreRender(Pre e) {
+        Entity entity = e.entity;
+        if (entity == mc.thePlayer && !renderSelf.isToggled()) {
+            return;
+        }
+        if (hidePlayers.isToggled() && !(entity == mc.thePlayer && renderSelf.isToggled())) {
+            e.setCanceled(true);
             return;
         }
         if (ignoreBots.isToggled()) {
-            if (AntiBot.isBot(e.entity)) {
+            if (AntiBot.isBot(entity)) {
                 return;
             }
-            this.bots.add(e.entity);
+            bots.add(entity);
         }
-        GL11.glEnable(32823);
+        GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
         GL11.glPolygonOffset(1.0f, -2500000.0f);
     }
 
     @SubscribeEvent
-    public void r2(Post e) {
-        if (e.entity == mc.thePlayer && !renderSelf.isToggled()) {
+    public void onPostRender(Post e) {
+        Entity entity = e.entity;
+        if (entity == mc.thePlayer && !renderSelf.isToggled()) {
+            return;
+        }
+        if (hidePlayers.isToggled() && !(entity == mc.thePlayer && renderSelf.isToggled())) {
             return;
         }
         if (ignoreBots.isToggled()) {
-            if (!this.bots.contains(e.entity)) {
+            if (!bots.contains(entity)) {
                 return;
             }
-            this.bots.remove(e.entity);
+            bots.remove(entity);
         }
-        GL11.glDisable(32823);
+        GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
         GL11.glPolygonOffset(1.0f, 2500000.0f);
     }
 
+    @Override
     public void onDisable() {
-        this.bots.clear();
+        bots.clear();
     }
 }

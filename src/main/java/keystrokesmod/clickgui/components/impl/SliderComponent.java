@@ -51,7 +51,7 @@ public class SliderComponent extends Component {
             suffix = "";
         }
         else {
-            if (input != 1 && (suffix.equals(" second") || suffix.equals(" block")) && this.moduleComponent.mod.moduleCategory() != Module.category.scripts) {
+            if (input != 1 && (suffix.equals(" second") || suffix.equals(" block") || suffix.equals(" tick")) && this.moduleComponent.mod.moduleCategory() != Module.category.scripts) {
                 suffix += "s";
             }
             if (this.sliderSetting.isString) {

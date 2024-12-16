@@ -18,6 +18,7 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.shader.Framebuffer;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
@@ -42,8 +43,9 @@ public class ClickGui extends GuiScreen {
     private GuiButtonExt commandLineSend;
     private GuiTextField commandLineInput;
     public static ArrayList<CategoryComponent> categories;
+    private Framebuffer stencilFramebuffer = new Framebuffer(1, 1, false);
     public int originalScale;
-    private int blurBackground = new Color(0, 0, 0, 200).getRGB();
+    private int blurBackground = Color.black.getRGB();
 
     public ClickGui() {
         categories = new ArrayList();
@@ -304,5 +306,12 @@ public class ClickGui extends GuiScreen {
             }
         }
         return false;
+    }
+
+    public static int[] calculateBlur(int setting) {
+        int passes = (int) (setting * 6.0 / 100.0 + 1.0);
+        int offset = (int) (setting * 3.0 / 100.0);
+
+        return new int[]{passes, offset};
     }
 }

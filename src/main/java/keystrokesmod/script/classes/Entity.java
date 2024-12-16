@@ -2,8 +2,6 @@ package keystrokesmod.script.classes;
 
 import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.Utils;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockLadder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.EntityLivingBase;
@@ -11,8 +9,6 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.potion.PotionEffect;
-import net.minecraft.util.BlockPos;
-import net.minecraft.util.MathHelper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -144,6 +140,10 @@ public class Entity {
 
     public float getWidth() {
         return entity.width;
+    }
+
+    public boolean isBurning() {
+        return entity.isBurning();
     }
 
     public ItemStack getHeldItem() {
@@ -354,5 +354,9 @@ public class Entity {
 
     public void setPosition(Vec3 position) {
         entity.setPosition(position.x, position.y, position.z);
+    }
+
+    public void setPosition(double x, double y, double z) {
+        entity.setPosition(x, y, z);
     }
 }

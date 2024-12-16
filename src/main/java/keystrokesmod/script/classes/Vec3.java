@@ -22,8 +22,32 @@ public class Vec3 {
         return false;
     }
 
+    public Vec3 offset(Vec3 position) {
+        return new Vec3(this.x + position.x, this.y + position.y, this.z + position.z);
+    }
+
     public Vec3 offset(double x, double y, double z) {
         return new Vec3(this.x + x, this.y + y, this.z + z);
+    }
+
+    public Vec3 ceil() {
+        return new Vec3(Math.ceil(this.x), Math.ceil(this.y), Math.ceil(this.z));
+    }
+
+    public Vec3 floor() {
+        return new Vec3(Math.floor(this.x), Math.floor(this.y), Math.floor(this.z));
+    }
+
+    public Vec3 inverse() {
+        return new Vec3(-this.x, -this.y, -this.z);
+    }
+
+    public Vec3 translate(Vec3 position) {
+        return this.offset(position.x, position.y, position.z);
+    }
+
+    public Vec3 translate(double x, double y, double z) {
+        return this.offset(x, y, z);
     }
 
     public static Vec3 convert(BlockPos blockPos) {

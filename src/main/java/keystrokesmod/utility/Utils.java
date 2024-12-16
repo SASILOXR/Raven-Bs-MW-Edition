@@ -35,6 +35,11 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -752,7 +757,8 @@ public class Utils {
     public static double round(double n, int d) {
         if (d == 0) {
             return (double) Math.round(n);
-        } else {
+        }
+        else {
             double p = Math.pow(10.0D, (double) d);
             return (double) Math.round(n * p) / p;
         }
@@ -770,6 +776,17 @@ public class Utils {
             }
         }
         return sb.toString();
+    }
+
+    public static void addToClipboard(String string) {
+        try {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            StringSelection stringSelection = new StringSelection(string);
+            clipboard.setContents(stringSelection, null);
+        }
+        catch (Exception e) {
+            Utils.sendMessage("&cFailed to copy &b" + string);
+        }
     }
 
     public static List<String> gsl() {
@@ -909,6 +926,22 @@ public class Utils {
             return mc.thePlayer.inventory.getStackInSlot(ModuleManager.autoTool.previousSlot == -1 ? mc.thePlayer.inventory.currentItem : ModuleManager.autoTool.previousSlot);
         }
         return original;
+    }
+
+
+    public static String readInputStream(InputStream inputStream) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            while ((line = bufferedReader.readLine()) != null)
+                stringBuilder.append(line).append('\n');
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return stringBuilder.toString();
     }
 
     public static boolean isLobby() {

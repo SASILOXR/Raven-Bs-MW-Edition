@@ -22,7 +22,8 @@ public class Ping {
         Commands.print("§3Checking...", 1);
         if (e) {
             Commands.print("§cPlease wait.", 0);
-        } else {
+        }
+        else {
             Utils.mc.thePlayer.sendChatMessage("/...");
             e = true;
             s = System.currentTimeMillis();

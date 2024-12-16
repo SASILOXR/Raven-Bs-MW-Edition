@@ -1,20 +1,22 @@
 package keystrokesmod.utility;
 
 import keystrokesmod.module.impl.player.Freecam;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderGlobal;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.resources.model.IBakedModel;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
@@ -29,6 +31,10 @@ public class RenderUtils {
     private static Minecraft mc = Minecraft.getMinecraft();
     public static boolean ring_c = false;
     private static Frustum frustum = new Frustum();
+    private static final FloatBuffer MODELVIEW_BUFFER = BufferUtils.createFloatBuffer(16);
+    private static final FloatBuffer PROJECTION_BUFFER = BufferUtils.createFloatBuffer(16);
+    private static final IntBuffer VIEWPORT_BUFFER = BufferUtils.createIntBuffer(16);
+    private static final FloatBuffer SCREEN_COORDS_BUFFER = BufferUtils.createFloatBuffer(3);
 
     public static void renderBlock(BlockPos blockPos, int color, boolean outline, boolean shade) {
         renderBox(blockPos.getX(), blockPos.getY(), blockPos.getZ(), 1, 1, 1, color, outline, shade);
@@ -362,6 +368,72 @@ public class RenderUtils {
         ts.draw();
     }
 
+    public static void renderBlockModel(IBlockState blockState, double x, double y, double z, int color) {
+        Minecraft mc = Minecraft.getMinecraft();
+        BlockRendererDispatcher dispatcher = mc.getBlockRendererDispatcher();
+        IBakedModel model = dispatcher.getModelFromBlockState(blockState, mc.theWorld, new BlockPos(x, y, z));
+
+
+        double xPos = x - mc.getRenderManager().viewerPosX;
+        double yPos = y - mc.getRenderManager().viewerPosY;
+        double zPos = z - mc.getRenderManager().viewerPosZ;
+
+        float a = ((color >> 24) & 0xFF) / 255.0f;
+        float r = ((color >> 16) & 0xFF) / 255.0f;
+        float g = ((color >> 8)  & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(xPos, yPos, zPos);
+
+        GlStateManager.enableBlend();
+        GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GlStateManager.disableTexture2D();
+        GlStateManager.disableCull();
+        GlStateManager.disableDepth();
+        GlStateManager.depthMask(false);
+        GlStateManager.color(r, g, b, a);
+
+        renderModelColoredQuads(model, r, g, b, a);
+
+        GlStateManager.depthMask(true);
+        GlStateManager.enableDepth();
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableCull();
+        GlStateManager.disableBlend();
+        GlStateManager.popMatrix();
+    }
+
+    private static void renderModelColoredQuads(IBakedModel model, float r, float g, float b, float a) {
+        Tessellator tessellator = Tessellator.getInstance();
+        WorldRenderer wr = tessellator.getWorldRenderer();
+        for (EnumFacing face : EnumFacing.values()) {
+            for (BakedQuad quad : model.getFaceQuads(face)) {
+                drawColoredQuad(wr, quad, r, g, b, a, tessellator);
+            }
+        }
+        for (BakedQuad quad : model.getGeneralQuads()) {
+            drawColoredQuad(wr, quad, r, g, b, a, tessellator);
+        }
+    }
+
+    private static void drawColoredQuad(WorldRenderer wr, BakedQuad quad, float r, float g, float b, float a, Tessellator tessellator) {
+        int[] vertexData = quad.getVertexData();
+        final int vertexCount = 4;
+        final int intsPerVertex = vertexData.length / vertexCount;
+
+        wr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        for (int i = 0; i < vertexCount; i++) {
+            int baseIndex = i * intsPerVertex;
+            float vx = Float.intBitsToFloat(vertexData[baseIndex]);
+            float vy = Float.intBitsToFloat(vertexData[baseIndex + 1]);
+            float vz = Float.intBitsToFloat(vertexData[baseIndex + 2]);
+
+            wr.pos(vx, vy, vz).color(r, g, b, a).endVertex();
+        }
+        tessellator.draw();
+    }
+
     public static void drawTracerLine(Entity e, int color, float lineWidth, float partialTicks) {
         if (e != null) {
             double x = e.lastTickPosX + (e.posX - e.lastTickPosX) * (double) partialTicks - mc.getRenderManager().viewerPosX;
@@ -439,26 +511,6 @@ public class RenderUtils {
         net.minecraft.client.gui.Gui.drawRect(0, 0, w, h, c);
     }
 
-    public static void drawRectangleGL(float x, float y, float x2, float y2, final int color) {
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-
-        glColor(color);
-
-        GL11.glBegin(GL11.GL_QUADS);
-        GL11.glVertex2f(x, y);
-        GL11.glVertex2f(x, y2);
-        GL11.glVertex2f(x2, y2);
-        GL11.glVertex2f(x2, y);
-        GL11.glEnd();
-
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_BLEND);
-
-        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
-    }
-
     public static void drawColoredString(String text, char lineSplit, int x, int y, long s, long shift, boolean rect, FontRenderer fontRenderer) {
         int bX = x;
         int l = 0;
@@ -481,29 +533,6 @@ public class RenderUtils {
             }
         }
 
-    }
-
-    public static void d2p(double x, double y, int radius, int sides, int color) {
-        float a = (float) (color >> 24 & 255) / 255.0F;
-        float r = (float) (color >> 16 & 255) / 255.0F;
-        float g = (float) (color >> 8 & 255) / 255.0F;
-        float b = (float) (color & 255) / 255.0F;
-        Tessellator tessellator = Tessellator.getInstance();
-        WorldRenderer worldrenderer = tessellator.getWorldRenderer();
-        GlStateManager.enableBlend();
-        GlStateManager.disableTexture2D();
-        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
-        GlStateManager.color(r, g, b, a);
-        worldrenderer.begin(6, DefaultVertexFormats.POSITION);
-
-        for (int i = 0; i < sides; ++i) {
-            double angle = 6.283185307179586D * (double) i / (double) sides + Math.toRadians(180.0D);
-            worldrenderer.pos(x + Math.sin(angle) * (double) radius, y + Math.cos(angle) * (double) radius, 0.0D).endVertex();
-        }
-
-        tessellator.draw();
-        GlStateManager.enableTexture2D();
-        GlStateManager.disableBlend();
     }
 
     public static void d3p(double x, double y, double z, double radius, int sides, float lineWidth, int color, boolean chroma) {
@@ -615,10 +644,10 @@ public class RenderUtils {
     }
 
     public static void drawRoundedGradientOutlinedRectangle(float n, float n2, float n3, float n4, final float n5, final int n6, final int n7, final int n8) { // credit to the creator of raven b4
-        n *= 2.0;
-        n2 *= 2.0;
-        n3 *= 2.0;
-        n4 *= 2.0;
+        n *= 2.0f;
+        n2 *= 2.0f;
+        n3 *= 2.0f;
+        n4 *= 2.0f;
         GL11.glPushAttrib(1);
         GL11.glScaled(0.5, 0.5, 0.5);
         glEnable(3042);
@@ -683,17 +712,32 @@ public class RenderUtils {
     }
 
     public static double[] convertTo2D(double x, double y, double z) {
-        FloatBuffer screenCoords = BufferUtils.createFloatBuffer(3);
-        IntBuffer viewport = BufferUtils.createIntBuffer(16);
-        FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
-        FloatBuffer projection = BufferUtils.createFloatBuffer(16);
-        GL11.glGetFloat(2982, modelView);
-        GL11.glGetFloat(2983, projection);
-        GL11.glGetInteger(2978, viewport);
-        boolean result = GLU.gluProject((float)x, (float)y, (float)z, modelView, projection, viewport, screenCoords);
+        MODELVIEW_BUFFER.clear();
+        PROJECTION_BUFFER.clear();
+        VIEWPORT_BUFFER.clear();
+        SCREEN_COORDS_BUFFER.clear();
+
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, MODELVIEW_BUFFER);
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, PROJECTION_BUFFER);
+        GL11.glGetInteger(GL11.GL_VIEWPORT, VIEWPORT_BUFFER);
+
+        boolean result = GLU.gluProject(
+                (float) x,
+                (float) y,
+                (float) z,
+                MODELVIEW_BUFFER,
+                PROJECTION_BUFFER,
+                VIEWPORT_BUFFER,
+                SCREEN_COORDS_BUFFER
+        );
+
         if (result) {
-            return new double[] { screenCoords.get(0), org.lwjgl.opengl.Display.getHeight() - screenCoords.get(1), screenCoords.get(2) };
+            double screenX = SCREEN_COORDS_BUFFER.get(0);
+            double screenY = Minecraft.getMinecraft().displayHeight - SCREEN_COORDS_BUFFER.get(1);
+            double depth = SCREEN_COORDS_BUFFER.get(2);
+            return new double[]{screenX, screenY, depth};
         }
+
         return null;
     }
 
@@ -704,7 +748,7 @@ public class RenderUtils {
 
         float width = x2 - x;
 
-        if (width < 5) {
+        if (width < 3) {
             radius = Math.min(radius, width / 2.0f);
         }
 
@@ -747,6 +791,25 @@ public class RenderUtils {
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
+    public static void drawRectangleGL(float x, float y, float x2, float y2, final int color) {
+        GL11.glEnable(GL11.GL_BLEND);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        GL11.glDisable(GL11.GL_TEXTURE_2D);
+
+        glColor(color);
+
+        GL11.glBegin(GL11.GL_QUADS);
+        GL11.glVertex2f(x, y);
+        GL11.glVertex2f(x, y2);
+        GL11.glVertex2f(x2, y2);
+        GL11.glVertex2f(x2, y);
+        GL11.glEnd();
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_BLEND);
+
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
     public static void drawRoundedGradientRect(float x, float y, float x2, float y2, float radius, final int n6, final int n7, final int n8, final int n9) {
         if (x2 <= x) {
             return;
@@ -754,7 +817,7 @@ public class RenderUtils {
 
         float width = x2 - x;
 
-        if (width < 5) {
+        if (width < 3) {
             radius = Math.min(radius, width / 2.0f);
         }
 

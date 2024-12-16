@@ -1,6 +1,7 @@
 package keystrokesmod.module.impl.movement;
 
-import keystrokesmod.event.JumpEvent;
+import keystrokesmod.event.PostPlayerInputEvent;
+import keystrokesmod.event.PreMotionEvent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.client.Settings;
@@ -8,8 +9,6 @@ import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.RotationUtils;
 import keystrokesmod.utility.Utils;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionEffect;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 
@@ -21,8 +20,9 @@ public class BHop extends Module {
     private ButtonSetting liquidDisable;
     private ButtonSetting sneakDisable;
     private ButtonSetting stopMotion;
-    private String[] modes = new String[]{"Strafe", "Ground"};
+    private String[] modes = new String[]{"Strafe", "Ground", "Low"};
     public boolean hopping;
+    private boolean collided, strafe, down;
 
     public BHop() {
         super("Bhop", Module.category.movement);
@@ -40,7 +40,15 @@ public class BHop extends Module {
         return modes[(int) mode.getInput()];
     }
 
-    public void onUpdate() {
+    @SubscribeEvent
+    public void onPostPlayerInput(PostPlayerInputEvent e) {
+        if (hopping) {
+            mc.thePlayer.movementInput.jump = false;
+        }
+    }
+
+    @SubscribeEvent
+    public void onPreMotion(PreMotionEvent e) {
         if (((mc.thePlayer.isInWater() || mc.thePlayer.isInLava()) && liquidDisable.isToggled()) || (mc.thePlayer.isSneaking() && sneakDisable.isToggled())) {
             return;
         }
@@ -63,10 +71,15 @@ public class BHop extends Module {
                 }
                 break;
             case 1:
-                if (!Utils.jumpDown() && Utils.isMoving() && mc.currentScreen == null) {
-                    if (!mc.thePlayer.onGround) {
-                        break;
-                    }
+            case 2:
+                if (mc.thePlayer.isCollidedHorizontally) {
+                    collided = true;
+                }
+                else if (mc.thePlayer.onGround) {
+                    collided = false;
+                }
+                if (Utils.isMoving() && mc.thePlayer.onGround) {
+                    strafe = down = false;
                     if (autoJump.isToggled()) {
                         mc.thePlayer.jump();
                     }
@@ -95,6 +108,30 @@ public class BHop extends Module {
                     Utils.setSpeed(horizontalSpeed);
                     hopping = true;
                 }
+                if (mode.getInput() == 2 && Utils.isMoving()) {
+                    int simpleY = (int) Math.round((e.posY % 1) * 10000);
+
+                    if (mc.thePlayer.hurtTime == 0 && Utils.isMoving() && !collided) {
+                        if (simpleY == 13) {
+                            mc.thePlayer.motionY = mc.thePlayer.motionY - 0.02483;
+                        }
+                        if (simpleY == 2000) {
+                            mc.thePlayer.motionY = mc.thePlayer.motionY - 0.1913;
+                        }
+
+                        if (simpleY == 13) {
+                            down = true;
+                        }
+                        if (down) {
+                            e.posY -= 1E-5;
+                        }
+
+                        if (simpleY == 3426) strafe = true;
+                        if (strafe) {
+                            Utils.setSpeed(Utils.getHorizontalSpeed());
+                        }
+                    }
+                }
                 break;
         }
     }
@@ -106,12 +143,5 @@ public class BHop extends Module {
             mc.thePlayer.motionX = 0;
         }
         hopping = false;
-    }
-
-    @SubscribeEvent
-    public void onJump(JumpEvent e) {
-        if (autoJump.isToggled()) {
-            e.setSprint(false);
-        }
     }
 }

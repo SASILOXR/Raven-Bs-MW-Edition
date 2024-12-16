@@ -14,6 +14,7 @@ public class S3E extends SPacket {
     public int action;
     public int friendlyFlags;
     public int color;
+
     public S3E(S3EPacketTeams packet) {
         super(packet);
         this.name = packet.func_149312_c();

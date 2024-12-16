@@ -3,7 +3,6 @@ package keystrokesmod.script;
 import keystrokesmod.Raven;
 import keystrokesmod.clickgui.components.impl.CategoryComponent;
 import keystrokesmod.module.Module;
-import keystrokesmod.script.classes.Entity;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
@@ -16,17 +15,21 @@ import java.io.FileReader;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
 
 public class ScriptManager {
     private Minecraft mc = Minecraft.getMinecraft();
     public HashMap<Script, Module> scripts = new LinkedHashMap<>();
     public JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    public boolean d = true;
+    public boolean deleteTempFiles = true;
     public File directory;
-    public List<String> imports = Arrays.asList(Color.class.getName(), Collections.class.getName(), List.class.getName(), ArrayList.class.getName(), Arrays.class.getName(), Map.class.getName(), HashMap.class.getName(), HashSet.class.getName(), ConcurrentHashMap.class.getName(), LinkedHashMap.class.getName(), Iterator.class.getName(), Comparator.class.getName(), AtomicInteger.class.getName(), AtomicLong.class.getName(), AtomicBoolean.class.getName(), Random.class.getName());
+    public List<String> imports = Arrays.asList(Color.class.getName(), Collections.class.getName(), List.class.getName(), ArrayList.class.getName(), Arrays.class.getName(), Map.class.getName(), HashMap.class.getName(), HashSet.class.getName(), ConcurrentHashMap.class.getName(), LinkedHashMap.class.getName(), Iterator.class.getName(), Comparator.class.getName(), AtomicInteger.class.getName(), AtomicLong.class.getName(), AtomicBoolean.class.getName(), Random.class.getName(), Matcher.class.getName());
     public String tempDir = System.getProperty("java.io.tmpdir") + "cmF2ZW5fc2NyaXB0cw";
     public String b = ((String[])ScriptManager.class.getProtectionDomain().getCodeSource().getLocation().getPath().split("\\.jar!"))[0].substring(5) + ".jar";
 
@@ -55,53 +58,103 @@ public class ScriptManager {
         for (Module module : this.scripts.values()) {
             module.disable();
         }
-        if (d) {
-            d = false;
-            final File file = new File(tempDir);
-            if (file.exists() && file.isDirectory()) {
-                final File[] array = file.listFiles();
-                if (array != null) {
-                    final File[] array2 = array;
-                    for (int length = array2.length, i = 0; i < length; ++i) {
-                        array2[i].delete();
-                    }
-                }
-            }
-        }
-        else {
-            final Iterator<Map.Entry<Script, Module>> iterator = scripts.entrySet().iterator();
-            while (iterator.hasNext()) {
-                iterator.next().getKey().delete();
-                iterator.remove();
-            }
-        }
-        final File file2 = directory;
-        if (file2.exists() && file2.isDirectory()) {
-            final File[] array3 = file2.listFiles();
-            if (array3 != null) {
-                final HashSet<String> set = new HashSet<>();
-                for (final File file3 : array3) {
-                    if (file3.isFile()) {
-                        if (!set.contains(file3.getName())) {
-                            set.add(file3.getName());
-                            parseFile(file3);
+
+        if (deleteTempFiles) {
+            deleteTempFiles = false;
+            final File tempDirectory = new File(tempDir);
+            if (tempDirectory.exists() && tempDirectory.isDirectory()) {
+                final File[] tempFiles = tempDirectory.listFiles();
+                if (tempFiles != null) {
+                    for (File tempFile : tempFiles) {
+                        if (!tempFile.delete()) {
+                            System.err.println("Failed to delete temp file: " + tempFile.getAbsolutePath());
                         }
                     }
                 }
             }
         }
         else {
-            file2.mkdirs();
+            Iterator<Map.Entry<Script, Module>> iterator = scripts.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<Script, Module> entry = iterator.next();
+                entry.getKey().delete();
+                iterator.remove();
+            }
         }
+
+        final File scriptDirectory = directory;
+        if (scriptDirectory.exists() && scriptDirectory.isDirectory()) {
+            final File[] scriptFiles = scriptDirectory.listFiles();
+            if (scriptFiles != null) {
+                final HashSet<String> loadedScripts = new HashSet<>();
+                ScheduledExecutorService executor = Raven.getExecutor();
+
+                if (executor.isShutdown() || executor.isTerminated()) {
+                    System.err.println("Executor is shut down. Cannot load scripts.");
+                    return;
+                }
+
+                CountDownLatch latch = new CountDownLatch(scriptFiles.length);
+
+                for (final File scriptFile : scriptFiles) {
+                    if (scriptFile.isFile() && scriptFile.getName().endsWith(".java")) {
+                        if (!loadedScripts.contains(scriptFile.getName())) {
+                            loadedScripts.add(scriptFile.getName());
+                            executor.submit(() -> {
+                                try {
+                                    parseFile(scriptFile);
+                                }
+                                catch (Exception e) {
+                                    System.err.println("Error loading script " + scriptFile.getName() + ": " + e.getMessage());
+                                    e.printStackTrace();
+                                }
+                                finally {
+                                    latch.countDown();
+                                }
+                            });
+                        }
+                        else {
+                            latch.countDown();
+                        }
+                    }
+                    else {
+                        latch.countDown();
+                    }
+                }
+
+                try {
+                    boolean completed = latch.await(10, TimeUnit.SECONDS);
+                    if (!completed) {
+                        System.err.println("Timeout occurred while loading scripts.");
+                    }
+                }
+                catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Script loading was interrupted.");
+                }
+            }
+        }
+        else {
+            if (scriptDirectory.mkdirs()) {
+                System.out.println("Created script directory: " + scriptDirectory.getAbsolutePath());
+            }
+            else {
+                System.err.println("Failed to create script directory: " + scriptDirectory.getAbsolutePath());
+            }
+        }
+
         for (Module module : this.scripts.values()) {
             module.disable();
         }
+
         for (CategoryComponent categoryComponent : Raven.clickGui.categories) {
             if (categoryComponent.categoryName == Module.category.scripts) {
                 categoryComponent.reloadModules(false);
             }
         }
     }
+
+
 
     private void parseFile(final File file) {
         if (file.getName().startsWith("_") || !file.getName().endsWith(".java")) {

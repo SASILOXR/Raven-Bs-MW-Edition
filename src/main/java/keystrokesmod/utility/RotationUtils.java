@@ -29,11 +29,23 @@ public class RotationUtils {
         return fixRotation(array[0], array[1], n, n2);
     }
 
-    public static float[] getRotations(final BlockPos blockPos) {
-        final double n = blockPos.getX() + 0.45 - mc.thePlayer.posX;
-        final double n2 = blockPos.getY() + 0.45 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
-        final double n3 = blockPos.getZ() + 0.45 - mc.thePlayer.posZ;
-        return new float[] { mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float((float)(Math.atan2(n3, n) * 57.295780181884766) - 90.0f - mc.thePlayer.rotationYaw), clampTo90(mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float((float)(-(Math.atan2(n2, MathHelper.sqrt_double(n * n + n3 * n3)) * 57.295780181884766)) - mc.thePlayer.rotationPitch)) };
+    public static float[] getRotations(BlockPos blockPos) {
+        double x = blockPos.getX() + 0.45 - mc.thePlayer.posX;
+        double y = blockPos.getY() + 0.45 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
+        double z = blockPos.getZ() + 0.45 - mc.thePlayer.posZ;
+
+        float angleToBlock = (float) (Math.atan2(z, x) * (180 / Math.PI)) - 90.0f;
+        float deltaYaw = MathHelper.wrapAngleTo180_float(angleToBlock - mc.thePlayer.rotationYaw);
+        float yaw = mc.thePlayer.rotationYaw + deltaYaw;
+
+        double distance = MathHelper.sqrt_double(x * x + z * z);
+        float angleToBlockPitch = (float) (-(Math.atan2(y, distance) * (180 / Math.PI)));
+        float deltaPitch = MathHelper.wrapAngleTo180_float(angleToBlockPitch - mc.thePlayer.rotationPitch);
+        float pitch = mc.thePlayer.rotationPitch + deltaPitch;
+
+        pitch = clampTo90(pitch);
+
+        return new float[] { yaw, pitch };
     }
 
     public static float interpolateValue(float tickDelta, float old, float newFloat) {

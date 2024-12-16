@@ -90,9 +90,9 @@ public class Commands {
                     return;
                 }
 
-                NameHider.n = args[1];
+                NameHider.fakeName = args[1];
                 print("&a" + Utils.uf("name") + "Nick has been set to:".substring(4), 1);
-                print("\"" + NameHider.n + "\"", 0);
+                print("\"" + NameHider.fakeName + "\"", 0);
             }
             else if (cm.startsWith(FakeChat.command)) {
                 if (!hasArgs) {

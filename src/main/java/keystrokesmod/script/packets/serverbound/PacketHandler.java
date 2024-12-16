@@ -3,10 +3,7 @@ package keystrokesmod.script.packets.serverbound;
 import keystrokesmod.script.packets.clientbound.*;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.*;
-import net.minecraft.network.play.server.S08PacketPlayerPosLook;
-import net.minecraft.network.play.server.S12PacketEntityVelocity;
-import net.minecraft.network.play.server.S27PacketExplosion;
-import net.minecraft.network.play.server.S3EPacketTeams;
+import net.minecraft.network.play.server.*;
 
 public class PacketHandler {
     public static CPacket convertServerBound(net.minecraft.network.Packet packet) {
@@ -82,6 +79,18 @@ public class PacketHandler {
             }
             else if (packet instanceof S08PacketPlayerPosLook) {
                 sPacket = new S08((S08PacketPlayerPosLook) packet);
+            }
+            else if (packet instanceof S2APacketParticles) {
+                sPacket = new S2A((S2APacketParticles) packet);
+            }
+            else if (packet instanceof S06PacketUpdateHealth) {
+                sPacket = new S06((S06PacketUpdateHealth) packet);
+            }
+            else if (packet instanceof S23PacketBlockChange) {
+                sPacket = new S23((S23PacketBlockChange) packet);
+            }
+            else if (packet instanceof S29PacketSoundEffect) {
+                sPacket = new S29((S29PacketSoundEffect) packet);
             }
             else {
                 sPacket = new SPacket(packet);

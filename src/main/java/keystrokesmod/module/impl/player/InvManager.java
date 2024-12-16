@@ -1,9 +1,12 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.Raven;
 import keystrokesmod.event.ReceivePacketEvent;
 import keystrokesmod.module.Module;
+import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
+import keystrokesmod.utility.BadPacketsHandler;
 import keystrokesmod.utility.Utils;
 import net.minecraft.block.*;
 import net.minecraft.enchantment.Enchantment;
@@ -72,11 +75,11 @@ public class InvManager extends Module {
     }
 
     public void onUpdate() {
-        if (disableInLobby.isToggled() && Utils.isLobby()) {
+        if ((disableInLobby.isToggled() && Utils.isLobby()) || (ModuleManager.skyWars.isEnabled() && ModuleManager.invmove.isEnabled() && ModuleManager.invmove.inventory.getInput() == 3 && Utils.getSkyWarsStatus() != 2)) {
             resetDelay();
             return;
         }
-        if (Utils.inInventory()) {
+        if (Utils.inInventory() || (ModuleManager.invmove.isEnabled() && ModuleManager.invmove.inventory.getInput() == 3 && mc.currentScreen == null && !Raven.badPacketsHandler.sent())) {
             if (autoArmor.getInput() != -1 && lastArmor++ >= autoArmor.getInput()) {
                 for (int i = 0; i < 4; i++) {
                     int bestSlot = getBestArmor(i, null);

@@ -13,6 +13,7 @@ import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.script.classes.*;
 import keystrokesmod.script.classes.Vec3;
+import keystrokesmod.script.packets.clientbound.SPacket;
 import keystrokesmod.script.packets.serverbound.CPacket;
 import keystrokesmod.script.packets.serverbound.PacketHandler;
 import keystrokesmod.utility.*;
@@ -61,7 +62,11 @@ public class ScriptDefaults {
         }
 
         public static int getUID() {
-            return 8;
+            return 4;
+        }
+
+        public static String getUser() {
+            return "mic";
         }
 
         public static void addEnemy(String username) {
@@ -107,6 +112,10 @@ public class ScriptDefaults {
 
         public static boolean isCreative() {
             return mc.thePlayer.capabilities.isCreativeMode;
+        }
+
+        public static void processPacket(SPacket packet) {
+            packet.packet.processPacket(mc.getNetHandler());
         }
 
         public static boolean isFlying() {
@@ -305,6 +314,34 @@ public class ScriptDefaults {
         public static int[] getDisplaySize() {
             final ScaledResolution scaledResolution = new ScaledResolution(mc);
             return new int[]{scaledResolution.getScaledWidth(), scaledResolution.getScaledHeight(), scaledResolution.getScaleFactor()};
+        }
+
+        public float getServerDirection(PlayerState state) {
+            return state.yaw;
+        }
+
+        public Object[] raycastBlock(double distance) {
+            return raycastBlock(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+        }
+
+        public Object[] raycastBlock(double distance, float yaw, float pitch) {
+            MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch);
+            if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
+                return null;
+            }
+            return new Object[]{Vec3.convert(hit.getBlockPos()), new Vec3(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord), hit.sideHit.name()};
+        }
+
+        public Object[] raycastEntity(double distance) {
+            return raycastEntity(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+        }
+
+        public Object[] raycastEntity(double distance, float yaw, float pitch) {
+            MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch);
+            if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY) {
+                return null;
+            }
+            return new Object[]{Entity.convert(hit.entityHit), new Vec3(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord), mc.thePlayer.getDistanceSqToEntity(hit.entityHit)};
         }
 
         public static boolean placeBlock(Vec3 targetPos, String side, Vec3 hitVec) {
@@ -688,8 +725,28 @@ public class ScriptDefaults {
             GlStateManager.scale(1, 1, 1);
         }
 
+        public static Vec3 worldToScreen(double x, double y, double z, int scaleFactor, float partialTicks) {
+            double interpolatedX = x * partialTicks - mc.getRenderManager().viewerPosX;
+            double interpolatedY = y * partialTicks - mc.getRenderManager().viewerPosY;
+            double interpolatedZ = z * partialTicks - mc.getRenderManager().viewerPosZ;
+
+            double[] screenCoords = RenderUtils.convertTo2D(interpolatedX, interpolatedY, interpolatedZ);
+            if (screenCoords == null) {
+                return null;
+            }
+            double screenX = screenCoords[0] / scaleFactor;
+            double screenY = screenCoords[1] / scaleFactor;
+            double depth = screenCoords[2];
+
+            return new Vec3(screenX, screenY, depth);
+        }
+
         public static void roundedRect(float startX, float startY, float endX, float endY, float radius, int color) {
             RenderUtils.drawRoundedRectangle(startX, startY, endX, endY, radius, color);
+        }
+
+        public static double[] getRotations() {
+            return new double[] { mc.thePlayer.cameraYaw, mc.thePlayer.cameraPitch };
         }
 
         public static int getFontWidth(String text) {
@@ -907,7 +964,7 @@ public class ScriptDefaults {
             }
         }
 
-        public static int getKeycode(String key) {
+        public static int getKeyCode(String key) {
             return Keyboard.getKeyIndex(key);
         }
         public static boolean isMouseDown(int mouseButton) {

@@ -7,7 +7,7 @@ import keystrokesmod.utility.Utils;
 import net.minecraft.client.network.NetworkPlayerInfo;
 
 public class NameHider extends Module {
-    public static String n = "raven";
+    public static String fakeName = "raven";
     public static ButtonSetting hideAllNames;
 
     public NameHider() {
@@ -25,11 +25,11 @@ public class NameHider extends Module {
                     if (networkPlayerInfo.equals(getPlayerInfo)) {
                         continue;
                     }
-                    s = s.replace(networkPlayerInfo.getGameProfile().getName(), n);
+                    s = s.replace(networkPlayerInfo.getGameProfile().getName(), fakeName);
                 }
             }
             else {
-                s = s.replace(Utils.getServerName(), n);
+                s = s.replace(Utils.getServerName(), fakeName);
             }
         }
         return s;

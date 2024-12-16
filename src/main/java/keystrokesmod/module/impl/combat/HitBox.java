@@ -50,27 +50,26 @@ public class HitBox extends Module {
     }
 
     @SubscribeEvent
-    public void m(MouseEvent e) {
-        if (Utils.nullCheck()) {
-            if (e.button != 0 || !e.buttonstate || !Utils.nullCheck() || multiplier.getInput() == 1 || mc.thePlayer.isBlocking() || mc.currentScreen != null) {
-                return;
-            }
-            if (weaponOnly.isToggled() && !Utils.holdingWeapon()) {
-                return;
-            }
-            EntityLivingBase c = getEntity(1.0F);
-            if (c == null) {
-                return;
-            }
-            if (c instanceof EntityPlayer) {
-                if (Utils.isFriended((EntityPlayer) c)) {
-                    return;
-                }
-            } else if (playersOnly.isToggled()) {
-                return;
-            }
-            mc.objectMouseOver = mv;
+    public void onMouse(MouseEvent e) {
+        if (e.button != 0 || !e.buttonstate || !Utils.nullCheck() || multiplier.getInput() == 1 || mc.thePlayer.isBlocking() || mc.currentScreen != null) {
+            return;
         }
+        if (weaponOnly.isToggled() && !Utils.holdingWeapon()) {
+            return;
+        }
+        Entity c = getEntity(1.0F);
+        if (c == null) {
+            return;
+        }
+        if (c instanceof EntityPlayer) {
+            if (Utils.isFriended((EntityPlayer) c)) {
+                return;
+            }
+        }
+        else if (playersOnly.isToggled()) {
+            return;
+        }
+        mc.objectMouseOver = mv;
     }
 
     @SubscribeEvent
@@ -88,7 +87,7 @@ public class HitBox extends Module {
         return multiplier.getInput();
     }
 
-    public EntityLivingBase getEntity(float partialTicks) {
+    public Entity getEntity(float partialTicks) {
         if (mc.getRenderViewEntity() != null && mc.theWorld != null) {
             mc.pointedEntity = null;
             pointedEntity = null;
@@ -141,7 +140,7 @@ public class HitBox extends Module {
             if (pointedEntity != null && (d3 < d2 || mv == null)) {
                 mv = new MovingObjectPosition(pointedEntity, vec6);
                 if (pointedEntity instanceof EntityLivingBase || pointedEntity instanceof EntityItemFrame) {
-                    return (EntityLivingBase) pointedEntity;
+                    return pointedEntity;
                 }
             }
         }

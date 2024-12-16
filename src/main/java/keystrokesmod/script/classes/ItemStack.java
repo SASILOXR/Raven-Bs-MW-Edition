@@ -3,9 +3,7 @@ package keystrokesmod.script.classes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,11 +30,11 @@ public class ItemStack {
         this.displayName = itemStack.getDisplayName();
         this.stackSize = itemStack.stackSize;
         this.maxStackSize = itemStack.getMaxStackSize();
-        this.durability = itemStack.getItemDamage();
+        this.durability = itemStack.getMaxDamage() - itemStack.getItemDamage();
         this.maxDurability = itemStack.getMaxDamage();
     }
 
-    public List<String> getToolTip() {
+    public List<String> getTooltip() {
         if (this.itemStack == null) {
             return new ArrayList<>();
         }

@@ -18,6 +18,10 @@
     "client.MixinMovementInputFromOptions",
     "client.MixinMinecraft",
     "render.MixinItemRenderer",
-    "render.MixinRenderGlobal"
+    "render.MixinRenderGlobal",
+    "client.MixinWorldInfo",
+    "client.MixinWorld",
+    "render.MixinGuiChat",
+    "render.MixinGuiScreen"
   ]
 }

@@ -136,8 +136,11 @@ public class HUD extends Module {
                         if (alphabeticalSort.isToggled() && difference < 0) {
                             RenderUtils.drawRect(xPos - 2, yPos - 2, xPos - difference - 2, yPos - 1, color);
                         }
-                        else {
+                        else if (alignRight.isToggled()) {
                             RenderUtils.drawRect(xPos - difference - 2, yPos - 2, xPos - 1, yPos - 1, color);
+                        }
+                        else {
+                            RenderUtils.drawRect(xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, yPos - 2, xPos + difference + mc.fontRendererObj.getStringWidth(moduleName) + 1.5, yPos - 1, color);
                         }
                     }
                     if (outline.getInput() > 0) { // sides
@@ -313,6 +316,18 @@ public class HUD extends Module {
                             }
                             if (drawBackground.isToggled()) {
                                 RenderUtils.drawRect(xPos - 1, n - 1, xPos + mc.fontRendererObj.getStringWidth(moduleName) + 0.5, n + mc.fontRendererObj.FONT_HEIGHT + 1, backGroundColor);
+                            }
+                            if (n2 != 0 && outline.getInput() == 1) { // between
+                                double difference = mc.fontRendererObj.getStringWidth(previousModule) - mc.fontRendererObj.getStringWidth(moduleName);
+                                if (alphabeticalSort.isToggled() && difference < 0) {
+                                    RenderUtils.drawRect(xPos - 2, n - 2, xPos - difference - 2, n - 1, color);
+                                }
+                                else if (alignRight.isToggled()) {
+                                    RenderUtils.drawRect(xPos - difference - 2, n - 2, xPos - 1, n - 1, color);
+                                }
+                                else {
+                                    RenderUtils.drawRect(xPos + mc.fontRendererObj.getStringWidth(moduleName), n - 2, xPos - 1 + difference + mc.fontRendererObj.getStringWidth(moduleName), n - 1, color);
+                                }
                             }
                             if (outline.getInput() > 0) { // sides
                                 if (alignRight.isToggled()) {

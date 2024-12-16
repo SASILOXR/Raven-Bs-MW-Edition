@@ -99,28 +99,4 @@ public class World {
         }
         return tileEntities;
     }
-
-    public Object[] raycastBlock(double distance) {
-        return raycastBlock(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
-    }
-
-    public Object[] raycastBlock(double distance, float yaw, float pitch) {
-        MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch);
-        if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
-            return null;
-        }
-        return new Object[]{Vec3.convert(hit.getBlockPos()), new Vec3(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord), hit.sideHit.name()};
-    }
-
-    public Object[] raycastEntity(double distance) {
-        return raycastEntity(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
-    }
-
-    public Object[] raycastEntity(double distance, float yaw, float pitch) {
-        MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch);
-        if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY) {
-            return null;
-        }
-        return new Object[]{Entity.convert(hit.entityHit), new Vec3(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord), mc.thePlayer.getDistanceSqToEntity(hit.entityHit)};
-    }
 }
