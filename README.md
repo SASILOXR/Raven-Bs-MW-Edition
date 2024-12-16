@@ -4,7 +4,8 @@ Raven B4, but for those who can't afford it, or too paranoid to get it. We highl
 
 Quality features like AntiFireball, ItemESP, and more. No Bloat, no junk, based off b3, with the help of b4 src.
 
-![image](https://github.com/Strangerrrs/Raven-bS/assets/166373671/bff24a21-60e3-4955-aa88-4b732cbea6b0)
+![image](https://github.com/user-attachments/assets/d2568078-6e45-46d7-8480-9f5d5eb6bc23)
+
 
 
 
