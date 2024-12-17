@@ -14,13 +14,18 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.awt.*;
 
 @Mixin(RendererLivingEntity.class)
 public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> extends Render<T> {  // credit: pablolnmak
+    @Shadow
+    protected boolean renderOutlines;
+
     protected MixinRendererLivingEntity(RenderManager renderManager) {
         super(renderManager);
     }
@@ -69,5 +74,10 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
         GlStateManager.disableTexture2D();
         GlStateManager.setActiveTexture(OpenGlHelper.defaultTexUnit);
         return true;
+    }
+
+    @ModifyVariable(method = "renderModel", at = @At(value = "STORE"), ordinal = 0)
+    private boolean modifyInvisibleFlag(boolean flag) {
+        return flag || this.renderOutlines;
     }
 }
