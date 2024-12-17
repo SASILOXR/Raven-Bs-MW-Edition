@@ -15,6 +15,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -30,10 +31,15 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
         super(renderManager);
     }
 
+    @Unique
+    private boolean shouldRender() {
+        return ModuleManager.playerESP != null && ModuleManager.playerESP.isEnabled() && ModuleManager.playerESP.outline.isToggled();
+    }
+
     @Redirect(method = "doRender(Lnet/minecraft/entity/EntityLivingBase;DDDFF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/RendererLivingEntity;setScoreTeamColor(Lnet/minecraft/entity/EntityLivingBase;)Z"))
     private boolean setOutlineColor(RendererLivingEntity instance, T entityLivingBaseIn) {
         int i = 16777215;
-        boolean drawOutline = ModuleManager.playerESP != null && ModuleManager.playerESP.isEnabled() && ModuleManager.playerESP.outline.isToggled() && ((entityLivingBaseIn != Minecraft.getMinecraft().thePlayer && !AntiBot.isBot(entityLivingBaseIn)) || (entityLivingBaseIn == Minecraft.getMinecraft().thePlayer && ModuleManager.playerESP.renderSelf.isToggled()));
+        boolean drawOutline = shouldRender() && ((entityLivingBaseIn != Minecraft.getMinecraft().thePlayer && !AntiBot.isBot(entityLivingBaseIn)) || (entityLivingBaseIn == Minecraft.getMinecraft().thePlayer && ModuleManager.playerESP.renderSelf.isToggled()));
 
         if (!drawOutline || ModuleManager.playerESP.teamColor.isToggled())
         {
@@ -78,6 +84,6 @@ public abstract class MixinRendererLivingEntity<T extends EntityLivingBase> exte
 
     @ModifyVariable(method = "renderModel", at = @At(value = "STORE"), ordinal = 0)
     private boolean modifyInvisibleFlag(boolean flag) {
-        return flag || this.renderOutlines;
+        return flag || (this.renderOutlines && shouldRender() && ModuleManager.playerESP.showInvis.isToggled());
     }
 }
