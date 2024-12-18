@@ -12,7 +12,7 @@ Quality features like AntiFireball, ItemESP, and more. No Bloat, no junk, based 
 
 
 
-Discord:
+# Discord
 
 <a href="https://discord.gg/ZWttByQD5N"><img src="https://invidget.switchblade.xyz/ZWttByQD5N" alt="https://discord.gg/ZWttByQD5N"/></a><br>
 
