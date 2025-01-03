@@ -1,5 +1,6 @@
 package keystrokesmod.utility;
 
+
 import keystrokesmod.event.PostUpdateEvent;
 import keystrokesmod.event.ReceivePacketEvent;
 import keystrokesmod.event.SendPacketEvent;
@@ -15,11 +16,13 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class BadPacketsHandler {
+public class PacketsHandler {
+    public Minecraft mc = Minecraft.getMinecraft();
     public AtomicBoolean C0A = new AtomicBoolean(false);
     public AtomicBoolean C08 = new AtomicBoolean(false);
     public AtomicBoolean C07 = new AtomicBoolean(false);
     public AtomicBoolean C02 = new AtomicBoolean(false);
+    public AtomicBoolean C02_INTERACT_AT = new AtomicBoolean(false);
     public AtomicBoolean C09 = new AtomicBoolean(false);
     public AtomicBoolean delayAttack = new AtomicBoolean(false);
     public AtomicBoolean delay = new AtomicBoolean(false);
@@ -36,6 +39,9 @@ public class BadPacketsHandler {
                 e.setCanceled(true);
                 return;
             }
+            if (((C02PacketUseEntity) e.getPacket()).getAction() == C02PacketUseEntity.Action.INTERACT_AT) {
+                C02_INTERACT_AT.set(true);
+            }
             C02.set(true);
         }
         else if (e.getPacket() instanceof C08PacketPlayerBlockPlacement) {
@@ -45,6 +51,10 @@ public class BadPacketsHandler {
             C07.set(true);
         }
         else if (e.getPacket() instanceof C0APacketAnimation) {
+            if (C07.get()) {
+                e.setCanceled(true);
+                return;
+            }
             C0A.set(true);
         }
         else if (e.getPacket() instanceof C09PacketHeldItemChange) {
@@ -88,6 +98,7 @@ public class BadPacketsHandler {
         C07.set(false);
         C02.set(false);
         C0A.set(false);
+        C02_INTERACT_AT.set(false);
         C09.set(false);
     }
 
@@ -98,6 +109,9 @@ public class BadPacketsHandler {
         }
         else if (packet instanceof C02PacketUseEntity) {
             C02.set(true);
+            if (((C02PacketUseEntity) packet).getAction() == C02PacketUseEntity.Action.INTERACT_AT) {
+                C02_INTERACT_AT.set(true);
+            }
         }
         else if (packet instanceof C07PacketPlayerDigging) {
             C07.set(true);
@@ -115,5 +129,14 @@ public class BadPacketsHandler {
             return true;
         }
         return false;
+    }
+
+    public boolean updateSlot(int slot) {
+        if (playerSlot.get() == slot || slot == -1) {
+            return false;
+        }
+        mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(slot));
+        playerSlot.set(slot);
+        return true;
     }
 }

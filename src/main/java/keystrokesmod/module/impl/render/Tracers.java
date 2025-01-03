@@ -62,7 +62,7 @@ public class Tracers extends Module {
         if (Utils.nullCheck()) {
             int rgb = e.isToggled() ? Utils.getChroma(2L, 0L) : this.rgb_c;
             Iterator var3;
-            if (Raven.debugger) {
+            if (Raven.debug) {
                 var3 = mc.theWorld.loadedEntityList.iterator();
 
                 while (var3.hasNext()) {

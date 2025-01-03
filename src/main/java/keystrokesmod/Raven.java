@@ -16,6 +16,7 @@ import keystrokesmod.utility.profile.Profile;
 import keystrokesmod.utility.profile.ProfileManager;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.ClientCommandHandler;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -31,7 +32,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
         acceptedMinecraftVersions = "[1.8.9]"
 )
 public class Raven {
-    public static boolean debugger = false;
+    public static boolean debug = false;
     public static Minecraft mc = Minecraft.getMinecraft();
     private static KeySrokeRenderer keySrokeRenderer;
     private static boolean isKeyStrokeConfigGuiToggled;
@@ -42,7 +43,8 @@ public class Raven {
     public static ScriptManager scriptManager;
     public static CommandManager commandManager;
     public static Profile currentProfile;
-    public static BadPacketsHandler badPacketsHandler;
+    public static PacketsHandler packetsHandler;
+    private static boolean firstLoad;
 
     public Raven() {
         moduleManager = new ModuleManager();
@@ -55,9 +57,10 @@ public class Raven {
         FMLCommonHandler.instance().bus().register(this);
         FMLCommonHandler.instance().bus().register(new DebugInfoRenderer());
         FMLCommonHandler.instance().bus().register(new CPSCalculator());
+        //FMLCommonHandler.instance().bus().register(new MovementFix(this.mc));
         FMLCommonHandler.instance().bus().register(new KeySrokeRenderer());
         FMLCommonHandler.instance().bus().register(new Ping());
-        FMLCommonHandler.instance().bus().register(badPacketsHandler = new BadPacketsHandler());
+        FMLCommonHandler.instance().bus().register(packetsHandler = new PacketsHandler());
         Reflection.getFields();
         Reflection.getMethods();
         moduleManager.register();
@@ -65,13 +68,13 @@ public class Raven {
         keySrokeRenderer = new KeySrokeRenderer();
         clickGui = new ClickGui();
         profileManager = new ProfileManager();
+        scriptManager.loadScripts();
         profileManager.loadProfiles();
         profileManager.loadProfile("default");
         Reflection.setKeyBindings();
-        scriptManager.loadScripts();
-        scriptManager.loadScripts();
         FMLCommonHandler.instance().bus().register(ModuleManager.tower);
         commandManager = new CommandManager();
+
     }
 
     @SubscribeEvent
@@ -108,6 +111,14 @@ public class Raven {
                 isKeyStrokeConfigGuiToggled = false;
                 mc.displayGuiScreen(new KeyStrokeConfigGui());
             }
+        }
+    }
+
+    @SubscribeEvent
+    public void onEntityJoinWorld(EntityJoinWorldEvent e) {
+        if (e.entity == mc.thePlayer && !firstLoad) {
+            firstLoad = true;
+            scriptManager.loadScripts();
         }
     }
 

@@ -6,6 +6,7 @@ import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.script.Script;
 import keystrokesmod.utility.Utils;
+import keystrokesmod.utility.profile.ProfileModule;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import org.lwjgl.input.Keyboard;
@@ -183,7 +184,9 @@ public class Module {
         } else {
             this.enable();
         }
-
+        if (Raven.currentProfile != null) {
+            ((ProfileModule) Raven.currentProfile.getModule()).saved = false;
+        }
     }
 
     public void onUpdate() {}

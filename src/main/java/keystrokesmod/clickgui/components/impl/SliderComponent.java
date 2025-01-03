@@ -28,7 +28,7 @@ public class SliderComponent extends Component {
         this.sliderSetting = sliderSetting;
         this.moduleComponent = moduleComponent;
         this.x = moduleComponent.categoryComponent.getX() + moduleComponent.categoryComponent.getWidth();
-        this.y = moduleComponent.categoryComponent.getY() + moduleComponent.o;
+        this.y = moduleComponent.categoryComponent.getY() + moduleComponent.yPos;
         this.o = o;
     }
 
@@ -65,7 +65,7 @@ public class SliderComponent extends Component {
         GL11.glPopMatrix();
     }
 
-    public void so(int n) {
+    public void updateHeight(int n) {
         this.o = n;
     }
 

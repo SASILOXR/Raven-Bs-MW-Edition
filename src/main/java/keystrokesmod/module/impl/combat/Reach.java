@@ -146,7 +146,8 @@ public class Reach extends Module {
             mc.mcProfiler.endSection();
             if (entity != null && hitVec != null) {
                 return new Object[]{entity, hitVec};
-            } else {
+            }
+            else {
                 return null;
             }
         }

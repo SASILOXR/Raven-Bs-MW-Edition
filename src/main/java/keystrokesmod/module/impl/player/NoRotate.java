@@ -1,65 +1,95 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.Raven;
 import keystrokesmod.event.ReceivePacketEvent;
 import keystrokesmod.event.SendPacketEvent;
 import keystrokesmod.module.Module;
-import keystrokesmod.utility.Reflection;
+import keystrokesmod.utility.PacketUtils;
 import keystrokesmod.utility.Utils;
+import net.minecraft.network.INetHandler;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
+import net.minecraft.util.Vec3;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class NoRotate extends Module {
-    private boolean received;
-    private float[] rotations;
+    private S08Info s08PacketData;
+    private int receivedTick;
+
     public NoRotate() {
         super("NoRotate", category.player);
     }
 
-    @Override
-    public void onDisable() {
-        received = false;
-        rotations = null;
+    @SubscribeEvent
+    public void onReceivePacket(ReceivePacketEvent e) {
+        if (e.getPacket() instanceof S08PacketPlayerPosLook && mc.thePlayer != null && ((S08PacketPlayerPosLook) e.getPacket()).getPitch() != 0) {
+            e.setCanceled(true);
+            S08PacketPlayerPosLook p = (S08PacketPlayerPosLook) e.getPacket();
+            checkThreadAndEnqueue(new S08PacketPlayerPosLook(p.getX(), p.getY(), p.getZ(), mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, p.func_179834_f()));
+            s08PacketData = getPosAndRotation(p);
+            receivedTick = mc.thePlayer.ticksExisted;
+        }
     }
 
     @SubscribeEvent
-    public void onReceivePacket(ReceivePacketEvent event) {
-        if (!Utils.nullCheck()) {
-            return;
-        }
-        if (event.getPacket() instanceof S08PacketPlayerPosLook) {
-            S08PacketPlayerPosLook packet = (S08PacketPlayerPosLook) event.getPacket();
-            try {
-                Reflection.S08PacketPlayerPosLookYaw.set(packet, mc.thePlayer.rotationYaw);
-                Reflection.S08PacketPlayerPosLookPitch.set(packet, mc.thePlayer.rotationPitch);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                Utils.sendModuleMessage(this, "&cFailed to modify S08PacketPlayerPosLook. Relaunch your game.");
+    public void onSendPacket(SendPacketEvent e) {
+        if (s08PacketData != null && mc.thePlayer != null && e.getPacket() instanceof C03PacketPlayer.C06PacketPlayerPosLook) {
+            if (Utils.timeBetween(mc.thePlayer.ticksExisted, receivedTick) >= 2) {
+                s08PacketData = null;
                 return;
             }
-            received = true;
-            rotations = new float[]{packet.getYaw(), packet.getPitch()};
+            C03PacketPlayer.C06PacketPlayerPosLook p = (C03PacketPlayer.C06PacketPlayerPosLook) e.getPacket();
+            e.setCanceled(true);
+            PacketUtils.sendPacketNoEvent(new C03PacketPlayer.C06PacketPlayerPosLook(p.getPositionX(), p.getPositionY(), p.getPositionZ(), s08PacketData.yaw, s08PacketData.pitch, p.isOnGround()));
+            if (Raven.debug) {
+                Utils.sendModuleMessage(this, "&7spoofing c06 immediately.");
+            }
         }
     }
 
-    @SubscribeEvent
-    public void onPacket(SendPacketEvent e) {
-        if (!Utils.nullCheck()) {
-            return;
+    public S08Info getPosAndRotation(final S08PacketPlayerPosLook packet) {
+        double x = packet.getX();
+        double y = packet.getY();
+        double z = packet.getZ();
+        float yaw = packet.getYaw();
+        float pitch = packet.getPitch();
+        if (packet.func_179834_f().contains(S08PacketPlayerPosLook.EnumFlags.X)) {
+            x += mc.thePlayer.posX;
         }
-        if (received && rotations != null && (e.getPacket() instanceof C03PacketPlayer.C06PacketPlayerPosLook || e.getPacket() instanceof C03PacketPlayer.C05PacketPlayerLook)) {
-            C03PacketPlayer.C06PacketPlayerPosLook packet = (C03PacketPlayer.C06PacketPlayerPosLook) e.getPacket();
-            try {
-                Reflection.C03PacketPlayerYaw.set(packet, rotations[0]);
-                Reflection.C03PacketPlayerPitch.set(packet, rotations[1]);
-            }
-            catch (Exception exception) {
-                exception.printStackTrace();
-                Utils.sendModuleMessage(this, "&cFailed to modify C06PacketPlayerPosLook. Relaunch your game.");
-            }
-            received = false;
-            rotations = null;
+        if (packet.func_179834_f().contains(S08PacketPlayerPosLook.EnumFlags.Y)) {
+            y += mc.thePlayer.posY;
+        }
+        if (packet.func_179834_f().contains(S08PacketPlayerPosLook.EnumFlags.Z)) {
+            z += mc.thePlayer.posZ;
+        }
+        if (packet.func_179834_f().contains(S08PacketPlayerPosLook.EnumFlags.X_ROT)) {
+            pitch += mc.thePlayer.rotationPitch;
+        }
+        if (packet.func_179834_f().contains(S08PacketPlayerPosLook.EnumFlags.Y_ROT)) {
+            yaw += mc.thePlayer.rotationYaw;
+        }
+        return new S08Info(new Vec3(x, y, z), yaw, pitch);
+    }
+
+    public <T extends INetHandler> void checkThreadAndEnqueue(Packet<T> packet) {
+        if (!mc.isCallingFromMinecraftThread()) {
+            mc.addScheduledTask(() -> packet.processPacket((T) mc.getNetHandler()));
+        }
+    }
+
+    class S08Info {
+        Vec3 position;
+        float yaw, pitch;
+
+        public S08Info(Vec3 position, float yaw, float pitch) {
+            this.position = position;
+            this.yaw = yaw;
+            this.pitch = pitch;
+        }
+
+        public boolean samePos(Vec3 position) {
+            return this.position.xCoord == position.xCoord && this.position.yCoord == position.yCoord && this.position.zCoord == position.zCoord;
         }
     }
 }

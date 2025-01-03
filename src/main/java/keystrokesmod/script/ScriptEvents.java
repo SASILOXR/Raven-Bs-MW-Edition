@@ -89,8 +89,16 @@ public class ScriptEvents {
     }
 
     @SubscribeEvent
+    public void onGuiUpdate(GuiUpdateEvent e) {
+        if (e.guiScreen == null) {
+            return;
+        }
+        Raven.scriptManager.invoke("onGuiUpdate", module, e.guiScreen.getClass().getSimpleName(), e.opened);
+    }
+
+    @SubscribeEvent
     public void onPreMotion(PreMotionEvent e) {
-        PlayerState playerState = new PlayerState(e);
+        PlayerState playerState = new PlayerState(e, (byte) 0);
         Raven.scriptManager.invoke("onPreMotion", module, playerState);
         if (e.isEquals(playerState)) {
             return;

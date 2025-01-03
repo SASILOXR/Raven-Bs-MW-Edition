@@ -17,7 +17,7 @@ public class Component {
     public void keyTyped(char t, int k) {
     }
 
-    public void so(int n) {
+    public void updateHeight(int n) {
     }
 
     public int getHeight() {

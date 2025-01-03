@@ -27,7 +27,7 @@ public class WaterBucket extends Module {
 
     @SubscribeEvent
     public void onPreMotion(PreMotionEvent e) {
-        MovingObjectPosition rayCast = RotationUtils.rayCast(mc.playerController.getBlockReachDistance(), e.getYaw(), 90);
+        MovingObjectPosition rayCast = RotationUtils.rayCast(mc.playerController.getBlockReachDistance(), e.getYaw(), 90, true);
         if (inPosition() && rayCast != null && rayCast.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK && holdWaterBucket(switchToItem.isToggled())) {
             if (silentAim.isToggled()) {
                 e.setPitch(90);

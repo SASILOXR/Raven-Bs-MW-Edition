@@ -22,7 +22,7 @@ public abstract class MixinWorldInfo {
         return worldTime;
     }
 
-    @Inject(method = "isRaining", at = @At("RETURN"))
+    @Inject(method = "isRaining", at = @At("RETURN"), cancellable = true)
     private void setPrecipitation(CallbackInfoReturnable<Boolean> clr) {
         if (ModuleManager.weather != null && ModuleManager.weather.isEnabled() && ModuleManager.weather.rain.isToggled()) {
             clr.setReturnValue(true);

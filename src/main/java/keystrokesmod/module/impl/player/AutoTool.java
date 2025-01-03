@@ -6,7 +6,6 @@ import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.BlockUtils;
 import keystrokesmod.utility.Utils;
-import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
 import org.lwjgl.input.Mouse;
 
@@ -18,8 +17,8 @@ public class AutoTool extends Module {
     public ButtonSetting spoofItem;
     private ButtonSetting swap;
     public int previousSlot = -1;
-    private int ticksHovered;
-    private BlockPos currentBlock;
+    private long ticksHovered;
+
     public AutoTool() {
         super("AutoTool", category.player);
         this.registerSetting(hoverDelay = new SliderSetting("Hover delay", 0.0, 0.0, 20.0, 1.0));
@@ -61,23 +60,21 @@ public class AutoTool extends Module {
             resetVariables();
             return;
         }
-        if (over.getBlockPos().equals(currentBlock)) {
-            ticksHovered++;
-        }
-        else {
-            ticksHovered = 0;
-        }
-        currentBlock = over.getBlockPos();
-        if (hoverDelay.getInput() == 0 || ticksHovered > hoverDelay.getInput()) {
-            int slot = Utils.getTool(BlockUtils.getBlock(currentBlock));
-            if (slot == -1) {
+        if (hoverDelay.getInput() != 0) {
+            long ticks = this.ticksHovered + 1L;
+            this.ticksHovered = ticks;
+            if (ticks < hoverDelay.getInput()) {
                 return;
             }
-            if (previousSlot == -1) {
-                previousSlot = mc.thePlayer.inventory.currentItem;
-            }
-            setSlot(slot);
         }
+        int slot = Utils.getTool(BlockUtils.getBlock(over.getBlockPos()));
+        if (slot == -1) {
+            return;
+        }
+        if (previousSlot == -1) {
+            previousSlot = mc.thePlayer.inventory.currentItem;
+        }
+        setSlot(slot);
     }
 
     private void resetVariables() {

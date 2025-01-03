@@ -2,6 +2,8 @@ package keystrokesmod.utility;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonObject;
+import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.client.Settings;
@@ -13,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.network.NetworkPlayerInfo;
+import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
@@ -37,9 +40,7 @@ import org.lwjgl.input.Mouse;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.List;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -67,6 +68,65 @@ public class Utils {
         return false;
     }
 
+    public static float getCameraYaw() {
+        return (float) Math.toDegrees(Math.atan2(ActiveRenderInfo.getRotationZ(), ActiveRenderInfo.getRotationX()));
+    }
+
+    public static float getCameraPitch() {
+        return (float) Math.toDegrees(Math.acos(ActiveRenderInfo.getRotationXZ()));
+    }
+
+
+    public static Vec3 getCameraPos(double renderPartialTicks) {
+        if (mc.gameSettings.thirdPersonView == 0) {
+            Vec3 firstPersonPos = new Vec3(mc.thePlayer.posX, mc.thePlayer.posY + mc.thePlayer.getEyeHeight(), mc.thePlayer.posZ);
+            return firstPersonPos;
+        }
+        float cameraDistance = 4.0F;
+        if (ModuleManager.extendCamera != null && ModuleManager.extendCamera.isEnabled()) {
+            cameraDistance = (float) ModuleManager.extendCamera.distance.getInput();
+        }
+
+        Entity renderEntity = mc.getRenderViewEntity();
+        float entityEyeHeight = renderEntity.getEyeHeight();
+
+        double interpolatedX = renderEntity.prevPosX + (renderEntity.posX - renderEntity.prevPosX) * renderPartialTicks;
+        double interpolatedY = renderEntity.prevPosY + (renderEntity.posY - renderEntity.prevPosY) * renderPartialTicks + entityEyeHeight;
+        double interpolatedZ = renderEntity.prevPosZ + (renderEntity.posZ - renderEntity.prevPosZ) * renderPartialTicks;
+
+        double adjustedDistance = cameraDistance;
+
+        float cameraYaw = Utils.getCameraYaw();
+        float cameraPitch = Utils.getCameraPitch();
+
+        double offsetX = -MathHelper.sin(cameraYaw / 180.0F * (float) Math.PI) * MathHelper.cos(cameraPitch / 180.0F * (float) Math.PI) * adjustedDistance;
+        double offsetZ =  MathHelper.cos(cameraYaw / 180.0F * (float) Math.PI) * MathHelper.cos(cameraPitch / 180.0F * (float) Math.PI) * adjustedDistance;
+        double offsetY = -MathHelper.sin(cameraPitch / 180.0F * (float) Math.PI) * adjustedDistance;
+
+        if (ModuleManager.noHurtCam == null || !ModuleManager.noHurtCam.isEnabled()) {
+            for (int i = 0; i < 8; i++) {
+                float cornerOffsetX = (float) ((i & 1) * 2 - 1) * 0.1F;
+                float cornerOffsetY = (float) ((i >> 1 & 1) * 2 - 1) * 0.1F;
+                float cornerOffsetZ = (float) ((i >> 2 & 1) * 2 - 1) * 0.1F;
+
+                MovingObjectPosition rayTraceResult = mc.theWorld.rayTraceBlocks(new Vec3(interpolatedX + cornerOffsetX, interpolatedY + cornerOffsetY, interpolatedZ + cornerOffsetZ), new Vec3((interpolatedX - offsetX + cornerOffsetX + cornerOffsetZ), (interpolatedY - offsetY + cornerOffsetY), (interpolatedZ - offsetZ + cornerOffsetZ)));
+
+                if (rayTraceResult != null) {
+                    double blockHitDistance = rayTraceResult.hitVec.distanceTo(new Vec3(interpolatedX, interpolatedY, interpolatedZ));
+                    if (blockHitDistance < adjustedDistance) {
+                        adjustedDistance = blockHitDistance;
+                    }
+                }
+            }
+        }
+
+        double finalCameraX = interpolatedX - offsetX * (adjustedDistance / cameraDistance);
+        double finalCameraY = interpolatedY - offsetY * (adjustedDistance / cameraDistance);
+        double finalCameraZ = interpolatedZ - offsetZ * (adjustedDistance / cameraDistance);
+
+        return new Vec3(finalCameraX, finalCameraY, finalCameraZ);
+    }
+
     public static String getServerName() {
         return DuelsStats.nick.isEmpty() ? mc.thePlayer.getName() : DuelsStats.nick;
     }
@@ -80,10 +140,44 @@ public class Utils {
         return true;
     }
 
-    public static List<NetworkPlayerInfo> getTablist() {
+    public static boolean canPlayerBeSeen(EntityLivingBase player) {
+        double x = player.posX;
+        double y = player.posY;
+        double z = player.posZ;
+        Vec3 vecPlayer = mc.thePlayer.getPositionEyes(1.0f);
+        double shoulderHeight = player.getEyeHeight() - 0.2;
+        if (canSeeVec(vecPlayer, new Vec3(x + 0.3, shoulderHeight, z))) {
+            return true;
+        }
+        if (canSeeVec(vecPlayer, new Vec3(x - 0.3, shoulderHeight, z))) {
+            return true;
+        }
+        if (canSeeVec(vecPlayer, new Vec3(x, shoulderHeight, z + 0.3))) {
+            return true;
+        }
+        if (canSeeVec(vecPlayer, new Vec3(x, shoulderHeight, z - 0.3))) {
+            return true;
+        }
+        for (double d = player.getEyeHeight() + 0.2; d > 0.0; d -= 0.2) {
+            Vec3 vecPoint = new Vec3(x, y + d, z);
+            if (canSeeVec(vecPlayer, vecPoint)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean canSeeVec(Vec3 vecPlayer, Vec3 vecTarget) {
+        MovingObjectPosition mop = mc.theWorld.rayTraceBlocks(vecPlayer, vecTarget, false, false, false);
+        return mop == null || mop.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK;
+    }
+
+    public static List<NetworkPlayerInfo> getTablist(boolean removeSelf) {
         final ArrayList<NetworkPlayerInfo> list = new ArrayList<>(mc.getNetHandler().getPlayerInfoMap());
         removeDuplicates(list);
-        list.remove(mc.getNetHandler().getPlayerInfo(mc.thePlayer.getUniqueID()));
+        if (removeSelf) {
+            list.remove(mc.getNetHandler().getPlayerInfo(mc.thePlayer.getUniqueID()));
+        }
         return list;
     }
 
@@ -99,6 +193,14 @@ public class Utils {
             return true;
         }
         return false;
+    }
+
+    public static boolean onCursor(Entity entity) {
+        MovingObjectPosition movingObjectPosition = mc.objectMouseOver;
+        if (entity == null || movingObjectPosition == null || movingObjectPosition.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY || movingObjectPosition.entityHit == null ) {
+            return false;
+        }
+        return movingObjectPosition.entityHit == entity;
     }
 
     public static boolean addFriend(String name) {
@@ -248,6 +350,42 @@ public class Utils {
         return txt.replaceAll("&", "§");
     }
 
+    public static String getFirstColorCode(String input) {
+        if (input == null || input.length() < 2) {
+            return "";
+        }
+        for (int i = 0; i < input.length() - 1; i++) {
+            if (input.charAt(i) == '§') {
+                char c = input.charAt(i + 1);
+                if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+                    return "§" + c;
+                }
+            }
+        }
+        return "";
+    }
+
+    public static int getBoldWidth(String string) {
+        boolean bold = false;
+        int additionalWidth = 0;
+        for (int i = 0; i < string.length(); ++i) {
+            char c0 = string.charAt(i);
+            if (c0 == '§' && i + 1 < string.length()) {
+                int i2 = "0123456789abcdefklmnor".indexOf(string.toLowerCase(Locale.ENGLISH).charAt(i + 1));
+                if (i2 == 17) {
+                    bold = true;
+                }
+                ++i;
+            }
+            else {
+                if (bold) {
+                    ++additionalWidth;
+                }
+            }
+        }
+        return additionalWidth;
+    }
+
     public static void correctValue(SliderSetting c, SliderSetting d) {
         if (c.getInput() > d.getInput()) {
             double p = c.getInput();
@@ -347,6 +485,26 @@ public class Utils {
         return n;
     }
 
+    public static int darkenColor(int color, double percent) {
+        int alpha = (color >> 24) & 0xFF;
+        int red   = (color >> 16) & 0xFF;
+        int green = (color >> 8)  & 0xFF;
+        int blue  = color & 0xFF;
+
+        percent = (100 - percent) / 100;
+
+        red   = (int)(red * percent);
+        green = (int)(green * percent);
+        blue  = (int)(blue * percent);
+
+        red   = clamp(red);
+        green = clamp(green);
+        blue  = clamp(blue);
+
+        int darkenedColor = (alpha << 24) | (red << 16) | (green << 8) | blue;
+        return darkenedColor;
+    }
+
     public static boolean isTeamMate(Entity entity) {
         try {
             Entity teamMate = entity;
@@ -401,6 +559,15 @@ public class Utils {
             return 0;
         }
         return -1;
+    }
+
+    public static String getString(final JsonObject type, final String member) {
+        try {
+            return type.get(member).getAsString();
+        }
+        catch (Exception er) {
+            return "";
+        }
     }
 
     public static int getBedwarsStatus() {
@@ -492,13 +659,14 @@ public class Utils {
 
     public static void aim(Entity en, float ps, boolean pc) {
         if (en != null) {
-            float[] t = gr(en);
+            float[] t = getRotationsOld(en);
             if (t != null) {
                 float y = t[0];
                 float p = t[1] + 4.0F + ps;
                 if (pc) {
                     mc.getNetHandler().addToSendQueue(new C05PacketPlayerLook(y, p, mc.thePlayer.onGround));
-                } else {
+                }
+                else {
                     mc.thePlayer.rotationYaw = y;
                     mc.thePlayer.rotationPitch = p;
                 }
@@ -507,10 +675,11 @@ public class Utils {
         }
     }
 
-    public static float[] gr(Entity q) {
+    public static float[] getRotationsOld(Entity q) {
         if (q == null) {
             return null;
-        } else {
+        }
+        else {
             double diffX = q.posX - mc.thePlayer.posX;
             double diffY;
             if (q instanceof EntityLivingBase) {
@@ -524,7 +693,7 @@ public class Utils {
             double dist = MathHelper.sqrt_double(diffX * diffX + diffZ * diffZ);
             float yaw = (float) (Math.atan2(diffZ, diffX) * 180.0D / 3.141592653589793D) - 90.0F;
             float pitch = (float) (-(Math.atan2(diffY, dist) * 180.0D / 3.141592653589793D));
-            return new float[]{mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float(yaw - mc.thePlayer.rotationYaw), mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float(pitch - mc.thePlayer.rotationPitch)};
+            return new float[] { mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float(yaw - mc.thePlayer.rotationYaw) , mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float(pitch - mc.thePlayer.rotationPitch)};
         }
     }
 
@@ -641,12 +810,101 @@ public class Utils {
         return Math.sqrt(entity.motionX * entity.motionX + entity.motionZ * entity.motionZ);
     }
 
+    public static List<String> getTopLevelLines(String fileContents) {
+        List<String> topLevelLines = new ArrayList<>();
+        String[] lines = fileContents.split("\\r?\\n");
+        int braceLevel = 0;
+        boolean inBlockComment = false;
+
+        for (String line : lines) {
+            String originalLine = line;
+            String processedLine = line.trim();
+
+            if (inBlockComment) {
+                if (processedLine.contains("*/")) {
+                    inBlockComment = false;
+                    processedLine = processedLine.substring(processedLine.indexOf("*/") + 2).trim();
+                }
+                else {
+                    continue;
+                }
+            }
+
+            if (processedLine.startsWith("//")) {
+                continue;
+            }
+
+            if (processedLine.contains("/*")) {
+                inBlockComment = true;
+                processedLine = processedLine.substring(0, processedLine.indexOf("/*")).trim();
+                if (processedLine.isEmpty()) {
+                    continue;
+                }
+            }
+
+            if (processedLine.contains("//")) {
+                processedLine = processedLine.substring(0, processedLine.indexOf("//")).trim();
+            }
+
+            if (processedLine.contains("/*") && processedLine.contains("*/")) {
+                processedLine = processedLine.substring(0, processedLine.indexOf("/*")) + processedLine.substring(processedLine.indexOf("*/") + 2);
+                processedLine = processedLine.trim();
+            }
+
+            if (processedLine.isEmpty()) {
+                continue;
+            }
+
+            String lineWithoutStrings = removeStringLiterals(processedLine);
+
+            int openBraces = 0;
+            int closeBraces = 0;
+            for (char ch : lineWithoutStrings.toCharArray()) {
+                if (ch == '{') {
+                    openBraces++;
+                }
+                else if (ch == '}') {
+                    closeBraces++;
+                }
+            }
+            braceLevel += openBraces - closeBraces;
+
+            if (braceLevel == 0 && !processedLine.contains("{") && !processedLine.contains("}") && !processedLine.startsWith("@")) {
+                topLevelLines.add(originalLine.trim());
+            }
+        }
+
+        return topLevelLines;
+    }
+
+    private static String removeStringLiterals(String line) {
+        StringBuilder sb = new StringBuilder();
+        boolean inString = false;
+
+        for (int i = 0; i < line.length(); i++) {
+            char ch = line.charAt(i);
+            if (ch == '\"' && (i == 0 || line.charAt(i - 1) != '\\')) {
+                inString = !inString;
+                continue;
+            }
+            if (!inString) {
+                sb.append(ch);
+            }
+        }
+
+        return sb.toString();
+    }
+
     public static boolean onEdge() {
         return onEdge(mc.thePlayer);
     }
 
     public static boolean onEdge(Entity entity) {
         return mc.theWorld.getCollidingBoundingBoxes(entity, entity.getEntityBoundingBox().offset(entity.motionX / 3.0D, -1.0D, entity.motionZ / 3.0D)).isEmpty();
+    }
+
+    public static boolean lookingAtBlock() {
+        return mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK && mc.objectMouseOver.getBlockPos() != null;
     }
 
     public static boolean isDiagonal(boolean strict) {
@@ -687,12 +945,22 @@ public class Utils {
         }
     }
 
-    public static long getDifference(long n, long n2) {
+    public static boolean isEdgeOfBlock(final double posX, final double posY, final double posZ) {
+        BlockPos pos = new BlockPos(posX, posY - ((posY % 1.0 == 0.0) ? 1 : 0), posZ);
+        return mc.theWorld.isAirBlock(pos);
+    }
+
+    public static boolean isEdgeOfBlock() {
+        BlockPos pos = new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - ((mc.thePlayer.posY % 1.0 == 0.0) ? 1 : 0), mc.thePlayer.posZ);
+        return mc.theWorld.isAirBlock(pos);
+    }
+
+    public static long timeBetween(long n, long n2) {
         return Math.abs(n2 - n);
     }
 
     public static void sendModuleMessage(Module module, String s) {
-        sendRawMessage("&3" + module.getInfo() + "&7: &r" + s);
+        sendRawMessage("&3" + module.getName() + "&7: &r" + s);
     }
 
     public static EntityLivingBase raytrace(final int n) {
@@ -874,6 +1142,14 @@ public class Utils {
             return false;
         }
         return mc.thePlayer.getHeldItem().getItem() instanceof ItemSword;
+    }
+
+    public static boolean holdingSword(int slot) {
+        ItemStack stack = mc.thePlayer.inventory.getStackInSlot(slot);
+        if (stack == null || stack.getItem() == null) {
+            return false;
+        }
+        return stack.getItem() instanceof ItemSword;
     }
 
     public static double getDamage(ItemStack itemStack) {

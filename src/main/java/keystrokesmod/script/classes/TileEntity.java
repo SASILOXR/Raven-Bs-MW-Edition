@@ -9,7 +9,7 @@ public class TileEntity {
     public String type;
     public String name;
 
-    protected TileEntity(net.minecraft.tileentity.TileEntity tileEntity) {
+    public TileEntity(net.minecraft.tileentity.TileEntity tileEntity) {
         this.tileEntity = tileEntity;
         this.position = new Vec3(tileEntity.getPos().getX(), tileEntity.getPos().getY(), tileEntity.getPos().getZ());
         this.type = tileEntity.getBlockType().getClass().getSimpleName();

@@ -51,8 +51,8 @@ public class Commands {
                 print("Setting...", 1);
                 n = args[1];
                 Raven.getExecutor().execute(() -> {
-                    if (URLUtils.isHypixelKeyValid(n)) {
-                        URLUtils.API_KEY = n;
+                    if (NetworkUtils.isHypixelKeyValid(n)) {
+                        NetworkUtils.API_KEY = n;
                         print("&a" + "success!", 0);
                     } else {
                         print("&c" + "Invalid key.", 0);
@@ -120,7 +120,7 @@ public class Commands {
                     return;
                 }
 
-                if (URLUtils.API_KEY.isEmpty()) {
+                if (NetworkUtils.API_KEY.isEmpty()) {
                     print("&cAPI Key is empty!", 1);
                     print("Use \"setkey [api_key]\".", 0);
                     return;
@@ -336,8 +336,8 @@ public class Commands {
                 }
             }
             else if (cm.startsWith("Debug".toLowerCase())) {
-                Raven.debugger = !Raven.debugger;
-                print("Debug " + (Raven.debugger ? "enabled" : "disabled") + ".", 1);
+                Raven.debug = !Raven.debug;
+                print("Debug " + (Raven.debug ? "enabled" : "disabled") + ".", 1);
             }
             else if (cm.startsWith("profiles") || cm.startsWith("p")) {
                 if (!hasArgs) {

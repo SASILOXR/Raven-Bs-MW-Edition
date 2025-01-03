@@ -15,7 +15,6 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
-import net.minecraft.util.IChatComponent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -75,7 +74,7 @@ public class Anticheat extends Module {
             }
             else {
                 final Long n = hashMap.get(mode);
-                if (n != null && Utils.getDifference(n, currentTimeMillis) <= interval.getInput() * 1000.0) {
+                if (n != null && Utils.timeBetween(n, currentTimeMillis) <= interval.getInput() * 1000.0) {
                     return;
                 }
             }
@@ -85,9 +84,9 @@ public class Anticheat extends Module {
         final ChatComponentText chatComponentText = new ChatComponentText(Utils.formatColor("&7[&dR&7]&r " + entityPlayer.getDisplayName().getUnformattedText() + " &7detected for &d" + mode.getName()));
         final ChatStyle chatStyle = new ChatStyle();
         chatStyle.setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/wdr " + entityPlayer.getName()));
-        ((IChatComponent)chatComponentText).appendSibling(new ChatComponentText(Utils.formatColor(" §7[§cWDR§7]")).setChatStyle(chatStyle));
+        chatComponentText.appendSibling(new ChatComponentText(Utils.formatColor(" §7[§cWDR§7]")).setChatStyle(chatStyle));
         mc.thePlayer.addChatMessage(chatComponentText);
-        if (shouldPing.isToggled() && Utils.getDifference(lastAlert, currentTimeMillis) >= 1500L) {
+        if (shouldPing.isToggled() && Utils.timeBetween(lastAlert, currentTimeMillis) >= 1500L) {
             mc.thePlayer.playSound("note.pling", 1.0f, 1.0f);
             lastAlert = currentTimeMillis;
         }

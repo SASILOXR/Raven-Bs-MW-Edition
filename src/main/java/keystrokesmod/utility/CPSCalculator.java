@@ -24,7 +24,7 @@ public class CPSCalculator {
         if (d.buttonstate) {
             if (d.button == 0) {
                 aL();
-                if (Raven.debugger && mc.objectMouseOver != null) {
+                if (Raven.debug && mc.objectMouseOver != null) {
                     Entity en = mc.objectMouseOver.entityHit;
                     if (en == null) {
                         return;

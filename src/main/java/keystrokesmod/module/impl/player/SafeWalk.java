@@ -19,7 +19,7 @@ public class SafeWalk extends Module {
     public static ButtonSetting shift, blocksOnly, pitchCheck, disableOnForward;
     public ButtonSetting tower;
     private boolean isSneaking;
-    private long b = 0L;
+    private long lastShift = 0L;
 
     public SafeWalk() {
         super("SafeWalk", Module.category.player, 0);
@@ -33,10 +33,11 @@ public class SafeWalk extends Module {
     }
 
     public void onDisable() {
-        if (shift.isToggled() && Utils.overAir()) {
+        if (shift.isToggled() && Utils.isEdgeOfBlock()) {
             this.setSneakState(false);
         }
         isSneaking = false;
+        lastShift = 0L;
     }
 
     public void onUpdate() {
@@ -54,7 +55,7 @@ public class SafeWalk extends Module {
         if (!shift.isToggled() || !Utils.nullCheck()) {
             return;
         }
-        if (mc.thePlayer.onGround && Utils.overAir()) {
+        if (mc.thePlayer.onGround && Utils.isEdgeOfBlock()) {
             if (blocksOnly.isToggled()) {
                 final ItemStack getHeldItem = mc.thePlayer.getHeldItem();
                 if (getHeldItem == null || !(getHeldItem.getItem() instanceof ItemBlock)) {
@@ -86,35 +87,31 @@ public class SafeWalk extends Module {
         }
     }
 
-    private void setSneakState(boolean down) {
-        KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), down);
-
+    private void setSneakState(boolean shift) {
         if (this.isSneaking) {
-            if (down) {
+            if (shift) {
                 return;
             }
         }
-        else if (!down) {
+        else if (!shift) {
             return;
         }
-        if (down) {
-            final long n = (long) shiftDelay.getInput();
-            if (n != 0L) {
-                if (Utils.getDifference(this.b, System.currentTimeMillis()) < n) {
+        if (shift) {
+            final long targetShiftDelay = (long)shiftDelay.getInput();
+            if (targetShiftDelay > 0L) {
+                if (Utils.timeBetween(this.lastShift, System.currentTimeMillis()) < targetShiftDelay) {
                     return;
                 }
-                this.b = System.currentTimeMillis();
+                this.lastShift = System.currentTimeMillis();
             }
         }
         else {
             if (Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode())) {
                 return;
             }
-            this.b = System.currentTimeMillis();
+            this.lastShift = System.currentTimeMillis();
         }
-        final int getKeyCode = mc.gameSettings.keyBindSneak.getKeyCode();
-        this.isSneaking = down;
-        KeyBinding.setKeyBindState(getKeyCode, down);
+        KeyBinding.setKeyBindState(mc.gameSettings.keyBindSneak.getKeyCode(), this.isSneaking = shift);
     }
 
     public static boolean canSafeWalk() {

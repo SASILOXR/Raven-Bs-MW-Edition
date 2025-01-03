@@ -19,6 +19,7 @@ public class MixinNetworkManager {
             PacketUtils.skipSendEvent.remove(p_sendPacket_1_);
             return;
         }
+
         SendPacketEvent sendPacketEvent = new SendPacketEvent(p_sendPacket_1_);
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(sendPacketEvent);
 

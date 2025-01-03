@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
@@ -33,7 +34,7 @@ public class BreakProgress extends Module {
         this.registerSetting(fadeIn = new ButtonSetting("Fade in", false));
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onRenderWorld(RenderWorldLastEvent e) {
         if (this.progress == 0.0f || this.block == null || !Utils.nullCheck()) {
             return;

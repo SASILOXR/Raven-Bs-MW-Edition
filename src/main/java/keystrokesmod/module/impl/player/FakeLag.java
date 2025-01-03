@@ -78,8 +78,8 @@ public class FakeLag extends Module {
                 }
                 long receiveTime = entry.getValue();
                 long ms = System.currentTimeMillis();
-                if (Utils.getDifference(ms, receiveTime) > packetDelay.getInput() || !delay) {
-                    Raven.badPacketsHandler.handlePacket(packet);
+                if (Utils.timeBetween(ms, receiveTime) > packetDelay.getInput() || !delay) {
+                    Raven.packetsHandler.handlePacket(packet);
                     PacketUtils.sendPacketNoEvent(packet);
                     packets.remove();
                 }

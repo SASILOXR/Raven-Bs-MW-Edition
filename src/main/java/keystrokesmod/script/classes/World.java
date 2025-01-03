@@ -1,14 +1,12 @@
 package keystrokesmod.script.classes;
 
 import keystrokesmod.utility.BlockUtils;
-import keystrokesmod.utility.RotationUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.init.Blocks;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.MovingObjectPosition;
 
 import java.util.*;
 
@@ -18,18 +16,18 @@ public class World {
     public Block getBlockAt(int x, int y, int z) {
         net.minecraft.block.Block block = BlockUtils.getBlock(new BlockPos(x, y, z));
         if (block == null) {
-            return new Block(Blocks.air);
+            return new Block(Blocks.air, new BlockPos(x, y, z));
         }
-        return new Block(block);
+        return new Block(block, new BlockPos(x, y, z));
 
     }
 
     public Block getBlockAt(Vec3 pos) {
         net.minecraft.block.Block block = BlockUtils.getBlock(new BlockPos(pos.x, pos.y, pos.z));
         if (block == null) {
-            return new Block(Blocks.air);
+            return new Block(Blocks.air, new BlockPos(pos.x, pos.y, pos.z));
         }
-        return new Block(block);
+        return new Block(block, new BlockPos(pos.x, pos.y, pos.z));
     }
 
     public String getDimension() {
@@ -58,7 +56,7 @@ public class World {
 
     public List<NetworkPlayer> getNetworkPlayers() {
         List<NetworkPlayer> entities = new ArrayList<>();
-        for (NetworkPlayerInfo networkPlayerInfo : Utils.getTablist()) {
+        for (NetworkPlayerInfo networkPlayerInfo : Utils.getTablist(false)) {
             entities.add(new NetworkPlayer(networkPlayerInfo));
         }
         return entities;

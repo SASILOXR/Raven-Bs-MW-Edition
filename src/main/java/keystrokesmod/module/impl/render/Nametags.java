@@ -2,29 +2,25 @@ package keystrokesmod.module.impl.render;
 
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
-import keystrokesmod.module.impl.player.Freecam;
 import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
+import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.*;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.MathHelper;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraft.util.Vec3;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Nametags extends Module {
     private SliderSetting scale;
@@ -42,10 +38,10 @@ public class Nametags extends Module {
     private ButtonSetting showEnchants;
     private ButtonSetting showDurability;
     private ButtonSetting showStackSize;
-    private Map<EntityPlayer, double[]> entityPositions = new HashMap();
-    private int backGroundColor = new Color(0, 0, 0, 65).getRGB();
+    private int backGroundColor = new Color(0, 0, 0, 100).getRGB();
     private int friendColor = new Color(0, 255, 0, 255).getRGB();
     private int enemyColor = new Color(255, 0, 0, 255).getRGB();
+    private double normalizedThreshold = 8;
 
     public Nametags() {
         super("Nametags", category.render, 0);
@@ -67,41 +63,110 @@ public class Nametags extends Module {
         this.registerSetting(showStackSize = new ButtonSetting("Show stack size", true));
     }
 
-    @SubscribeEvent
-    public void onRenderTick(RenderGameOverlayEvent.Post ev) {
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onRenderWorldLast(RenderWorldLastEvent ev) {
         if (!Utils.nullCheck()) {
-            return;
-        }
-        if (ev.type != RenderGameOverlayEvent.ElementType.ALL) {
             return;
         }
         if (removeTags.isToggled()) {
             return;
         }
+        double interpolatedX;
+        double interpolatedY;
+        double interpolatedZ;
+        if (mc.gameSettings.thirdPersonView > 0) {
+            Vec3 thirdPersonPos = Utils.getCameraPos(ev.partialTicks);
+            interpolatedX = thirdPersonPos.xCoord;
+            interpolatedY = thirdPersonPos.yCoord;
+            interpolatedZ = thirdPersonPos.zCoord;
+        }
+        else {
+            interpolatedX = mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * ev.partialTicks;
+            interpolatedY = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * ev.partialTicks + mc.thePlayer.getEyeHeight();
+            interpolatedZ = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * ev.partialTicks;
+        }
 
-        GlStateManager.pushMatrix();
-        ScaledResolution scaledRes = new ScaledResolution(mc);
-        double twoDScale = scaledRes.getScaleFactor() / Math.pow(scaledRes.getScaleFactor(), 2.0D);
-        GlStateManager.scale(twoDScale, twoDScale, twoDScale);
-        for (Map.Entry<EntityPlayer, double[]> entry : entityPositions.entrySet()) {
-            EntityPlayer entityPlayer = entry.getKey();
+        ScaledResolution scaledResolution = new ScaledResolution(mc);
 
-            GlStateManager.pushMatrix();
-            String name;
-            if (onlyRenderName.isToggled()) {
-                name = entityPlayer.getName();
+        for (EntityPlayer en : mc.theWorld.playerEntities) {
+            if (!showInvis.isToggled() && en.isInvisible()) {
+                continue;
+            }
+            if (en == mc.thePlayer && (!renderSelf.isToggled() || mc.gameSettings.thirdPersonView == 0)) {
+                continue;
+            }
+            if (en.getDisplayNameString().isEmpty() || (en != mc.thePlayer && AntiBot.isBot(en))) {
+                continue;
+            }
+            if (!RenderUtils.isInViewFrustum(en)) {
+                continue;
+            }
+            double playerX = en.lastTickPosX + (en.posX - en.lastTickPosX) * ev.partialTicks;
+            double playerY = en.lastTickPosY + (en.posY - en.lastTickPosY) * ev.partialTicks;
+            double playerZ = en.lastTickPosZ + (en.posZ - en.lastTickPosZ) * ev.partialTicks;
+
+            double renderHeightOffset = (playerY - mc.getRenderManager().viewerPosY) + (!en.isSneaking() ? en.height : en.height - 0.3) + 0.294;
+            double heightOffset = playerY + (!en.isSneaking() ? en.height : en.height - 0.3) + 0.294;
+
+            if (!Reflection.setupCameraTransform(mc.entityRenderer, ev.partialTicks, 0)) {
+                continue;
+            }
+
+            Vec3 screenCords = RenderUtils.convertTo2D(scaledResolution.getScaleFactor(), playerX - mc.getRenderManager().viewerPosX, renderHeightOffset, playerZ - mc.getRenderManager().viewerPosZ);
+            boolean inFrustum = screenCords.zCoord < 1.0003684;
+            if (!inFrustum) {
+                continue;
+            }
+            mc.entityRenderer.setupOverlayRendering();
+
+            if (screenCords == null) {
+                continue;
+            }
+
+            float scaleSetting = (float) scale.getInput();
+            float newScale = scaleSetting;
+            if (autoScale.isToggled()) {
+                double deltaX = Math.abs(interpolatedX - playerX);
+                if (deltaX < normalizedThreshold + 1) {
+                    double deltaZ = Math.abs(interpolatedZ - playerZ);
+                    if (deltaZ < normalizedThreshold + 1) {
+                        double deltaY = Math.abs(interpolatedY - heightOffset);
+                        if (deltaY < normalizedThreshold + 1) {
+                            double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+                            if (distance < normalizedThreshold) {
+                                newScale = Math.max((float) (scaleSetting * (normalizedThreshold / distance)), scaleSetting);
+                            }
+                        }
+                    }
+                }
             }
             else {
-                name = entityPlayer.getDisplayName().getFormattedText();
+                double deltaX = Math.abs(interpolatedX - playerX);
+                double deltaZ = Math.abs(interpolatedZ - playerZ);
+                double deltaY = Math.abs(interpolatedY - heightOffset);
+                double distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+                newScale = (float) ((scale.getInput() + 4) / distance);
+            }
+            String name;
+            if (onlyRenderName.isToggled()) {
+                String formattedName = Utils.getFirstColorCode(en.getDisplayName().getFormattedText());
+                String colorSuffix = "";
+                if (formattedName.length() >= 2 && formattedName.startsWith("§")) {
+                    colorSuffix = formattedName;
+                }
+                name = colorSuffix + en.getName();
+            }
+            else {
+                name = en.getDisplayName().getFormattedText();
             }
             if (showHealth.isToggled()) {
-                name = name + " " + Utils.getHealthStr(entityPlayer, false);
+                name = name + " " + Utils.getHealthStr(en, false);
             }
             if (showHitsToKill.isToggled()) {
-                name = name + " " + Utils.getHitsToKill(entityPlayer, mc.thePlayer.getCurrentEquippedItem());
+                name = name + " " + Utils.getHitsToKill(en, mc.thePlayer.getCurrentEquippedItem());
             }
             if (showDistance.isToggled()) {
-                int distance = Math.round(mc.thePlayer.getDistanceToEntity(entityPlayer));
+                int distance = Math.round(mc.thePlayer.getDistanceToEntity(en));
                 String color = "§";
                 if (distance < 8) {
                     color += "c";
@@ -120,74 +185,38 @@ public class Nametags extends Module {
                 }
                 name = color + distance + "m§r " + name;
             }
-            if (ModuleManager.skyWars.isEnabled() && ModuleManager.skyWars.strengthIndicator.isToggled() && !ModuleManager.skyWars.strengthPlayers.isEmpty() && ModuleManager.skyWars.strengthPlayers.get(entityPlayer) != null) {
-                double startTime = ModuleManager.skyWars.strengthPlayers.get(entityPlayer);
+            if (ModuleManager.skyWars.isEnabled() && ModuleManager.skyWars.strengthIndicator.isToggled() && !ModuleManager.skyWars.strengthPlayers.isEmpty() && ModuleManager.skyWars.strengthPlayers.get(en) != null) {
+                double startTime = ModuleManager.skyWars.strengthPlayers.get(en);
                 double timePassed = (System.currentTimeMillis() - startTime) / 1000;
                 double strengthRemaining = Math.max(0, Utils.round(5.0 - timePassed, 1));
                 String strengthInfo = "§4" + (Utils.isWholeNumber(strengthRemaining) ? (int) strengthRemaining + "" : strengthRemaining) + "s§r ";
                 name = strengthInfo + name;
             }
-            double[] renderPositions = entry.getValue();
-            GlStateManager.translate(renderPositions[0], renderPositions[1], 0);
-            int strWidth = mc.fontRendererObj.getStringWidth(name) / 2;
-            GlStateManager.color(0.0F, 0.0F, 0.0F);
-            double rawScaleSetting = scale.getInput();
-            double scaleSetting = rawScaleSetting * 10;
-            double nameTagScale = twoDScale * scaleSetting;
-            final float renderPartialTicks = Utils.getTimer().renderPartialTicks;
-            final EntityPlayer player = (Freecam.freeEntity == null) ? mc.thePlayer : Freecam.freeEntity;
-            final double deltaX = player.lastTickPosX + (player.posX - player.lastTickPosX) * renderPartialTicks - (entityPlayer.lastTickPosX + (entityPlayer.posX - entityPlayer.lastTickPosX) * renderPartialTicks);
-            final double deltaY = player.lastTickPosY + (player.posY - player.lastTickPosY) * renderPartialTicks - (entityPlayer.lastTickPosY + (entityPlayer.posY - entityPlayer.lastTickPosY) * renderPartialTicks);
-            final double deltaZ = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * renderPartialTicks - (entityPlayer.lastTickPosZ + (entityPlayer.posZ - entityPlayer.lastTickPosZ) * renderPartialTicks);
-            double distance = MathHelper.sqrt_double(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
-            if (!autoScale.isToggled()) {
-                if (renderSelf.isToggled() && entityPlayer == mc.thePlayer) {
-                    distance = 3;
-                }
-                nameTagScale = rawScaleSetting / (Math.max(distance, 3) / 10);
-            }
-            else {
-                if (distance < 3 && entityPlayer == mc.thePlayer) {
-                    distance = Math.pow(1.02, -9.65 + 20);
-                }
-                else {
-                    distance = Math.max(0.7, Math.pow(1.05, -distance + 10));
-                }
-                nameTagScale *= distance;
-            }
-            GlStateManager.scale(nameTagScale, nameTagScale, nameTagScale);
+
+            int strWidth = (mc.fontRendererObj.getStringWidth(name)) / 2;
             int x1 = -strWidth - 1;
             int y1 = -10;
             int x2 = strWidth + 1;
             int y2 = 8 - 9;
+            GlStateManager.pushMatrix();
+            GlStateManager.scale(newScale, newScale, newScale);
+            GlStateManager.translate(screenCords.xCoord / newScale, screenCords.yCoord / newScale, 0);
             if (drawBackground.isToggled()) {
                 RenderUtils.drawRect(x1, y1, x2, y2, backGroundColor);
             }
-            if (Utils.isFriended(entityPlayer)) {
+            if (Utils.isFriended(en)) {
                 RenderUtils.drawOutline(x1, y1, x2, y2, 2, friendColor);
             }
-            else if (Utils.isEnemy(entityPlayer)) {
+            else if (Utils.isEnemy(en)) {
                 RenderUtils.drawOutline(x1, y1, x2, y2, 2, enemyColor);
             }
             mc.fontRendererObj.drawString(name, -strWidth, -9, -1, dropShadow.isToggled());
             if (showArmor.isToggled()) {
-                renderArmor(entityPlayer);
+                renderArmor(en);
             }
-
+            GlStateManager.scale(1.0f, 1.0f, 1.0f);
             GlStateManager.popMatrix();
         }
-        GlStateManager.popMatrix();
-    }
-
-    @SubscribeEvent
-    public void onRenderWorld(RenderWorldLastEvent renderWorldLastEvent) {
-        if (!Utils.nullCheck()) {
-            return;
-        }
-        if (removeTags.isToggled()) {
-            return;
-        }
-        updatePositions();
     }
 
     @SubscribeEvent
@@ -201,41 +230,6 @@ public class Nametags extends Module {
                 return;
             }
             e.setCanceled(true);
-        }
-    }
-
-    private void updatePositions() {
-        entityPositions.clear();
-        final float pTicks = Utils.getTimer().renderPartialTicks;
-        for (EntityPlayer entityPlayer : mc.theWorld.playerEntities) {
-            if (!showInvis.isToggled() && entityPlayer.isInvisible()) {
-                continue;
-            }
-            if (entityPlayer == mc.thePlayer && (!renderSelf.isToggled() || mc.gameSettings.thirdPersonView == 0)) {
-                continue;
-            }
-            if (entityPlayer.getDisplayNameString().isEmpty() || (entityPlayer != mc.thePlayer && AntiBot.isBot(entityPlayer))) {
-                continue;
-            }
-
-            double interpolatedX = entityPlayer.lastTickPosX + (entityPlayer.posX - entityPlayer.lastTickPosX) * pTicks - mc.getRenderManager().viewerPosX;
-            double interpolatedY = entityPlayer.lastTickPosY + (entityPlayer.posY - entityPlayer.lastTickPosY) * pTicks - mc.getRenderManager().viewerPosY;
-            double interpolatedZ = entityPlayer.lastTickPosZ + (entityPlayer.posZ - entityPlayer.lastTickPosZ) * pTicks - mc.getRenderManager().viewerPosZ;
-
-            interpolatedY += entityPlayer.isSneaking() ? entityPlayer.height - 0.05 : entityPlayer.height + 0.27;
-
-            double[] convertedPosition = RenderUtils.convertTo2D(interpolatedX, interpolatedY, interpolatedZ);
-            if (convertedPosition == null) {
-                continue;
-            }
-            if (convertedPosition[2] >= 0.0D && convertedPosition[2] < 1.0D) {
-                double[] headConvertedPosition = RenderUtils.convertTo2D(interpolatedX, interpolatedY + 1.0D, interpolatedZ);
-                if (headConvertedPosition == null) {
-                    continue;
-                }
-                double height = Math.abs(headConvertedPosition[1] - convertedPosition[1]);
-                entityPositions.put(entityPlayer, new double[]{convertedPosition[0], convertedPosition[1], height, convertedPosition[2]});
-            }
         }
     }
 
@@ -266,6 +260,7 @@ public class Nametags extends Module {
 
     private void renderItemStack(ItemStack stack, int xPos, int yPos) {
         GlStateManager.pushMatrix();
+        GlStateManager.disableAlpha();
         mc.getRenderItem().zLevel = -150.0F;
         GlStateManager.enableDepth();
         RenderHelper.enableGUIStandardItemLighting();
@@ -277,6 +272,7 @@ public class Nametags extends Module {
         renderText(stack, xPos, yPos);
         GlStateManager.enableDepth();
         GlStateManager.scale(2, 2, 2);
+        GlStateManager.enableAlpha();
         GlStateManager.popMatrix();
     }
 

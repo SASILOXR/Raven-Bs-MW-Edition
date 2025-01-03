@@ -9,7 +9,6 @@ import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.combat.WTap;
 import keystrokesmod.module.impl.movement.NoSlow;
 import keystrokesmod.utility.RotationUtils;
-import keystrokesmod.utility.Utils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.entity.AbstractClientPlayer;
@@ -132,6 +131,8 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
 
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(preMotionEvent);
 
+        RotationUtils.serverRotations = new float[] { preMotionEvent.getYaw(), preMotionEvent.getPitch() };
+
         boolean flag = preMotionEvent.isSprinting();
         if (flag != this.serverSprintState) {
             if (flag) {
@@ -199,7 +200,6 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
                 this.lastReportedPitch = preMotionEvent.getPitch();
             }
         }
-
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new PostMotionEvent());
     }
 
@@ -257,7 +257,7 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
         boolean flag2 = this.movementInput.moveForward >= f;
         this.movementInput.updatePlayerMoveState();
         boolean stopSprint = ModuleManager.noSlow == null || !ModuleManager.noSlow.isEnabled() || NoSlow.slowed.getInput() == 80;
-        if ((this.isUsingItem() || (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && ModuleManager.killAura.block.get() && ModuleManager.killAura.rmbDown && ModuleManager.killAura.manualBlock.isToggled())) && !this.isRiding()) {
+        if ((this.isUsingItem() || mc.thePlayer.isBlocking()) && !this.isRiding()) {
             MovementInput var10000 = this.movementInput;
             float slowed = NoSlow.getSlowed();
             var10000.moveStrafe *= slowed;
@@ -273,7 +273,7 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
         this.pushOutOfBlocks(this.posX + (double) this.width * 0.35, this.getEntityBoundingBox().minY + 0.5, this.posZ - (double) this.width * 0.35);
         this.pushOutOfBlocks(this.posX + (double) this.width * 0.35, this.getEntityBoundingBox().minY + 0.5, this.posZ + (double) this.width * 0.35);
         boolean flag3 = (float) this.getFoodStats().getFoodLevel() > 6.0F || this.capabilities.allowFlying;
-        if (this.onGround && !flag1 && !flag2 && this.movementInput.moveForward >= f && !this.isSprinting() && flag3 && (!(this.isUsingItem() || (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && ModuleManager.killAura.block.get() && ModuleManager.killAura.rmbDown && ModuleManager.killAura.manualBlock.isToggled())) || !stopSprint) && !this.isPotionActive(Potion.blindness)) {
+        if (this.onGround && !flag1 && !flag2 && this.movementInput.moveForward >= f && !this.isSprinting() && flag3 && (!(this.isUsingItem() || mc.thePlayer.isBlocking()) || !stopSprint) && !this.isPotionActive(Potion.blindness)) {
             if (this.sprintToggleTimer <= 0 && !this.mc.gameSettings.keyBindSprint.isKeyDown()) {
                 this.sprintToggleTimer = 7;
             } else {
@@ -281,7 +281,7 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
             }
         }
 
-        if ((!this.isSprinting() && this.movementInput.moveForward >= f && flag3 && (!(this.isUsingItem() || (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && ModuleManager.killAura.block.get() && ModuleManager.killAura.rmbDown && ModuleManager.killAura.manualBlock.isToggled())) || !stopSprint) && !this.isPotionActive(Potion.blindness) && this.mc.gameSettings.keyBindSprint.isKeyDown())) {
+        if ((!this.isSprinting() && this.movementInput.moveForward >= f && flag3 && (!(this.isUsingItem() || mc.thePlayer.isBlocking()) || !stopSprint) && !this.isPotionActive(Potion.blindness) && this.mc.gameSettings.keyBindSprint.isKeyDown())) {
             this.setSprinting(true);
         }
 

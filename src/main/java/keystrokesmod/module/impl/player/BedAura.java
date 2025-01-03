@@ -4,6 +4,7 @@ import keystrokesmod.Raven;
 import keystrokesmod.event.*;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.combat.KillAura;
 import keystrokesmod.module.impl.minigames.BedWars;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -15,7 +16,6 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.C07PacketPlayerDigging;
-import net.minecraft.network.play.client.C09PacketHeldItemChange;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.network.play.server.S27PacketExplosion;
 import net.minecraft.util.BlockPos;
@@ -46,25 +46,22 @@ public class BedAura extends Module {
     private ButtonSetting renderOutline;
     private ButtonSetting sendAnimations;
     private ButtonSetting silentSwing;
-    private String[] modes = new String[]{"Legit", "Instant", "Swap"};
+    private String[] modes = new String[] { "Legit", "Instant", "Swap" };
     private BlockPos[] bedPos;
     public float breakProgress;
-    private int currentSlot = -1;
     private int lastSlot = -1;
     public boolean rotate;
     public BlockPos currentBlock;
     private long lastCheck = 0;
     public boolean stopAutoblock;
     private int outlineColor = new Color(226, 65, 65).getRGB();
-    private int breakTickDelay = 2;
-    private int ticksAfterBreak = 0;
-    private boolean delayStart;
     private BlockPos nearestBlock;
     private Map<BlockPos, Float> breakProgressMap = new HashMap<>();
     public double lastProgress;
     public float vanillaProgress;
     private int defaultOutlineColor = new Color(226, 65, 65).getRGB();
     private boolean aiming;
+    private int noAutoBlockTicks;
 
     public BedAura() {
         super("BedAura", category.player, 0);
@@ -96,7 +93,7 @@ public class BedAura extends Module {
         reset(true);
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SubscribeEvent(priority = EventPriority.HIGHEST) // takes priority over ka & antifireball
     public void onPreUpdate(PreUpdateEvent e) {
         if (!Utils.nullCheck()) {
             return;
@@ -128,35 +125,30 @@ public class BedAura extends Module {
                 return;
             }
         }
-        if (delayStart) {
-            if (ticksAfterBreak++ <= breakTickDelay) {
-                if (currentSlot != -1 && currentSlot != mc.thePlayer.inventory.currentItem) {
-                    stopAutoblock = true;
-                    delayStart = true;
-                }
-                return;
-            }
-            else {
-                if (currentSlot != -1 && currentSlot != mc.thePlayer.inventory.currentItem) {
-                    stopAutoblock = true;
-                    delayStart = true;
-                }
+        switch (noAutoBlockTicks) {
+            case -1:
+                noAutoBlockTicks = -2;
+                break;
+            case -2:
                 resetSlot();
-                delayStart = false;
-                ticksAfterBreak = 0;
-            }
-        }
-        else {
-            ticksAfterBreak = 0;
+                noAutoBlockTicks = -3;
+                break;
+            case -3:
+                noAutoBlockTicks = -4;
+                break;
+            case -4:
+                stopAutoblock = false;
+                noAutoBlockTicks = 0;
+                break;
         }
         if (breakNearBlock.isToggled() && isCovered(bedPos[0]) && isCovered(bedPos[1])) {
             if (nearestBlock == null) {
                 nearestBlock = getBestBlock(bedPos, true);
             }
             breakBlock(nearestBlock);
-        } else {
+        }
+        else {
             nearestBlock = null;
-            resetSlot();
             breakBlock(getBestBlock(bedPos, false) != null ? getBestBlock(bedPos, false) : bedPos[0]);
         }
     }
@@ -183,7 +175,7 @@ public class BedAura extends Module {
             if (!RotationUtils.inRange(currentBlock, range.getInput())) {
                 return;
             }
-            e.setYaw(rotations[0]);
+            e.setYaw(RotationUtils.applyVanilla(rotations[0]));
             e.setPitch(rotations[1]);
             rotate = false;
             if (groundSpoof.isToggled() && !mc.thePlayer.isInWater()) {
@@ -193,7 +185,7 @@ public class BedAura extends Module {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onRenderWorld(RenderWorldLastEvent renderWorldLastEvent) {
         if (!renderOutline.isToggled() || currentBlock == null || !Utils.nullCheck()) {
             return;
@@ -211,9 +203,7 @@ public class BedAura extends Module {
     }
 
     private void resetSlot() {
-        if (currentSlot != -1 && currentSlot != mc.thePlayer.inventory.currentItem && mode.getInput() == 2) {
-            stopAutoblock = true;
-            delayStart = true;
+        if (Raven.packetsHandler.playerSlot.get() != mc.thePlayer.inventory.currentItem && mode.getInput() == 2) {
             setPacketSlot(mc.thePlayer.inventory.currentItem);
         }
         else if (lastSlot != -1) {
@@ -312,29 +302,26 @@ public class BedAura extends Module {
     private void reset(boolean resetSlot) {
         if (resetSlot) {
             resetSlot();
-            currentSlot = -1;
         }
         bedPos = null;
         breakProgress = 0;
         rotate = false;
         nearestBlock = null;
         aiming = false;
-        ticksAfterBreak = 0;
         currentBlock = null;
         breakProgressMap.clear();
         lastSlot = -1;
         vanillaProgress = 0;
-        delayStart = false;
-        stopAutoblock = false;
         lastProgress = 0;
+        stopAutoblock = false;
+        noAutoBlockTicks = 0;
     }
 
     public void setPacketSlot(int slot) {
-        if (slot == currentSlot || slot == -1 || Raven.badPacketsHandler.playerSlot.get() == slot) {
+        if (slot == -1) {
             return;
         }
-        mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(slot));
-        currentSlot = slot;
+        Raven.packetsHandler.updateSlot(slot);
     }
 
     private void startBreak(BlockPos blockPos) {
@@ -375,25 +362,29 @@ public class BedAura extends Module {
         if (breakProgress == 0 && !aiming) {
             return;
         }
+        if (!stopAutoblock && breakProgress <= 0 && mode.getInput() == 2 && ModuleManager.killAura.autoBlockOverride()) {
+            stopAutoblock = true; // if blocking then return and stop autoblocking
+            return;
+        }
         if (mode.getInput() == 2 || mode.getInput() == 0) {
             if (breakProgress == 0 && aiming) {
                 resetSlot();
-                stopAutoblock = true;
                 rotate = true;
                 if (mode.getInput() == 0) {
                     setSlot(Utils.getTool(block));
                 }
                 startBreak(blockPos);
+                if (mode.getInput() == 2) {
+                    noAutoBlockTicks = 1; // increment by 1
+                }
             }
             else if (breakProgress >= 1 && aiming) {
                 if (mode.getInput() == 2) {
-                    ModuleManager.killAura.resetBlinkState(false);
+                    noAutoBlockTicks = -1; // set to -1 to indicate it was on stop rather than +1
                     setPacketSlot(Utils.getTool(block));
                 }
                 stopBreak(blockPos);
                 reset(false);
-                stopAutoblock = true;
-                delayStart = true;
                 Iterator<Map.Entry<BlockPos, Float>> iterator = breakProgressMap.entrySet().iterator();
                 while (iterator.hasNext()) {
                     Map.Entry<BlockPos, Float> entry = iterator.next();
@@ -408,14 +399,19 @@ public class BedAura extends Module {
             }
             else {
                 if (mode.getInput() == 0) {
-                    stopAutoblock = true;
                     rotate = true;
+                }
+                if (noAutoBlockTicks == 1) {
+                    stopAutoblock = false;
+                    noAutoBlockTicks = 0;
                 }
             }
             double progress = vanillaProgress = (float) (BlockUtils.getBlockHardness(block, (mode.getInput() == 2 && Utils.getTool(block) != -1) ? mc.thePlayer.inventory.getStackInSlot(Utils.getTool(block)) : mc.thePlayer.getHeldItem(), false, ignoreSlow.isToggled() || groundSpoof.isToggled()) * breakSpeed.getInput());
             if (lastProgress != 0 && breakProgress >= lastProgress) {
-                ModuleManager.killAura.resetBlinkState(false);
-                stopAutoblock = true;
+                // tick before we break so here we've gotta stop autoblocking
+                if (mode.getInput() == 2 && ModuleManager.killAura.autoBlockOverride()) {
+                    stopAutoblock = true; // if blocking then return and stop autoblocking
+                }
             }
             breakProgress += progress;
             breakProgressMap.put(blockPos, breakProgress);
@@ -428,7 +424,6 @@ public class BedAura extends Module {
             }
         }
         else if (mode.getInput() == 1 && aiming) {
-            stopAutoblock = true;
             rotate = true;
             if (!silentSwing.isToggled()) {
                 swing();

@@ -1,18 +1,20 @@
 package keystrokesmod.script.classes;
 
+import com.google.common.collect.Iterables;
+import com.mojang.authlib.properties.Property;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.scoreboard.ScorePlayerTeam;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 public class NetworkPlayer {
     private NetworkPlayerInfo networkPlayerInfo;
-    protected NetworkPlayer(NetworkPlayerInfo networkPlayerInfo) {
+    public NetworkPlayer(NetworkPlayerInfo networkPlayerInfo) {
         this.networkPlayerInfo = networkPlayerInfo;
     }
 
     public String getCape() {
-        if (networkPlayerInfo == null) {
-            return "";
-        }
         return networkPlayerInfo.getLocationCape().getResourcePath();
     }
 
@@ -38,10 +40,11 @@ public class NetworkPlayer {
     }
 
     public String getSkinData() {
-        if (networkPlayerInfo == null) {
-            return "";
+        final Property texture = (Property) Iterables.getFirst(networkPlayerInfo.getGameProfile().getProperties().get("textures"), (Object)null);
+        if (texture == null) {
+            return null;
         }
-        return networkPlayerInfo.getLocationSkin().getResourcePath();
+        return new String(Base64.getDecoder().decode(texture.getValue().getBytes(StandardCharsets.UTF_8)));
     }
 
     public String getUUID() {

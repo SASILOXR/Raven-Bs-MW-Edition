@@ -9,7 +9,8 @@ public class C01 extends CPacket {
         super(null);
         this.message = message;
     }
-    public C01(C01PacketChatMessage packet) {
+
+    public C01(C01PacketChatMessage packet, byte f) {
         super(packet);
         this.message = packet.getMessage();
     }

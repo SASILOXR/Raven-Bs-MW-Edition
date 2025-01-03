@@ -5,7 +5,7 @@ import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.ProfileUtils;
-import keystrokesmod.utility.URLUtils;
+import keystrokesmod.utility.NetworkUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
@@ -103,7 +103,7 @@ public class DuelsStats extends Module {
             Utils.sendMessage("&eOpponent found: " + "&3" + n);
         }
 
-        if (URLUtils.API_KEY.isEmpty()) {
+        if (NetworkUtils.API_KEY.isEmpty()) {
             Utils.sendMessage("&cAPI Key is empty!");
         } else {
             ProfileUtils.DM dm = ProfileUtils.DM.values()[(int) (mode.getInput() - 1.0D)];

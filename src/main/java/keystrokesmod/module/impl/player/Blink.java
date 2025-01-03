@@ -24,8 +24,6 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Blink extends Module {
@@ -48,7 +46,7 @@ public class Blink extends Module {
     public void onDisable() {
         synchronized (blinkedPackets) {
             for (Packet packet : blinkedPackets) {
-                Raven.badPacketsHandler.handlePacket(packet);
+                Raven.packetsHandler.handlePacket(packet);
                 PacketUtils.sendPacketNoEvent(packet);
             }
         }

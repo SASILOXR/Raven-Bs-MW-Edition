@@ -1,6 +1,5 @@
 package keystrokesmod.module.impl.player;
 
-import keystrokesmod.Raven;
 import keystrokesmod.event.JumpEvent;
 import keystrokesmod.event.PreMotionEvent;
 import keystrokesmod.event.PreUpdateEvent;
@@ -305,7 +304,7 @@ public class Scaffold extends Module {
                 for (float checkPitch : pitchSearchList) {
                     float fixedPitch = RotationUtils.clampTo90((float) (targetRotation[1] + checkPitch + getRandom()));
 
-                    MovingObjectPosition raycast = RotationUtils.rayCast(mc.playerController.getBlockReachDistance(), fixedYaw, fixedPitch);
+                    MovingObjectPosition raycast = RotationUtils.rayCast(mc.playerController.getBlockReachDistance(), fixedYaw, fixedPitch, true);
                     if (raycast == null || raycast.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
                         continue;
                     }

@@ -6,7 +6,6 @@ import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
-import keystrokesmod.utility.BadPacketsHandler;
 import keystrokesmod.utility.Utils;
 import net.minecraft.block.*;
 import net.minecraft.enchantment.Enchantment;
@@ -79,7 +78,7 @@ public class InvManager extends Module {
             resetDelay();
             return;
         }
-        if (Utils.inInventory() || (ModuleManager.invmove.isEnabled() && ModuleManager.invmove.inventory.getInput() == 3 && mc.currentScreen == null && !Raven.badPacketsHandler.sent())) {
+        if (Utils.inInventory() || (ModuleManager.invmove.isEnabled() && ModuleManager.invmove.inventory.getInput() == 3 && mc.currentScreen == null && !Raven.packetsHandler.sent())) {
             if (autoArmor.getInput() != -1 && lastArmor++ >= autoArmor.getInput()) {
                 for (int i = 0; i < 4; i++) {
                     int bestSlot = getBestArmor(i, null);

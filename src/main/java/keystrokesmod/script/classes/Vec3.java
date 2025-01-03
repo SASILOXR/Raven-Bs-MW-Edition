@@ -12,6 +12,12 @@ public class Vec3 {
         this.z = z;
     }
 
+    public Vec3(net.minecraft.util.Vec3 minecraftVec3) {
+        this.x = minecraftVec3.xCoord;
+        this.y = minecraftVec3.yCoord;
+        this.z = minecraftVec3.zCoord;
+    }
+
     public boolean equals(Vec3 vector2) {
         if (this == vector2) {
             return true;

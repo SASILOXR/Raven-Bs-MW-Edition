@@ -19,7 +19,7 @@ public class PacketHandler {
                 newPacket = new C0B((C0BPacketEntityAction) packet);
             }
             else if (packet instanceof C01PacketChatMessage) {
-                newPacket = new C01((C01PacketChatMessage)packet);
+                newPacket = new C01((C01PacketChatMessage)packet, (byte) 0);
             }
             else if (packet instanceof C02PacketUseEntity) {
                 newPacket = new C02((C02PacketUseEntity)packet);
@@ -91,6 +91,15 @@ public class PacketHandler {
             }
             else if (packet instanceof S29PacketSoundEffect) {
                 sPacket = new S29((S29PacketSoundEffect) packet);
+            }
+            else if (packet instanceof S2FPacketSetSlot) {
+                sPacket = new S2F((S2FPacketSetSlot) packet);
+            }
+            else if (packet instanceof S48PacketResourcePackSend) {
+                sPacket = new S48((S48PacketResourcePackSend) packet);
+            }
+            else if (packet instanceof S3APacketTabComplete) {
+                sPacket = new S3A((S3APacketTabComplete) packet, (byte) 0);
             }
             else {
                 sPacket = new SPacket(packet);

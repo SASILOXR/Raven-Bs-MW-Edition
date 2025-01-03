@@ -1,9 +1,7 @@
 package keystrokesmod.script.classes;
 
-import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -94,7 +92,36 @@ public class Entity {
     }
 
     public String getDisplayName() {
-        return entity.getDisplayName().getFormattedText();
+        if (this.entity instanceof EntityItem) {
+            return ((EntityItem)this.entity).getEntityItem().getDisplayName();
+        }
+        return this.entity.getDisplayName().getUnformattedText();
+    }
+
+    public Entity getRidingEntity() {
+        return Entity.convert(this.entity.ridingEntity);
+    }
+
+    public Entity getRiddenByEntity() {
+        return Entity.convert(this.entity.riddenByEntity);
+    }
+
+    public Vec3 getServerPosition() {
+        return new Vec3(entity.serverPosX, entity.serverPosY, entity.serverPosZ);
+    }
+
+    public int getExperienceLevel() {
+        if (!(entity instanceof EntityPlayer)) {
+            return 0;
+        }
+        return ((EntityPlayer) entity).experienceLevel;
+    }
+
+    public float getExperience() {
+        if (!(entity instanceof EntityPlayer)) {
+            return 0;
+        }
+        return ((EntityPlayer) entity).experience;
     }
 
     public float getFallDistance() {
@@ -102,14 +129,16 @@ public class Entity {
     }
 
     public String getUUID() {
-        if (!(entity instanceof EntityPlayer)) {
-            return entity.getUniqueID().toString();
-        }
-        return getNetworkPlayer().getUUID();
+        return this.entity.getUniqueID().toString();
     }
 
     public double getBPS() {
-        return Utils.gbps(this.entity, 0);
+        if (!this.isLiving) {
+            return 0.0;
+        }
+        double x = this.entity.posX - this.entity.prevPosX;
+        double z = this.entity.posZ - this.entity.prevPosZ;
+        return Math.sqrt(x * x + z * z) * 20.0;
     }
 
     public String getFacing() {
@@ -152,7 +181,7 @@ public class Entity {
             if (item == null) {
                 return null;
             }
-            return new ItemStack(item);
+            return new ItemStack(item, (byte) 0);
         }
         else if (!(entity instanceof EntityLivingBase)) {
             return null;
@@ -161,7 +190,7 @@ public class Entity {
         if (stack == null) {
             return null;
         }
-        return new ItemStack(stack);
+        return new ItemStack(stack, (byte) 0);
     }
 
     public int getHurtTime() {
@@ -201,17 +230,7 @@ public class Entity {
     }
 
     public NetworkPlayer getNetworkPlayer() {
-        if (!(entity instanceof EntityPlayer)) {
-            return null;
-        }
-        NetworkPlayer networkPlayer = null;
-        try {
-            networkPlayer = new NetworkPlayer((NetworkPlayerInfo) Reflection.getPlayerInfo.invoke(entity));
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        return networkPlayer;
+        return new NetworkPlayer(Minecraft.getMinecraft().getNetHandler().getPlayerInfo(this.entity.getUniqueID()));
     }
 
     public float getPitch() {
@@ -237,11 +256,8 @@ public class Entity {
         return potionEffects;
     }
 
-    public ItemStack getArmorInSlot(int slot) {
-        if (!(entity instanceof EntityLivingBase)) {
-            return null;
-        }
-        return ItemStack.convert(((EntityLivingBase) entity).getCurrentArmor(slot));
+    public ItemStack getArmorInSlot(final int slot) {
+        return (this.isPlayer && slot >= 0 && slot <= 3) ? ItemStack.convert(((EntityPlayer)this.entity).inventory.armorInventory[slot]) : null;
     }
 
     public double getSpeed() {
@@ -261,6 +277,18 @@ public class Entity {
 
     public float getYaw() {
         return entity.rotationYaw;
+    }
+
+    public int getFireResistance() {
+        return this.entity.fireResistance;
+    }
+
+    public float getPrevYaw() {
+        return entity.prevRotationYaw;
+    }
+
+    public float getPrevPitch() {
+        return entity.prevRotationPitch;
     }
 
     public boolean isCreative() {
@@ -283,7 +311,25 @@ public class Entity {
     }
 
     public boolean isDead() {
-        return entity.isDead;
+        return this.entity.isDead || (this.isLiving && ((EntityLivingBase)this.entity).deathTime > 0);
+    }
+
+    public int getHunger() {
+        if (!this.isPlayer || ((EntityPlayer) this.entity).getFoodStats() == null) {
+            return 0;
+        }
+        return ((EntityPlayer) this.entity).getFoodStats().getFoodLevel();
+    }
+
+    public float getSaturation() {
+        if (!this.isPlayer || ((EntityPlayer) this.entity).getFoodStats() == null) {
+            return 0.0f;
+        }
+        return ((EntityPlayer) this.entity).getFoodStats().getSaturationLevel();
+    }
+
+    public float getAir() {
+        return this.entity.getAir();
     }
 
     public boolean isInvisible() {

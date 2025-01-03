@@ -37,6 +37,7 @@ public class AutoClicker extends Module {
     public ButtonSetting inventoryFill;
     public ButtonSetting weaponOnly;
     public ButtonSetting blocksOnly;
+    public ButtonSetting disableCreative;
     private Random rand = null;
     private Method gs;
     private long i;
@@ -46,6 +47,7 @@ public class AutoClicker extends Module {
     private double m;
     private boolean n;
     private boolean hol;
+    private boolean blocked;
 
     public AutoClicker() {
         super("AutoClicker", Module.category.combat, 0);
@@ -60,6 +62,7 @@ public class AutoClicker extends Module {
         this.registerSetting(inventoryFill = new ButtonSetting("Inventory fill", false));
         this.registerSetting(weaponOnly = new ButtonSetting("Weapon only", false));
         this.registerSetting(blocksOnly = new ButtonSetting("Blocks only", true));
+        this.registerSetting(disableCreative = new ButtonSetting("Disable in creative", false));
         this.closetModule = true;
 
         try {
@@ -81,7 +84,7 @@ public class AutoClicker extends Module {
         if (this.gs == null) {
             this.disable();
         }
-
+        this.blocked = Mouse.isButtonDown(1);
         this.rand = new Random();
     }
 
@@ -89,6 +92,7 @@ public class AutoClicker extends Module {
         this.i = 0L;
         this.j = 0L;
         this.hol = false;
+        this.blocked = false;
     }
 
     public void guiUpdate() {
@@ -98,6 +102,9 @@ public class AutoClicker extends Module {
     @SubscribeEvent
     public void onRenderTick(RenderTickEvent ev) {
         if (ev.phase != Phase.END && Utils.nullCheck() && !mc.thePlayer.isEating()) {
+            if (disableCreative.isToggled() && mc.thePlayer.capabilities.isCreativeMode) {
+                return;
+            }
             if (mc.currentScreen == null && mc.inGameHasFocus) {
                 if (weaponOnly.isToggled() && !Utils.holdingWeapon()) {
                     return;
@@ -105,16 +112,19 @@ public class AutoClicker extends Module {
 
                 if (leftClick.isToggled() && Mouse.isButtonDown(0)) {
                     this.dc(mc.gameSettings.keyBindAttack.getKeyCode(), 0);
-                } else if (rightClick.isToggled() && Mouse.isButtonDown(1)) {
+                }
+                else if (rightClick.isToggled() && Mouse.isButtonDown(1)) {
                     if (blocksOnly.isToggled() && (mc.thePlayer.getCurrentEquippedItem() == null || !(mc.thePlayer.getCurrentEquippedItem().getItem() instanceof ItemBlock))) {
                         return;
                     }
                     this.dc(mc.gameSettings.keyBindUseItem.getKeyCode(), 1);
-                } else {
+                }
+                else {
                     this.i = 0L;
                     this.j = 0L;
                 }
-            } else if (inventoryFill.isToggled() && mc.currentScreen instanceof GuiInventory) {
+            }
+            else if (inventoryFill.isToggled() && mc.currentScreen instanceof GuiInventory) {
                 if (!Mouse.isButtonDown(0) || !Keyboard.isKeyDown(54) && !Keyboard.isKeyDown(42)) {
                     this.i = 0L;
                     this.j = 0L;
@@ -137,7 +147,7 @@ public class AutoClicker extends Module {
             if (p != null) {
                 Block bl = mc.theWorld.getBlockState(p).getBlock();
                 if (bl != Blocks.air && !(bl instanceof BlockLiquid)) {
-                    if (!this.hol) {
+                    if (!this.hol && (!ModuleManager.killAura.isEnabled() || KillAura.target == null)) {
                         KeyBinding.setKeyBindState(key, true);
                         KeyBinding.onTick(key);
                         this.hol = true;
@@ -174,27 +184,31 @@ public class AutoClicker extends Module {
         }
 
         if (this.j > 0L && this.i > 0L) {
-            double c = blockHitChance.getInput();
-            if (System.currentTimeMillis() > this.j && KillAura.target == null && !ModuleManager.killAura.swing) {
+            double blockHitC = blockHitChance.getInput();
+            if (System.currentTimeMillis() > this.j && (!ModuleManager.killAura.isEnabled() || KillAura.target == null)) {
                 KeyBinding.setKeyBindState(key, true);
                 KeyBinding.onTick(key);
                 Reflection.setButton(mouse, true);
-                if (mouse == 0 && c > 0.0 && Mouse.isButtonDown(1) && Math.random() >= (100.0 - c) / 100.0) {
+                if (mouse == 0 && blockHitC > 0.0 && Mouse.isButtonDown(1) && Math.random() >= (100.0 - blockHitC) / 100.0) {
                     final int getKeyCode = mc.gameSettings.keyBindUseItem.getKeyCode();
                     KeyBinding.setKeyBindState(getKeyCode, true);
                     KeyBinding.onTick(getKeyCode);
                     Reflection.setButton(1, true);
+                    blocked = true;
                 }
                 this.gd();
-            } else if (System.currentTimeMillis() > this.i) {
+            }
+            else if (System.currentTimeMillis() > this.i || blocked) {
                 KeyBinding.setKeyBindState(key, false);
                 Reflection.setButton(mouse, false);
-                if (mouse == 0 && c > 0.0 && Math.random() >= (100.0 - c) / 100.0) {
+                if (mouse == 0 && blockHitC > 0.0) {
                     KeyBinding.setKeyBindState(mc.gameSettings.keyBindUseItem.getKeyCode(), false);
                     Reflection.setButton(1, false);
+                    blocked = false;
                 }
             }
-        } else {
+        }
+        else {
             this.gd();
         }
 

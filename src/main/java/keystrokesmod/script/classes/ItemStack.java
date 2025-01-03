@@ -2,11 +2,16 @@ package keystrokesmod.script.classes;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.StatCollector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ItemStack {
     public String type;
@@ -18,8 +23,9 @@ public class ItemStack {
     public int maxDurability;
     public boolean isBlock;
     public net.minecraft.item.ItemStack itemStack;
+    public int meta;
 
-    public ItemStack(net.minecraft.item.ItemStack itemStack) {
+    public ItemStack(net.minecraft.item.ItemStack itemStack, byte f1) {
         if (itemStack == null) {
             return;
         }
@@ -32,41 +38,49 @@ public class ItemStack {
         this.maxStackSize = itemStack.getMaxStackSize();
         this.durability = itemStack.getMaxDamage() - itemStack.getItemDamage();
         this.maxDurability = itemStack.getMaxDamage();
+        this.meta = itemStack.getMetadata();
+    }
+
+    public ItemStack(String name) {
+        this(withMeta(name), (byte) 0);
+    }
+
+    private static net.minecraft.item.ItemStack withMeta(String name) {
+        String[] parts = name.split(":");
+        String itemName = parts[0];
+        int meta = 0;
+
+        if (parts.length > 1) {
+            meta = parseMeta(parts[1]);
+        }
+
+        net.minecraft.item.Item item = Item.itemRegistry.getObject(new ResourceLocation("minecraft:" + itemName));
+        return new net.minecraft.item.ItemStack(item, 1, meta);
+    }
+
+    private static int parseMeta(String metaStr) {
+        try {
+            return Integer.parseInt(metaStr);
+        }
+        catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     public List<String> getTooltip() {
-        if (this.itemStack == null) {
-            return new ArrayList<>();
-        }
-        return this.itemStack.getTooltip(Minecraft.getMinecraft().thePlayer, false);
+        return this.itemStack.getTooltip(Minecraft.getMinecraft().thePlayer, true);
     }
 
     public List<Object[]> getEnchantments() {
+        Map<Integer, Integer> enchants = EnchantmentHelper.getEnchantments(this.itemStack);
+        if (enchants.isEmpty()) {
+            return null;
+        }
         List<Object[]> enchantments = new ArrayList<>();
-        if (this.itemStack != null && itemStack.getEnchantmentTagList() != null && !itemStack.getEnchantmentTagList().hasNoTags()) {
-            for (int i = 0; i < itemStack.getEnchantmentTagList().tagCount(); i++) {
-                NBTTagCompound tagCompound = itemStack.getEnchantmentTagList().getCompoundTagAt(i);
-                short enchantmentId = -1;
-                if (tagCompound.hasKey("ench")) {
-                    enchantmentId = tagCompound.getShort("ench");
-                }
-                else if (tagCompound.hasKey("id")) {
-                    enchantmentId = tagCompound.getShort("id");
-                }
-                if (enchantmentId == -1) {
-                    continue;
-                }
-                short enchantLevel = 0;
-                if (enchantmentId != -1) {
-                    enchantLevel = tagCompound.getShort("lvl");
-                }
-                Enchantment enchantment = Enchantment.getEnchantmentById(enchantmentId);
-                if (enchantment == null) {
-                    continue;
-                }
-                String enchantmentStr = enchantment.getName().substring(12);
-                enchantments.add(new Object[] { enchantmentStr, enchantLevel });
-            }
+        for (Map.Entry<Integer, Integer> entry : enchants.entrySet()) {
+            Enchantment enchant = Enchantment.getEnchantmentById((int)entry.getKey());
+            String name = StatCollector.translateToFallback(enchant.getName()).toLowerCase().replace(" ", "_");
+            enchantments.add(new Object[] { name, entry.getValue() });
         }
         return enchantments;
     }
@@ -75,11 +89,11 @@ public class ItemStack {
         if (itemStack == null) {
             return null;
         }
-        return new ItemStack(itemStack);
+        return new ItemStack(itemStack, (byte) 0);
     }
 
     @Override
     public String toString() {
-        return this.itemStack == null ? "" : this.itemStack.getItem().toString();
+        return "ItemStack(" + this.type + "," + this.name + ")";
     }
 }

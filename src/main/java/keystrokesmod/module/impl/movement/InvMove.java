@@ -17,6 +17,7 @@ import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C0DPacketCloseWindow;
 import net.minecraft.network.play.client.C0EPacketClickWindow;
+import net.minecraft.network.play.client.C16PacketClientStatus;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 
@@ -34,13 +35,14 @@ public class InvMove extends Module {
     private ButtonSetting allowRotating;
     public int ticks;
     public boolean setMotion;
-    private String[] modes = new String[] { "Disabled", "Vanilla", "Blink" };
+    private String[] inventoryModes = new String[] { "Disabled", "Vanilla", "Blink", "Close" };
+    private String[] chestAndOtherModes = new String[] { "Disabled", "Vanilla", "Blink" };
     private ConcurrentLinkedQueue<Packet> blinkedPackets = new ConcurrentLinkedQueue<>();
 
     public InvMove() {
         super("InvMove", Module.category.movement);
-        this.registerSetting(inventory = new SliderSetting("Inventory", 1, modes));
-        this.registerSetting(chestAndOthers = new SliderSetting("Chest & others", 1, modes));
+        this.registerSetting(inventory = new SliderSetting("Inventory", 1, inventoryModes));
+        this.registerSetting(chestAndOthers = new SliderSetting("Chest & others", 1, chestAndOtherModes));
         this.registerSetting(motion = new SliderSetting("Motion", "x", 1, 0.05, 1, 0.01));
         this.registerSetting(modifyMotionPost = new ButtonSetting("Modify motion after click", false));
         this.registerSetting(slowWhenNecessary = new ButtonSetting("Slow motion when necessary", false));
@@ -52,12 +54,6 @@ public class InvMove extends Module {
 
     public void onDisable() {
         reset();
-        KeyBinding.setKeyBindState(mc.gameSettings.keyBindForward.getKeyCode(), false);
-        KeyBinding.setKeyBindState(mc.gameSettings.keyBindBack.getKeyCode(), false);
-        KeyBinding.setKeyBindState(mc.gameSettings.keyBindRight.getKeyCode(), false);
-        KeyBinding.setKeyBindState(mc.gameSettings.keyBindLeft.getKeyCode(), false);
-        KeyBinding.setKeyBindState(mc.gameSettings.keyBindJump.getKeyCode(), false);
-        KeyBinding.setKeyBindState(mc.gameSettings.keyBindSprint.getKeyCode(), Keyboard.isKeyDown(mc.gameSettings.keyBindSprint.getKeyCode()));
         releasePackets();
     }
 
@@ -146,6 +142,9 @@ public class InvMove extends Module {
         }
         else if (e.getPacket() instanceof C0DPacketCloseWindow) {
             if (canBlink()) {
+                if (inventory.getInput() == 3 && ModuleManager.invManager.isEnabled()) {
+                    PacketUtils.sendPacketNoEvent(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT));
+                }
                 releasePackets();
             }
         }
@@ -172,10 +171,10 @@ public class InvMove extends Module {
     }
 
     private boolean canBlink() {
-        if (mc.currentScreen == null) {
+        if (mc.currentScreen == null && inventory.getInput() != 3) {
             return false;
         }
-        else if (mc.currentScreen instanceof GuiInventory && inventory.getInput() == 2) {
+        else if ((mc.currentScreen instanceof GuiInventory && inventory.getInput() == 2) || (inventory.getInput() == 3 && mc.currentScreen == null)) {
             return true;
         }
         else if (chestAndOthers.getInput() == 2 && !(mc.currentScreen instanceof ClickGui) && !(mc.currentScreen instanceof GuiChat)) {

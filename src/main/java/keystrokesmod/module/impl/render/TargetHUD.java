@@ -9,12 +9,15 @@ import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Theme;
 import keystrokesmod.utility.Timer;
 import keystrokesmod.utility.Utils;
+import keystrokesmod.utility.shader.BlurUtils;
+import keystrokesmod.utility.shader.RoundedUtils;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.lwjgl.opengl.GL11;
@@ -67,12 +70,12 @@ public class TargetHUD extends Module {
                 reset();
                 return;
             }
-            if (KillAura.target != null) {
-                target = KillAura.target;
+            if (KillAura.attackingEntity != null) {
+                target = KillAura.attackingEntity;
                 lastAliveMS = System.currentTimeMillis();
                 fadeTimer = null;
             } else if (target != null) {
-                if (System.currentTimeMillis() - lastAliveMS >= 200 && fadeTimer == null) {
+                if (System.currentTimeMillis() - lastAliveMS >= 400 && fadeTimer == null) {
                     (fadeTimer = new Timer(400)).start();
                 }
             }
@@ -85,7 +88,7 @@ public class TargetHUD extends Module {
                 health = 0;
             }
             if (health != lastHealth) {
-                (healthBarTimer = new Timer(mode.getInput() == 0 ? 1000 : 350)).start();
+                (healthBarTimer = new Timer(mode.getInput() == 0 ? 500 : 350)).start();
             }
             lastHealth = health;
             playerInfo += " " + Utils.getHealthStr(target, true);
@@ -93,7 +96,7 @@ public class TargetHUD extends Module {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onRenderWorld(RenderWorldLastEvent renderWorldLastEvent) {
         if (!renderEsp.isToggled() || !Utils.nullCheck()) {
             return;
@@ -106,29 +109,37 @@ public class TargetHUD extends Module {
         }
     }
 
-    private void drawTargetHUD(Timer cd, String string, double health) {
+    private void drawTargetHUD(Timer fadeTimer, String string, double health) {
         if (showStatus.isToggled()) {
             string = string + " " + ((health <= Utils.getCompleteHealth(mc.thePlayer) / mc.thePlayer.getMaxHealth()) ? "§aW" : "§cL");
         }
         final ScaledResolution scaledResolution = new ScaledResolution(mc);
-        final int n2 = 8;
-        final int n3 = mc.fontRendererObj.getStringWidth(string) + n2;
-        final int x = (scaledResolution.getScaledWidth() / 2 - n3 / 2) + posX;
+        final int padding = 8;
+        final int targetStrWithPadding = mc.fontRendererObj.getStringWidth(string) + padding;
+        final int x = (scaledResolution.getScaledWidth() / 2 - targetStrWithPadding / 2) + posX;
         final int y = (scaledResolution.getScaledHeight() / 2 + 15) + posY;
-        final int n6 = x - n2;
-        final int n7 = y - n2;
-        final int n8 = x + n3;
-        final int n9 = y + (mc.fontRendererObj.FONT_HEIGHT + 5) - 6 + n2;
-        final int n10 = (cd == null) ? 255 : (255 - cd.getValueInt(0, 255, 1));
-        if (n10 > 0) {
-            final int n11 = (n10 > 110) ? 110 : n10;
-            final int n12 = (n10 > 210) ? 210 : n10;
-            final int[] array = Theme.getGradients((int) theme.getInput());
+        final int n6 = x - padding;
+        final int n7 = y - padding;
+        final int n8 = x + targetStrWithPadding;
+        final int n9 = y + (mc.fontRendererObj.FONT_HEIGHT + 5) - 6 + padding;
+        final int alpha = (fadeTimer == null) ? 255 : (255 - fadeTimer.getValueInt(0, 255, 1));
+        if (alpha > 0) {
+            final int maxAlphaOutline = (alpha > 110) ? 110 : alpha;
+            final int maxAlphaBackground = (alpha > 210) ? 210 : alpha;
+            final int[] gradientColors = Theme.getGradients((int) theme.getInput());
             switch ((int) mode.getInput()) {
                 case 0:
+                    float bloomRadius = (fadeTimer == null) ? 2f : (2f * alpha / 255f);
+                    float blurRadius = (fadeTimer == null) ? 3 : (3f * alpha / 255f);
+                    BlurUtils.prepareBloom();
+                    RoundedUtils.drawRound((float) n6, (float) n7, Math.abs((float) n6 - n8), Math.abs((float) n7 - (n9 + 13)), 8.0f, true, new Color(0, 0, 0, maxAlphaBackground));
+                    BlurUtils.bloomEnd(3, bloomRadius);
+                    BlurUtils.prepareBlur();
+                    RoundedUtils.drawRound((float) n6, (float) n7, Math.abs((float) n6 - n8), Math.abs((float) n7 - (n9 + 13)), 8.0f, true, new Color(Utils.mergeAlpha(Color.black.getRGB(), maxAlphaOutline)));
+                    BlurUtils.blurEnd(2, blurRadius);
                     break;
                 case 1:
-                    RenderUtils.drawRoundedGradientOutlinedRectangle((float) n6, (float) n7, (float) n8, (float) (n9 + 13), 10.0f, Utils.mergeAlpha(Color.black.getRGB(), n11), Utils.mergeAlpha(array[0], n10), Utils.mergeAlpha(array[1], n10));
+                    RenderUtils.drawRoundedGradientOutlinedRectangle((float) n6, (float) n7, (float) n8, (float) (n9 + 13), 10.0f, Utils.mergeAlpha(Color.black.getRGB(), maxAlphaOutline), Utils.mergeAlpha(gradientColors[0], alpha), Utils.mergeAlpha(gradientColors[1], alpha));
                     break;
             }
             final int n13 = n6 + 6;
@@ -136,24 +147,27 @@ public class TargetHUD extends Module {
             final int n15 = n9;
 
             // Bar background
-            RenderUtils.drawRoundedRectangle((float) n13, (float) n15, (float) n14, (float) (n15 + 5), 4.0f, Utils.mergeAlpha(Color.black.getRGB(), n11));
-            int k = Utils.mergeAlpha(array[0], n12);
-            int n16 = Utils.mergeAlpha(array[1], n12);
+            RenderUtils.drawRoundedRectangle((float) n13, (float) n15, (float) n14, (float) (n15 + 5), 4.0f, Utils.mergeAlpha(Color.black.getRGB(), maxAlphaOutline));
+            int mergedGradientLeft = Utils.mergeAlpha(gradientColors[0], maxAlphaBackground);
+            int mergedGradientRight = Utils.mergeAlpha(gradientColors[1], maxAlphaBackground);
             float healthBar = (float) (int) (n14 + (n13 - n14) * (1 - health));
+            boolean smoothBack = false;
             if (healthBar != lastHealthBar && lastHealthBar - n13 >= 3 && healthBarTimer != null ) {
+                int type = mode.getInput() == 0 ? 4 : 1;
                 float diff = lastHealthBar - healthBar;
                 if (diff > 0) {
-                    lastHealthBar = lastHealthBar - healthBarTimer.getValueFloat(0, diff, 1);
+                    lastHealthBar = lastHealthBar - healthBarTimer.getValueFloat(0, diff, type);
                 }
                 else {
-                    lastHealthBar = healthBarTimer.getValueFloat(lastHealthBar, healthBar, 1);
+                    smoothBack = true;
+                    lastHealthBar = healthBarTimer.getValueFloat(lastHealthBar, healthBar, type);
                 }
             }
             else {
                 lastHealthBar = healthBar;
             }
             if (healthColor.isToggled()) {
-                k = n16 = Utils.mergeAlpha(Utils.getColorForHealth(health), n12);
+                mergedGradientLeft = mergedGradientRight = Utils.mergeAlpha(Utils.getColorForHealth(health), maxAlphaBackground);
             }
             if (lastHealthBar > n14) { // exceeds total width then clamp
                 lastHealthBar = n14;
@@ -161,16 +175,16 @@ public class TargetHUD extends Module {
 
             switch ((int) mode.getInput()) { // health bar
                 case 0:
-                    RenderUtils.drawRoundedRectangle((float) n13, (float) n15, lastHealthBar, (float) (n15 + 5), 4.0f, Utils.mergeAlpha(Utils.mergeAlpha(n16, 160), n11));
-                    RenderUtils.drawRoundedGradientRect((float) n13, (float) n15, healthBar, (float) (n15 + 5), 4.0f, k, k, n16, n16);
+                    RenderUtils.drawRoundedRectangle((float) n13, (float) n15, lastHealthBar, (float) (n15 + 5), 4.0f, Utils.darkenColor(mergedGradientRight, 25));
+                    RenderUtils.drawRoundedGradientRect((float) n13, (float) n15, smoothBack ? lastHealthBar : healthBar, (float) (n15 + 5), 4.0f, mergedGradientLeft, mergedGradientLeft, mergedGradientRight, mergedGradientRight);
                     break;
                 case 1:
-                    RenderUtils.drawRoundedGradientRect((float) n13, (float) n15, lastHealthBar, (float) (n15 + 5), 4.0f, k, k, n16, n16);
+                    RenderUtils.drawRoundedGradientRect((float) n13, (float) n15, lastHealthBar, (float) (n15 + 5), 4.0f, mergedGradientLeft, mergedGradientLeft, mergedGradientRight, mergedGradientRight);
                     break;
             }
             GL11.glPushMatrix();
             GL11.glEnable(GL11.GL_BLEND);
-            mc.fontRendererObj.drawString(string, (float) x, (float) y, (new Color(220, 220, 220, 255).getRGB() & 0xFFFFFF) | Utils.clamp(n10 + 15) << 24, true);
+            mc.fontRendererObj.drawString(string, (float) x, (float) y, (new Color(220, 220, 220, 255).getRGB() & 0xFFFFFF) | Utils.clamp(alpha + 15) << 24, true);
             GL11.glDisable(GL11.GL_BLEND);
             GL11.glPopMatrix();
         }

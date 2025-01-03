@@ -62,7 +62,7 @@ public class ButtonSetting extends Setting {
                 booleanValue = data.getAsJsonPrimitive(getName()).getAsBoolean();
             }
             catch (Exception e) {
-                e.printStackTrace();
+
             }
             setEnabled(booleanValue);
         }

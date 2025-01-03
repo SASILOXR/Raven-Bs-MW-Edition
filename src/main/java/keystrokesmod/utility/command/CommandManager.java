@@ -13,9 +13,13 @@ public class CommandManager {
 
     public CommandManager() {
         registerCommand(new Help());
+        registerCommand(new Ping());
         registerCommand(new Name());
         registerCommand(new Binds());
         registerCommand(new Cname());
+        registerCommand(new Debug());
+        registerCommand(new Friend());
+        registerCommand(new Enemy());
     }
 
     public void executeCommand(String input) {

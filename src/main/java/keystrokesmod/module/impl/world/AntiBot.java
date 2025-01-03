@@ -115,7 +115,7 @@ public class AntiBot extends Module {
 
     private static List<String> getTablist() {
         List<String> tab = new ArrayList<>();
-        for (NetworkPlayerInfo networkPlayerInfo : Utils.getTablist()) {
+        for (NetworkPlayerInfo networkPlayerInfo : Utils.getTablist(true)) {
             if (networkPlayerInfo == null) {
                 continue;
             }

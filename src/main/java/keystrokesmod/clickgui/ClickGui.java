@@ -11,6 +11,8 @@ import keystrokesmod.module.impl.client.Gui;
 import keystrokesmod.utility.Commands;
 import keystrokesmod.utility.Timer;
 import keystrokesmod.utility.Utils;
+import keystrokesmod.utility.shader.BlurUtils;
+import keystrokesmod.utility.shader.RoundedUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
@@ -18,7 +20,6 @@ import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.shader.Framebuffer;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
@@ -35,17 +36,16 @@ import java.util.concurrent.TimeUnit;
 
 public class ClickGui extends GuiScreen {
     private ScheduledFuture sf;
-    private Timer aT;
-    private Timer aL;
-    private Timer aE;
-    private Timer aR;
+    private Timer logoSmoothWidth;
+    private Timer logoSmoothLength;
+    private Timer smoothEntity;
+    private Timer backgroundFade;
+    private Timer blurSmooth;
     private ScaledResolution sr;
     private GuiButtonExt commandLineSend;
     private GuiTextField commandLineInput;
     public static ArrayList<CategoryComponent> categories;
-    private Framebuffer stencilFramebuffer = new Framebuffer(1, 1, false);
     public int originalScale;
-    private int blurBackground = Color.black.getRGB();
 
     public ClickGui() {
         categories = new ArrayList();
@@ -60,38 +60,42 @@ public class ClickGui extends GuiScreen {
             categories.add(categoryComponent);
             y += 20;
         }
-
-
     }
 
     public void initMain() {
-        (this.aT = this.aE = this.aR = new Timer(500.0F)).start();
+        (this.logoSmoothWidth = this.smoothEntity = this.blurSmooth = this.backgroundFade = new Timer(500.0F)).start();
         this.sf = Raven.getExecutor().schedule(() -> {
-            (this.aL = new Timer(650.0F)).start();
+            (this.logoSmoothLength = new Timer(650.0F)).start();
         }, 650L, TimeUnit.MILLISECONDS);
-        for (CategoryComponent categoryComponent : categories) {
-            categoryComponent.setScreenHeight(this.height);
-        }
     }
 
     @Override
     public void initGui() {
         super.initGui();
         this.sr = new ScaledResolution(this.mc);
+        for (CategoryComponent categoryComponent : categories) {
+            categoryComponent.setScreenHeight(this.sr.getScaledHeight());
+        }
         (this.commandLineInput = new GuiTextField(1, this.mc.fontRendererObj, 22, this.height - 100, 150, 20)).setMaxStringLength(256);
         this.buttonList.add(this.commandLineSend = new GuiButtonExt(2, 22, this.height - 70, 150, 20, "Send"));
         this.commandLineSend.visible = CommandLine.a;
     }
 
     public void drawScreen(int x, int y, float p) {
+        if (Gui.backgroundBlur.getInput() != 0) {
+            BlurUtils.prepareBlur();
+            RoundedUtils.drawRound(0, 0, this.width, this.height, 0.0f, true, Color.black);
+            float inputToRange = (float) (3 * ((Gui.backgroundBlur.getInput() + 35) / 100));
+            BlurUtils.blurEnd(2, this.blurSmooth.getValueFloat(0, inputToRange, 1));
+        }
         if (Gui.darkBackground.isToggled()) {
-            drawRect(0, 0, this.width, this.height, (int) (this.aR.getValueFloat(0.0F, 0.7F, 2) * 255.0F) << 24);
+            drawRect(0, 0, this.width, this.height, (int) (this.backgroundFade.getValueFloat(0.0F, 0.7F, 2) * 255.0F) << 24);
         }
         int r;
         if (!Gui.removeWatermark.isToggled()) {
             int h = this.height / 4;
             int wd = this.width / 2;
-            int w_c = 30 - this.aT.getValueInt(0, 30, 3);
+            int w_c = 30 - this.logoSmoothWidth.getValueInt(0, 30, 3);
             this.drawCenteredString(this.fontRendererObj, "r", wd + 1 - w_c, h - 25, Utils.getChroma(2L, 1500L));
             this.drawCenteredString(this.fontRendererObj, "a", wd - w_c, h - 15, Utils.getChroma(2L, 1200L));
             this.drawCenteredString(this.fontRendererObj, "v", wd - w_c, h - 5, Utils.getChroma(2L, 900L));
@@ -100,8 +104,8 @@ public class ClickGui extends GuiScreen {
             this.drawCenteredString(this.fontRendererObj, "bS", wd + 1 + w_c, h + 30, Utils.getChroma(2L, 0L));
             this.drawVerticalLine(wd - 10 - w_c, h - 30, h + 43, Color.white.getRGB());
             this.drawVerticalLine(wd + 10 + w_c, h - 30, h + 43, Color.white.getRGB());
-            if (this.aL != null) {
-                r = this.aL.getValueInt(0, 20, 2);
+            if (this.logoSmoothLength != null) {
+                r = this.logoSmoothLength.getValueInt(0, 20, 2);
                 this.drawHorizontalLine(wd - 10, wd - 10 + r, h - 29, -1);
                 this.drawHorizontalLine(wd + 10, wd + 10 - r, h + 42, -1);
             }
@@ -120,7 +124,7 @@ public class ClickGui extends GuiScreen {
         if (!Gui.removePlayerModel.isToggled()) {
             GlStateManager.pushMatrix();
             GlStateManager.disableBlend();
-            GuiInventory.drawEntityOnScreen(this.width + 15 - this.aE.getValueInt(0, 40, 2), this.height - 10, 40, (float) (this.width - 25 - x), (float) (this.height - 50 - y), this.mc.thePlayer);
+            GuiInventory.drawEntityOnScreen(this.width + 15 - this.smoothEntity.getValueInt(0, 40, 2), this.height - 10, 40, (float) (this.width - 25 - x), (float) (this.height - 50 - y), this.mc.thePlayer);
             GlStateManager.enableBlend();
             GlStateManager.popMatrix();
         }
@@ -277,7 +281,7 @@ public class ClickGui extends GuiScreen {
 
     @Override
     public void onGuiClosed() {
-        this.aL = null;
+        this.logoSmoothLength = null;
         if (this.sf != null) {
             this.sf.cancel(true);
             this.sf = null;

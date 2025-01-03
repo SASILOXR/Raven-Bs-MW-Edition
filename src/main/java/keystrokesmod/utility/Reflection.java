@@ -1,7 +1,6 @@
 package keystrokesmod.utility;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.GuiEnchantment;
 import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.GuiScreenBook;
@@ -12,14 +11,17 @@ import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.ai.EntityAIAttackOnCollide;
+import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
+import net.minecraft.entity.ai.EntityAITasks;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.inventory.*;
 import net.minecraft.item.ItemFood;
 import net.minecraft.network.play.client.C01PacketChatMessage;
 import net.minecraft.network.play.client.C02PacketUseEntity;
-import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.MouseEvent;
@@ -43,30 +45,32 @@ public class Reflection {
     public static Field curBlockDamageMP;
     public static Field blockHitDelay;
     public static Method clickMouse;
+    public static Method setupCameraTransform;
     public static Method rightClickMouse;
     public static Field shaderResourceLocations;
     public static Field useShader;
     public static Field shaderIndex;
     public static Method loadShader;
-    public static Method getPlayerInfo;
     public static Field inGround;
     public static Method getFOVModifier;
     public static Field itemInUseCount;
     public static Field S08PacketPlayerPosLookYaw;
     public static Field S08PacketPlayerPosLookPitch;
-    public static Field C03PacketPlayerYaw;
-    public static Field C03PacketPlayerPitch;
     public static Field C02PacketUseEntityEntityId;
     public static Field bookContents;
+    public static Field classTarget;
     public static Field fallDistance;
     public static Field thirdPersonDistance;
     public static Field alwaysEdible;
     public static Field mcGuiInGame;
+    public static Field targetEntity;
+    public static Field targetTasks;
+    public static Field executingTaskEntries;
     public static Field C01PacketChatMessageMessage;
     public static HashMap<Class, Field> containerInventoryPlayer = new HashMap<>();
     private static List<Class> containerClasses = Arrays.asList(GuiFurnace.class, GuiBrewingStand.class, GuiEnchantment.class, ContainerHopper.class, GuiDispenser.class, ContainerWorkbench.class, ContainerMerchant.class, ContainerHorseInventory.class);
     public static boolean sendMessage = false;
-    public static Map<KeyBinding, String> keyBindings = new HashMap<>();
+    public static Map<String, KeyBinding> keybinds = new HashMap<>();
 
     public static void getFields() {
         try {
@@ -103,9 +107,24 @@ public class Reflection {
                 curBlockDamageMP.setAccessible(true);
             }
 
+            classTarget = ReflectionHelper.findField(EntityAIAttackOnCollide.class, "field_75444_h", "classTarget");
+            if (classTarget != null) {
+                classTarget.setAccessible(true);
+            }
+
             blockHitDelay = ReflectionHelper.findField(PlayerControllerMP.class, "field_78781_i", "blockHitDelay");
             if (blockHitDelay != null) {
                 blockHitDelay.setAccessible(true);
+            }
+
+            targetEntity = ReflectionHelper.findField(EntityAINearestAttackableTarget.class, "targetEntity", "field_75309_a");
+            if (targetEntity != null) {
+                targetEntity.setAccessible(true);
+            }
+
+            targetTasks = ReflectionHelper.findField(EntityLiving.class, "targetTasks", "field_70715_bh");
+            if (targetTasks != null) {
+                targetTasks.setAccessible(true);
             }
 
             fallDistance = ReflectionHelper.findField(Entity.class, "fallDistance", "field_70143_R");
@@ -116,6 +135,11 @@ public class Reflection {
             mcGuiInGame = ReflectionHelper.findField(GuiIngame.class, "mc", "field_73839_d");
             if (mcGuiInGame != null) {
                 mcGuiInGame.setAccessible(true);
+            }
+
+            executingTaskEntries = ReflectionHelper.findField(EntityAITasks.class, "executingTaskEntries", "field_75780_b");
+            if (executingTaskEntries != null) {
+                executingTaskEntries.setAccessible(true);
             }
 
             shaderResourceLocations = ReflectionHelper.findField(EntityRenderer.class, "shaderResourceLocations", "field_147712_ad");
@@ -163,16 +187,6 @@ public class Reflection {
                 S08PacketPlayerPosLookPitch.setAccessible(true);
             }
 
-            C03PacketPlayerYaw = ReflectionHelper.findField(C03PacketPlayer.class, "field_149476_e", "yaw");
-            if (C03PacketPlayerYaw != null) {
-                C03PacketPlayerYaw.setAccessible(true);
-            }
-
-            C03PacketPlayerPitch = ReflectionHelper.findField(C03PacketPlayer.class, "field_149473_f", "pitch");
-            if (C03PacketPlayerPitch != null) {
-                C03PacketPlayerPitch.setAccessible(true);
-            }
-
             C02PacketUseEntityEntityId = ReflectionHelper.findField(C02PacketUseEntity.class, "entityId", "field_149567_a");
             if (C02PacketUseEntityEntityId != null) {
                 C02PacketUseEntityEntityId.setAccessible(true);
@@ -197,8 +211,9 @@ public class Reflection {
     }
 
     public static void setKeyBindings() {
-        for (KeyBinding keyBinding : Minecraft.getMinecraft().gameSettings.keyBindings) {
-            keyBindings.put(keyBinding, keyBinding.getKeyDescription().substring(4));
+        for (KeyBinding keyBind : Minecraft.getMinecraft().gameSettings.keyBindings) {
+            String keyName = keyBind.getKeyDescription().replaceFirst("key\\.", "");
+            keybinds.put(keyName, keyBind);
         }
     }
 
@@ -242,19 +257,10 @@ public class Reflection {
                 clickMouse.setAccessible(true);
             }
 
-            try {
-                getPlayerInfo = AbstractClientPlayer.class.getDeclaredMethod("getPlayerInfo");
-            } catch (NoSuchMethodException var4) {
-                try {
-                    getPlayerInfo =
+            setupCameraTransform = ReflectionHelper.findMethod(EntityRenderer.class, Minecraft.getMinecraft().entityRenderer, new String[]{"func_78479_a", "setupCameraTransform"}, float.class, int.class);
 
-                            AbstractClientPlayer.class.getDeclaredMethod("func_175155_b");
-                } catch (NoSuchMethodException var3) {
-                }
-            }
-
-            if (getPlayerInfo != null) {
-                getPlayerInfo.setAccessible(true);
+            if (setupCameraTransform != null) {
+                setupCameraTransform.setAccessible(true);
             }
         }
         catch (Exception e) {
@@ -313,14 +319,51 @@ public class Reflection {
         }
     }
 
-    public static boolean setBlocking(boolean blocking) {
+    public static boolean setItemInUse(boolean blocking) {
         try {
             itemInUseCount.set(Minecraft.getMinecraft().thePlayer, blocking ? 1 : 0);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
             Utils.sendMessage("§cFailed to set block state client-side.");
             return false;
         }
         return blocking;
+    }
+
+    public static void setItemInUseCount(int count) {
+        try {
+            itemInUseCount.set(Minecraft.getMinecraft().thePlayer, count);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static boolean setupCameraTransform(EntityRenderer entityRenderer, float partialTicks, int eyeIndex) {
+        try {
+            if (setupCameraTransform == null) {
+                return false;
+            }
+            setupCameraTransform.invoke(entityRenderer, partialTicks, eyeIndex);
+            return true;
+        }
+        catch (IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static Entity getClassTarget(EntityAIAttackOnCollide task) {
+        try {
+            if (classTarget != null) {
+                Entity targetEntity = (Entity) classTarget.get(task);
+                return targetEntity;
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

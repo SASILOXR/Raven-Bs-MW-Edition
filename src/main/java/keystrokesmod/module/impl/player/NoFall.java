@@ -1,12 +1,16 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.Raven;
 import keystrokesmod.event.PreMotionEvent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
-import keystrokesmod.utility.Reflection;
+import keystrokesmod.utility.BlockUtils;
+import keystrokesmod.utility.PacketUtils;
 import keystrokesmod.utility.Utils;
+import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.C03PacketPlayer;
+import net.minecraft.util.BlockPos;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -16,6 +20,7 @@ public class NoFall extends Module {
     private ButtonSetting disableAdventure;
     private ButtonSetting ignoreVoid;
     private String[] modes = new String[]{"Spoof", "Extra", "NoGround"};
+    private double initialY;
 
     public NoFall() {
         super("NoFall", category.player);
@@ -31,37 +36,25 @@ public class NoFall extends Module {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onPreMotion(PreMotionEvent e) {
-        Utils.resetTimer();
-        if (disableAdventure.isToggled() && mc.playerController.getCurrentGameType().isAdventure()) {
+        if (reset()) {
+            Utils.resetTimer();
+            initialY = mc.thePlayer.posY;
             return;
         }
-        if (ignoreVoid.isToggled() && isVoid()) {
-            return;
-        }
-        if (Utils.isBedwarsPractice()) {
-            return;
-        }
+        double predictedY = mc.thePlayer.posY + mc.thePlayer.motionY;
+        double distanceFallen = initialY - predictedY;
         if (((double) mc.thePlayer.fallDistance > minFallDistance.getInput() || minFallDistance.getInput() == 0) || mode.getInput() == 2) {
             switch ((int) mode.getInput()) {
                 case 0:
                     e.setOnGround(true);
                     break;
                 case 1:
-                    float fallDistance = 0;
-                    try {
-                        fallDistance = Reflection.fallDistance.getFloat(mc.thePlayer);
-                    }
-                    catch (Exception exception) {
-                        Utils.sendMessage("&cFailed to get fall distance.");
-                    }
-                    if (fallDistance > minFallDistance.getInput()) {
-                        Utils.getTimer().timerSpeed = (float) 0.5;
-                        mc.getNetHandler().addToSendQueue(new C03PacketPlayer(true));
-                        try {
-                            Reflection.fallDistance.setFloat(mc.thePlayer, 0);
-                        }
-                        catch (Exception exception) {
-                            Utils.sendMessage("&cFailed to set fall distance to 0.");
+                    if (distanceFallen >= minFallDistance.getInput()) {
+                        Utils.getTimer().timerSpeed = (float) 0.7;
+                        PacketUtils.sendPacketNoEvent(new C03PacketPlayer(true));
+                        initialY = mc.thePlayer.posY;
+                        if (Raven.debug) {
+                            Utils.sendMessage("&7nofalling");
                         }
                     }
                     break;
@@ -79,5 +72,27 @@ public class NoFall extends Module {
 
     private boolean isVoid() {
         return Utils.overVoid(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ);
+    }
+
+    private boolean reset() {
+        if (disableAdventure.isToggled() && mc.playerController.getCurrentGameType().isAdventure()) {
+            return true;
+        }
+        if (ignoreVoid.isToggled() && isVoid()) {
+            return true;
+        }
+        if (Utils.isBedwarsPractice()) {
+            return true;
+        }
+        if (mc.thePlayer.onGround) {
+            return true;
+        }
+        if (BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY- 1, mc.thePlayer.posZ)) != Blocks.air) {
+            return true;
+        }
+        if (mc.thePlayer.motionY > 0) {
+            return true;
+        }
+        return false;
     }
 }

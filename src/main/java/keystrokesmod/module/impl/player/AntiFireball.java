@@ -70,7 +70,7 @@ public class AntiFireball extends Module {
             return;
         }
         if (fireball != null) {
-            if (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && ModuleManager.killAura.block.get() && (ModuleManager.killAura.autoBlockMode.getInput() == 3 || ModuleManager.killAura.autoBlockMode.getInput() == 4)) {
+            if (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && ModuleManager.killAura.blockingServer && ModuleManager.killAura.blinkAutoBlock()) {
                 if (KillAura.target != null) {
                     attack = false;
                     return;
@@ -134,7 +134,7 @@ public class AntiFireball extends Module {
     }
 
     private boolean stopAttack() {
-        return (ModuleManager.bedAura != null && ModuleManager.bedAura.isEnabled() && ModuleManager.bedAura.currentBlock != null) || (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && KillAura.target != null);
+        return (ModuleManager.bedAura != null && ModuleManager.bedAura.isEnabled() && ModuleManager.bedAura.currentBlock != null) || (ModuleManager.killAura != null && ModuleManager.killAura.isEnabled() && KillAura.attackingEntity != null);
     }
 
     private boolean condition() {

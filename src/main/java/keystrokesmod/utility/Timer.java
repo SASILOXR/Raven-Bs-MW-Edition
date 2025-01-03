@@ -24,6 +24,10 @@ public class Timer {
                     break;
                 case 3:
                     t = this.bounce(t);
+                    break;
+                case 4:
+                    t = quadInOut(t);
+                    break;
             }
 
             float value = begin + t * (end - begin);
@@ -63,5 +67,14 @@ public class Timer {
         }
 
         return i;
+    }
+
+    float quadInOut(float t) {
+        if (t < 0.5f) {
+            return 2 * t * t;
+        }
+        else {
+            return -1 + (4 - 2 * t) * t;
+        }
     }
 }

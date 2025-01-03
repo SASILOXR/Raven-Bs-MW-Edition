@@ -63,7 +63,6 @@ public class SpeedBuilders extends Module {
     private double blockCount;
     private long lastPlace = 0L;
     private BlockPos lastPlacePos = null;
-    private boolean autoToggled;
     private int lastPlaceTick = 0;
     private boolean eliminated;
 
@@ -82,7 +81,6 @@ public class SpeedBuilders extends Module {
 
     @Override
     public void onDisable() {
-        autoToggled = (autoSwap.isToggled() && hoverPlace.isToggled());
         lastPlaceTick = 0;
     }
 
@@ -107,18 +105,12 @@ public class SpeedBuilders extends Module {
                 IBlockState currentState = mc.theWorld.getBlockState(entry.getKey());
                 IBlockState requiredState = entry.getValue().requiredState;
 
-                Block currentBlock = currentState.getBlock();
-                Block requiredBlock = requiredState.getBlock();
-
-                int currentMeta = currentBlock.getMetaFromState(currentState);
-                int requiredMeta = requiredBlock.getMetaFromState(requiredState);
-
-                if (requiredBlock == Blocks.leaves || requiredBlock == Blocks.leaves2) {
-                    currentMeta &= 3;
-                    requiredMeta &= 3;
+                if (currentState == null || requiredState == null) {
+                    entry.getValue().isPlaced = false;
+                    continue;
                 }
 
-                if (currentBlock == requiredBlock && currentMeta == requiredMeta) {
+                if (currentState.equals(requiredState) ||(requiredState.getBlock() instanceof BlockLeaves && (currentState.getBlock().equals(requiredState.getBlock())))) {
                     entry.getValue().isPlaced = true;
                 }
                 else {
@@ -134,14 +126,14 @@ public class SpeedBuilders extends Module {
 
                     BuildBlockInfo info = buildInfo.get(facePos);
                     if (info != null && !info.isPlaced) {
-                        if (autoSwap.isToggled() || autoToggled) {
+                        if (autoSwap.isToggled()) {
                             int requiredMeta = info.requiredState.getBlock().getMetaFromState(info.requiredState);
                             int slot = getSlot(info.requiredState.getBlock(), requiredMeta);
                             if (slot != -1 && slot != mc.thePlayer.inventory.currentItem) {
                                 mc.thePlayer.inventory.currentItem = slot;
                             }
                         }
-                        if ((hoverPlace.isToggled() || autoToggled) && holdingSameBlock(info.requiredState) && !autoPlace.isToggled() && correctPlaceState(info.requiredState, targetPos, mop.sideHit, mop.hitVec, mc.thePlayer.getHeldItem())) {
+                        if ((hoverPlace.isToggled()) && holdingSameBlock(info.requiredState) && !autoPlace.isToggled() && correctPlaceState(info.requiredState, targetPos, mop.sideHit, mop.hitVec, mc.thePlayer.getHeldItem())) {
                             if (lastPlaceTick++ < placeDelay.getInput()) {
                                 return;
                             }
@@ -214,14 +206,13 @@ public class SpeedBuilders extends Module {
             }
         }
         else if (e.button == 2) {
-            autoToggled = !autoToggled;
-            if (autoToggled) {
-                autoSwap.enable();
-                hoverPlace.enable();
-            }
-            else {
+            if (autoSwap.isToggled()) {
                 autoSwap.disable();
                 hoverPlace.disable();
+            }
+            else {
+                autoSwap.enable();
+                hoverPlace.enable();
             }
         }
     }
@@ -416,7 +407,7 @@ public class SpeedBuilders extends Module {
         int endZ = centerPos.getZ() + 3;
 
         int startY = centerPos.getY() + 1;
-        int endY = startY + 25;
+        int endY = startY + 30;
 
         for (int x = startX; x <= endX; x++) {
             for (int z = startZ; z <= endZ; z++) {
@@ -435,7 +426,7 @@ public class SpeedBuilders extends Module {
     }
 
     public boolean autoEnabled() {
-        return autoToggled || (autoSwap.isToggled() && hoverPlace.isToggled());
+        return autoSwap.isToggled() && hoverPlace.isToggled();
     }
 
     public boolean holdingSameBlock(IBlockState requiredState) {
@@ -516,7 +507,7 @@ public class SpeedBuilders extends Module {
     }
 
     private boolean removeMeta(Block block) {
-        return (block instanceof BlockStairs || block instanceof BlockCauldron || block instanceof BlockRail || block instanceof BlockRailBase || block instanceof BlockTripWireHook || block instanceof BlockTripWire || block instanceof BlockDispenser || block instanceof BlockDropper || block instanceof BlockHopper || block instanceof BlockTorch || block instanceof BlockButton || block instanceof BlockLever || block instanceof BlockTrapDoor || block instanceof BlockSlab);
+        return (block instanceof BlockStairs || block instanceof BlockDoublePlant || block instanceof BlockFlower || block instanceof BlockSkull || block instanceof BlockLadder || block instanceof BlockPumpkin || block instanceof BlockCauldron || block instanceof BlockRail || block instanceof BlockRailBase || block instanceof BlockTripWireHook || block instanceof BlockTripWire || block instanceof BlockDispenser || block instanceof BlockDropper || block instanceof BlockHopper || block instanceof BlockTorch || block instanceof BlockButton || block instanceof BlockLever || block instanceof BlockTrapDoor || block instanceof BlockSlab);
     }
 
     private boolean correctPlaceState(IBlockState requiredState, BlockPos blockPos, EnumFacing enumFacing, Vec3 hitVec, ItemStack heldItem) {
@@ -524,7 +515,7 @@ public class SpeedBuilders extends Module {
             return false;
         }
 
-        if (requiredState.getBlock() instanceof BlockLeaves) {
+        if (requiredState.getBlock() instanceof BlockLeaves || requiredState.getBlock() instanceof BlockButton) {
             return true;
         }
 

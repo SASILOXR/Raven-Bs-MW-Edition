@@ -3,6 +3,7 @@ package keystrokesmod.module.impl.render;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.combat.AntiKnockback;
+import keystrokesmod.module.impl.combat.Velocity;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -36,7 +37,7 @@ public class HUD extends Module {
     public static int posY = 70;
     private boolean isAlphabeticalSort;
     private boolean canShowInfo;
-    private String[] outlineModes = new String[] { "Disabled", "Full", "Side" };
+    private String[] outlineModes = new String[] { "None", "Full", "Side" };
     private static int backGroundColor = new Color(0, 0, 0, 110).getRGB();
 
     public HUD() {
@@ -87,6 +88,7 @@ public class HUD extends Module {
         double n2 = 0.0;
         String previousModule = "";
         int lastXPos = 0;
+        boolean removeVelocity = ModuleManager.antiKnockback.isEnabled();
         try {
             for (Module module : ModuleManager.organizedModules) {
                 if (module.isEnabled() && module != this) {
@@ -103,6 +105,9 @@ public class HUD extends Module {
                         continue;
                     }
                     if (removeCloset.isToggled() && module.closetModule) {
+                        continue;
+                    }
+                    if (module instanceof Velocity && removeVelocity) {
                         continue;
                     }
                     String moduleName = module.getName();

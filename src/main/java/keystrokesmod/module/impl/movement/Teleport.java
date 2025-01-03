@@ -86,7 +86,7 @@ public class Teleport extends Module {
         if (mouseEvent.button != 1 || !mouseEvent.buttonstate || !rightClick.isToggled() || !Utils.nullCheck()) {
             return;
         }
-        MovingObjectPosition rayCast = RotationUtils.rayCast(150.0, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+        MovingObjectPosition rayCast = RotationUtils.rayCast(150.0, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, true);
         if (rayCast == null || rayCast.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
             return;
         }
@@ -102,7 +102,7 @@ public class Teleport extends Module {
         if (rightClick.isToggled()) {
             return;
         }
-        MovingObjectPosition rayCast = RotationUtils.rayCast(150.0, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+        MovingObjectPosition rayCast = RotationUtils.rayCast(150.0, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, true);
         if (rayCast == null || rayCast.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
             return;
         }

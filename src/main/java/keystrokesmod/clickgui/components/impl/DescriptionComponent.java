@@ -17,7 +17,7 @@ public class DescriptionComponent extends Component {
         this.desc = desc;
         this.p = b;
         this.x = b.categoryComponent.getX() + b.categoryComponent.getWidth();
-        this.y = b.categoryComponent.getY() + b.o;
+        this.y = b.categoryComponent.getY() + b.yPos;
         this.o = o;
     }
 
@@ -28,7 +28,7 @@ public class DescriptionComponent extends Component {
         GL11.glPopMatrix();
     }
 
-    public void so(int n) {
+    public void updateHeight(int n) {
         this.o = n;
     }
 }

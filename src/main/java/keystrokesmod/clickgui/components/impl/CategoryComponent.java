@@ -21,17 +21,20 @@ import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 public class CategoryComponent {
     public List<ModuleComponent> modules = new CopyOnWriteArrayList<>();
     public Module.category categoryName;
     public boolean opened;
-    private int width;
-    private int y;
-    private int x;
-    private int titleHeight;
+    public int width;
+    public int y;
+    public int x;
+    public int titleHeight;
     public boolean dragging;
     public int xx;
     public int yy;
@@ -44,7 +47,7 @@ public class CategoryComponent {
     private Timer textTimer;
     public Timer smoothScrollTimer;
     public ScaledResolution scale;
-    private float big;
+    public float big;
     private float bigSettings;
     private final int translucentBackground = new Color(0, 0, 0, 110).getRGB();
     private final int regularOutline = new Color(81, 99, 149).getRGB();
@@ -55,8 +58,6 @@ public class CategoryComponent {
     private int lastModuleY;
     private int screenHeight;
     private boolean scrolled;
-
-    // New field for target scroll position
     private int targetModuleY;
     private float closedHeight;
 
@@ -105,8 +106,11 @@ public class CategoryComponent {
                     ModuleComponent b = new ModuleComponent(profile.getModule(), this, moduleRenderY);
                     this.modules.add(b);
                 }
-            } else {
-                for (Module module : Raven.scriptManager.scripts.values()) {
+            }
+            else {
+                Collection<Module> modulesCollection = Raven.scriptManager.scripts.values();
+                List<Module> sortedModules = modulesCollection.stream().sorted(Comparator.comparing(Module::getName, String.CASE_INSENSITIVE_ORDER)).collect(Collectors.toList());
+                for (Module module : sortedModules) {
                     moduleRenderY += 16;
                     ModuleComponent b = new ModuleComponent(module, this, moduleRenderY);
                     this.modules.add(b);
@@ -142,15 +146,15 @@ public class CategoryComponent {
 
     public void mouseClicked(boolean on) {
         this.opened = on;
-        (this.smoothTimer = new Timer(300)).start();
+        (this.smoothTimer = new Timer(500)).start();
         (this.textTimer = new Timer(200)).start();
     }
 
     public void openModule(ModuleComponent component) {
         if (!component.isOpened) {
-            closedHeight = big;
+            closedHeight = this.y + this.titleHeight + big + 4;
         }
-        (this.smoothTimer = new Timer(300)).start();
+        (this.smoothTimer = new Timer(200)).start();
     }
 
     public void onScroll(int mouseScrollInput) {
@@ -180,7 +184,9 @@ public class CategoryComponent {
         if (!this.modules.isEmpty() && this.opened) {
             for (ModuleComponent c : this.modules) {
                 settingsHeight += c.getHeight();
-                if (modulesHeight + c.getHeight() > this.screenHeight - 40) {
+                int height = !c.isOpened ? 16 : c.getModuleHeight();
+                if (modulesHeight + height > this.screenHeight * 0.9d) {
+                    modulesHeight = (int) (this.screenHeight * 0.9d);
                     continue;
                 }
                 modulesHeight += c.getHeight();
@@ -203,7 +209,7 @@ public class CategoryComponent {
                 extra = smoothTimer.getValueFloat(lastHeight, this.y + this.titleHeight + modulesHeight + 4, 1);
             }
             else if (diff > 0) {
-                extra = (this.y + this.titleHeight + 4 + (this.opened ? closedHeight : big)) - smoothTimer.getValueFloat(0, big, 1);
+                extra = smoothTimer.getValueFloat(this.opened ? closedHeight : lastHeight, this.y + this.titleHeight + modulesHeight + 4, 1);
             }
         }
 
@@ -214,7 +220,7 @@ public class CategoryComponent {
 
         if (scrolled && smoothScrollTimer != null) {
             if (System.currentTimeMillis() - smoothScrollTimer.last <= 200) {
-                float interpolated = smoothScrollTimer.getValueFloat(lastModuleY, targetModuleY, 1);
+                float interpolated = smoothScrollTimer.getValueFloat(lastModuleY, targetModuleY, 4);
                 moduleY = (int) interpolated;
             }
             else {
@@ -240,9 +246,9 @@ public class CategoryComponent {
 
         if (!this.n4m) {
             int prevY = this.y;
-            this.y = (int) this.moduleY;
+            this.y = this.moduleY;
 
-            if ((this.opened || smoothTimer != null) && !this.modules.isEmpty()) {
+            if (this.opened || smoothTimer != null) {
                 for (Component c2 : this.modules) {
                     c2.render();
                 }
@@ -253,12 +259,12 @@ public class CategoryComponent {
         GL11.glPopMatrix();
     }
 
-    public void render() {
-        int o = this.titleHeight + 3;
+    public void updateHeight() {
+        int y = this.titleHeight + 3;
 
         for (Component component : this.modules) {
-            component.so(o);
-            o += component.getHeight();
+            component.updateHeight(y);
+            y += component.getHeight();
         }
     }
 
@@ -360,10 +366,6 @@ public class CategoryComponent {
         }
         GlStateManager.scale(1, 1, 1);
         GlStateManager.popMatrix();
-    }
-
-    public int getScreenHeight() {
-        return screenHeight;
     }
 
     public void setScreenHeight(int screenHeight) {

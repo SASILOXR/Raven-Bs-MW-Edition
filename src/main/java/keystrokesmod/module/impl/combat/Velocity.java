@@ -6,7 +6,7 @@ import keystrokesmod.module.impl.movement.LongJump;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.Utils;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 
@@ -19,8 +19,8 @@ public class Velocity extends Module {
 
     public Velocity() {
         super("Velocity", category.combat, 0);
-        this.registerSetting(horizontal = new SliderSetting("Horizontal", 90.0D, 0.0D, 100.0D, 1.0D));
-        this.registerSetting(vertical = new SliderSetting("Vertical", 100.0D, 0.0D, 100.0D, 1.0D));
+        this.registerSetting(horizontal = new SliderSetting("Horizontal", "%", 90.0D, 0.0D, 100.0D, 1.0D));
+        this.registerSetting(vertical = new SliderSetting("Vertical", "%", 100.0D, 0.0D, 100.0D, 1.0D));
         this.registerSetting(chance = new SliderSetting("Chance", "%", 100.0D, 0.0D, 100.0D, 1.0D));
         this.registerSetting(onlyWhileTargeting = new ButtonSetting("Only while targeting", false));
         this.registerSetting(disableS = new ButtonSetting("Disable while holding S", false));
@@ -38,8 +38,11 @@ public class Velocity extends Module {
     }
 
     @SubscribeEvent
-    public void onLivingUpdate(LivingUpdateEvent ev) {
+    public void onLivingUpdate(LivingEvent.LivingUpdateEvent ev) {
         if (Utils.nullCheck() && !LongJump.stopModules && !ModuleManager.bedAura.cancelKnockback()) {
+            if (ev.entity != mc.thePlayer) {
+                return;
+            }
             if (ModuleManager.antiKnockback.isEnabled()) {
                 return;
             }

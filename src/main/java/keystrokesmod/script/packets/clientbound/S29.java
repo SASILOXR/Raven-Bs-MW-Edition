@@ -16,4 +16,12 @@ public class S29 extends SPacket {
         this.volume = packet.getVolume();
         this.pitch = packet.getPitch();
     }
+
+    public S29(String sound, Vec3 position, float volume, float pitch) {
+        super(new S29PacketSoundEffect(sound, position.x, position.y, position.z, volume, pitch));
+        this.sound = sound;
+        this.position = position;
+        this.volume = volume;
+        this.pitch = pitch;
+    }
 }

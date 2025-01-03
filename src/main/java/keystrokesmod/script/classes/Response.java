@@ -1,32 +1,28 @@
 package keystrokesmod.script.classes;
 
-import com.google.gson.JsonParser;
-import keystrokesmod.utility.URLUtils;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
-
 public class Response {
-    private HttpURLConnection connection;
+    private int responseCode;
+    private String contents;
 
-    protected Response(HttpURLConnection connection) {
-        this.connection = connection;
+    public Response(int responseCode, String contents) {
+        this.responseCode = responseCode;
+        this.contents = contents;
     }
 
     public int code() {
-        try {
-            return this.connection.getResponseCode();
-        }
-        catch (IOException e) {
-            return 0;
-        }
+        return this.responseCode;
     }
 
     public String string() {
-        return URLUtils.getTextFromConnection(this.connection);
+        return this.contents;
     }
 
     public Json json() {
-        return new Json((new JsonParser()).parse(URLUtils.getTextFromConnection(this.connection)).getAsJsonObject(), 0);
+        return (this.contents == null) ? null : new Json(this.contents);
+    }
+
+    @Override
+    public String toString() {
+        return "Response(" + this.responseCode + ")";
     }
 }

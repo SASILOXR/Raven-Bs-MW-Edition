@@ -29,19 +29,22 @@ public class ModuleComponent extends Component {
     private final int disabledColor = new Color(192, 192, 192).getRGB();
     public Module mod;
     public CategoryComponent categoryComponent;
-    public int o;
+    public int yPos;
     public ArrayList<Component> settings;
     public boolean isOpened;
     private boolean hovering;
     private Timer hoverTimer;
+    private boolean hoverStarted;
+    private Timer smoothTimer;
+    private int smoothingY = 16;
 
-    public ModuleComponent(Module mod, CategoryComponent p, int o) {
+    public ModuleComponent(Module mod, CategoryComponent p, int yPos) {
         this.mod = mod;
         this.categoryComponent = p;
-        this.o = o;
+        this.yPos = yPos;
         this.settings = new ArrayList();
         this.isOpened = false;
-        int y = o + 12;
+        int y = yPos + 12;
         if (mod != null && !mod.getSettings().isEmpty()) {
             for (Setting v : mod.getSettings()) {
                 if (v instanceof SliderSetting) {
@@ -65,15 +68,15 @@ public class ModuleComponent extends Component {
         this.settings.add(new BindComponent(this, y));
     }
 
-    public void so(int n) {
-        this.o = n;
-        int y = this.o + 16;
+    public void updateHeight(int newY) {
+        this.yPos = newY;
+        int y = this.yPos + 16;
         Iterator var3 = this.settings.iterator();
 
         while (true) {
             while (var3.hasNext()) {
                 Component co = (Component) var3.next();
-                co.so(y);
+                co.updateHeight(y);
                 if (co instanceof SliderComponent) {
                     y += 16;
                 } else if (co instanceof ButtonComponent || co instanceof BindComponent || co instanceof DescriptionComponent) {
@@ -126,16 +129,17 @@ public class ModuleComponent extends Component {
     }
 
     public void render() {
-        if (hovering) {
-            double hoverAlpha = hoverTimer == null ? originalHoverAlpha : originalHoverAlpha - hoverTimer.getValueFloat(0, originalHoverAlpha, 1);
+        if (hovering || hoverTimer != null) {
+            double hoverAlpha = (hovering && hoverTimer != null) ? hoverTimer.getValueFloat(0, originalHoverAlpha, 1) : (hoverTimer != null && !hovering) ? originalHoverAlpha - hoverTimer.getValueFloat(0, originalHoverAlpha, 1) : originalHoverAlpha;
             if (hoverAlpha == 0) {
                 hoverTimer = null;
-                hovering = false;
             }
-            RenderUtils.drawRoundedRectangle(this.categoryComponent.getX(), this.categoryComponent.getY() + o, this.categoryComponent.getX() + this.categoryComponent.getWidth(), this.categoryComponent.getY() + 16 + this.o, 8, Utils.mergeAlpha(hoverColor, (int) hoverAlpha));
+            RenderUtils.drawRoundedRectangle(this.categoryComponent.getX(), this.categoryComponent.getY() + yPos, this.categoryComponent.getX() + this.categoryComponent.getWidth(), this.categoryComponent.getY() + 16 + this.yPos, 8, Utils.mergeAlpha(hoverColor, (int) hoverAlpha));
         }
-        v((float) this.categoryComponent.getX(), (float) (this.categoryComponent.getY() + this.o), (float) (this.categoryComponent.getX() + this.categoryComponent.getWidth()), (float) (this.categoryComponent.getY() + 15 + this.o), this.mod.isEnabled() ? this.c2 : -12829381, this.mod.isEnabled() ? this.c2 : -12302777);
+
+        v((float) this.categoryComponent.getX(), (float) (this.categoryComponent.getY() + this.yPos), (float) (this.categoryComponent.getX() + this.categoryComponent.getWidth()), (float) (this.categoryComponent.getY() + 15 + this.yPos), this.mod.isEnabled() ? this.c2 : -12829381, this.mod.isEnabled() ? this.c2 : -12302777);
         GL11.glPushMatrix();
+
         int button_rgb = this.mod.isEnabled() ? enabledColor : disabledColor;
         if (this.mod.script != null && this.mod.script.error) {
             button_rgb = invalidColor;
@@ -143,16 +147,53 @@ public class ModuleComponent extends Component {
         if (this.mod.moduleCategory() == Module.category.profiles && !(this.mod instanceof Manager) && !((ProfileModule) this.mod).saved && Raven.currentProfile.getModule() == this.mod) {
             button_rgb = unsavedColor;
         }
-        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.mod.getName(), (float) (this.categoryComponent.getX() + this.categoryComponent.getWidth() / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.mod.getName()) / 2), (float) (this.categoryComponent.getY() + this.o + 4), button_rgb);
-        GL11.glPopMatrix();
-        if (this.isOpened && !this.settings.isEmpty()) {
-            for (Component c : this.settings) {
-                c.render();
+
+        if (smoothTimer != null && System.currentTimeMillis() - smoothTimer.last >= 300) {
+            smoothTimer = null;
+        }
+        if (smoothTimer != null) {
+            int height = getModuleHeight();
+            if (isOpened) {
+                smoothingY = smoothTimer.getValueInt(16, height, 1);
+                if (smoothingY == height) {
+                    smoothTimer = null;
+                }
             }
+            else {
+                smoothingY = smoothTimer.getValueInt(height, 16, 1);
+                if (smoothingY == 16) {
+                    smoothTimer = null;
+                }
+            }
+            this.categoryComponent.updateHeight();
+        }
+
+        Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.mod.getName(), (float) (this.categoryComponent.getX() + this.categoryComponent.getWidth() / 2 - Minecraft.getMinecraft().fontRendererObj.getStringWidth(this.mod.getName()) / 2), (float) (this.categoryComponent.getY() + this.yPos + 4), button_rgb);
+
+        GL11.glPopMatrix();
+        boolean scissorRequired = smoothTimer != null;
+        if (scissorRequired) {
+            GL11.glPushMatrix();
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            RenderUtils.scissor(this.categoryComponent.getX() - 2, this.categoryComponent.getY() + this.yPos + 4, this.categoryComponent.getWidth() + 4, smoothingY + 4);
+        }
+
+        if (this.isOpened || smoothTimer != null) {
+            for (Component settingComponent : this.settings) {
+                settingComponent.render();
+            }
+        }
+
+        if (scissorRequired) {
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
+            GL11.glPopMatrix();
         }
     }
 
     public int getHeight() {
+        if (smoothTimer != null) {
+            return smoothingY;
+        }
         if (!this.isOpened) {
             return 16;
         }
@@ -176,6 +217,25 @@ public class ModuleComponent extends Component {
         }
     }
 
+    public int getModuleHeight() {
+        int h = 16;
+        Iterator var2 = this.settings.iterator();
+
+        while (true) {
+            while (var2.hasNext()) {
+                Component c = (Component) var2.next();
+                if (c instanceof SliderComponent) {
+                    h += 16;
+                }
+                else if (c instanceof ButtonComponent || c instanceof BindComponent || c instanceof DescriptionComponent) {
+                    h += 12;
+                }
+            }
+
+            return h;
+        }
+    }
+
     public void drawScreen(int x, int y) {
         if (!this.settings.isEmpty()) {
             for (Component c : this.settings) {
@@ -184,16 +244,17 @@ public class ModuleComponent extends Component {
         }
         if (overModuleName(x, y) && this.categoryComponent.opened) {
             hovering = true;
+            if (hoverTimer == null) {
+                (hoverTimer = new Timer(75)).start();
+                hoverStarted = true;
+            }
         }
         else {
-            if (hovering) {
-                if (hoverTimer == null) {
-                    (hoverTimer = new Timer(250)).start();
-                }
+            if (hovering && hoverStarted) {
+                (hoverTimer = new Timer(75)).start();
             }
-            else {
-                hovering = false;
-            }
+            hoverStarted = false;
+            hovering = false;
         }
     }
 
@@ -201,8 +262,8 @@ public class ModuleComponent extends Component {
         return mod.getName();
     }
 
-    public boolean onClick(int x, int y, int b) {
-        if (this.overModuleName(x, y) && b == 0 && this.mod.canBeEnabled()) {
+    public boolean onClick(int x, int y, int mouse) {
+        if (this.overModuleName(x, y) && mouse == 0 && this.mod.canBeEnabled()) {
             this.mod.toggle();
             if (this.mod.moduleCategory() != Module.category.profiles) {
                 if (Raven.currentProfile != null) {
@@ -211,14 +272,15 @@ public class ModuleComponent extends Component {
             }
         }
 
-        if (this.overModuleName(x, y) && b == 1) {
+        if (this.overModuleName(x, y) && mouse == 1) {
             this.isOpened = !this.isOpened;
-            this.categoryComponent.render();
+            (this.smoothTimer = new Timer(200)).start();
+            this.categoryComponent.updateHeight();
             return true;
         }
 
-        for (Component c : this.settings) {
-            c.onClick(x, y, b);
+        for (Component settingComponent : this.settings) {
+            settingComponent.onClick(x, y, mouse);
         }
         return false;
     }
@@ -240,9 +302,12 @@ public class ModuleComponent extends Component {
         for (Component c : this.settings) {
             c.onGuiClosed();
         }
+        smoothTimer = null;
+        hoverTimer = null;
+        smoothingY = getHeight();
     }
 
     public boolean overModuleName(int x, int y) {
-        return x > this.categoryComponent.getX() && x < this.categoryComponent.getX() + this.categoryComponent.getWidth() && y > this.categoryComponent.getModuleY() + this.o && y < this.categoryComponent.getModuleY() + 16 + this.o;
+        return x > this.categoryComponent.getX() && x < this.categoryComponent.getX() + this.categoryComponent.getWidth() && y > this.categoryComponent.getModuleY() + this.yPos && y < this.categoryComponent.getModuleY() + 16 + this.yPos;
     }
 }

@@ -89,6 +89,7 @@ public class ModuleManager {
         this.addModule(bHop = new BHop());
         this.addModule(invManager = new InvManager());
         this.addModule(new ChatBypass());
+        this.addModule(new NoRotate());
         this.addModule(scaffold = new Scaffold());
         this.addModule(new AutoRequeue());
         this.addModule(new AntiAFK());
@@ -149,7 +150,6 @@ public class ModuleManager {
         this.addModule(new ItemESP());
         this.addModule(new MobESP());
         this.addModule(new Fun.Spin());
-        this.addModule(new NoRotate());
         this.addModule(new FakeChat());
         this.addModule(nameHider = new NameHider());
         this.addModule(new FakeLag());

@@ -13,6 +13,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.awt.*;
@@ -62,11 +63,11 @@ public class PlayerESP extends Module {
         this.rgb_c = (new Color((int) red.getInput(), (int) green.getInput(), (int) blue.getInput())).getRGB();
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onRenderWorld(RenderWorldLastEvent e) {
         if (Utils.nullCheck()) {
             int rgb = rainbow.isToggled() ? Utils.getChroma(2L, 0L) : this.rgb_c;
-            if (Raven.debugger) {
+            if (Raven.debug) {
                 for (final Entity entity : mc.theWorld.loadedEntityList) {
                     if (entity instanceof EntityLivingBase && entity != mc.thePlayer) {
                         if (teamColor.isToggled()) {

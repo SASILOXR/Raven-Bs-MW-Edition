@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.event.SendPacketEvent;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.ButtonSetting;
@@ -8,6 +9,7 @@ import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.Utils;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
 import net.minecraftforge.fml.common.gameevent.TickEvent.PlayerTickEvent;
@@ -25,7 +27,7 @@ public class FastPlace extends Module {
     }
 
     @SubscribeEvent
-    public void a(PlayerTickEvent e) {
+    public void onPlayerTick(PlayerTickEvent e) {
         if (e.phase == Phase.END) {
             if (ModuleManager.scaffold.stopFastPlace()) {
                 return;
@@ -36,6 +38,9 @@ public class FastPlace extends Module {
                     if (item == null || !(item.getItem() instanceof ItemBlock)) {
                         return;
                     }
+                }
+                if (pitchCheck.isToggled() && mc.thePlayer.rotationPitch < 70.0f) {
+                    return;
                 }
 
                 try {
@@ -55,6 +60,25 @@ public class FastPlace extends Module {
                 } catch (IllegalAccessException var4) {
                 } catch (IndexOutOfBoundsException var5) {
                 }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void onSendPacket(SendPacketEvent e) {
+        if (!Utils.nullCheck() || ModuleManager.scaffold.stopFastPlace()) {
+            return;
+        }
+        if (pitchCheck.isToggled() && mc.thePlayer.rotationPitch < 70.0f) {
+            return;
+        }
+        if (e.getPacket() instanceof C08PacketPlayerBlockPlacement) {
+            C08PacketPlayerBlockPlacement p = (C08PacketPlayerBlockPlacement) e.getPacket();
+            if (p.getPlacedBlockDirection() != 255 || p.getStack() == null || !(p.getStack().getItem() instanceof ItemBlock)) {
+                return;
+            }
+            if (Math.random() < 0.7) {
+                e.setCanceled(true);
             }
         }
     }

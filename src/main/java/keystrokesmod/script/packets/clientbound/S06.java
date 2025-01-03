@@ -1,5 +1,6 @@
 package keystrokesmod.script.packets.clientbound;
 
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S06PacketUpdateHealth;
 
 public class S06 extends SPacket {
@@ -14,4 +15,10 @@ public class S06 extends SPacket {
         this.food = packet.getFoodLevel();
     }
 
+    public S06(float health, float saturation, int food) {
+        super(new S06PacketUpdateHealth(health, food, saturation));
+        this.health = health;
+        this.saturation = saturation;
+        this.food = food;
+    }
 }

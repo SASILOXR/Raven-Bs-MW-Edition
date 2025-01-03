@@ -73,7 +73,7 @@ public class AutoPlace extends Module {
             if (mc.thePlayer.motionY > 0.0) {
                 this.rd(1);
             }
-            else if (!pitchCheck.isToggled()) {
+            else if (!pitchCheck.isToggled() || mc.thePlayer.rotationPitch >= 70.0f) {
                 this.rd(1000);
             }
         }

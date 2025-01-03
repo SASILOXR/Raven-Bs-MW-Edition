@@ -18,8 +18,8 @@ public class Gui extends Module {
     public Gui() {
         super("Gui", category.client, 54);
         this.registerSetting(guiScale = new SliderSetting("Gui scale", 2, new String[]{ "Small", "Normal", "Large" }));
-        this.registerSetting(backgroundBlur = new SliderSetting("Background blur", "%", 50, 0, 100, 1));
-        this.registerSetting(scrollSpeed = new SliderSetting("Scroll speed", 50, 0, 90, 1));
+        this.registerSetting(backgroundBlur = new SliderSetting("Background blur", "%", 0, 0, 100, 1));
+        this.registerSetting(scrollSpeed = new SliderSetting("Scroll speed", 50, 2, 90, 1));
         this.registerSetting(darkBackground = new ButtonSetting("Dark background", true));
         this.registerSetting(rainBowOutlines = new ButtonSetting("Rainbow outlines", true));
         this.registerSetting(removePlayerModel = new ButtonSetting("Remove player model", false));

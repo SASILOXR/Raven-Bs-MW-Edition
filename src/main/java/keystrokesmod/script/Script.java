@@ -22,6 +22,7 @@ public class Script {
     public boolean error = false;
     public int extraLines;
     public ScriptEvents event;
+    public File file;
 
     public Script(String name) {
         this.name = name;
@@ -67,20 +68,20 @@ public class Script {
             }
             final Diagnostic bp = new Diagnostic();
             final StandardJavaFileManager standardFileManager = Raven.scriptManager.compiler.getStandardFileManager(bp, null, null);
-            final ArrayList<String> list = new ArrayList<>();
-            list.add("-d");
-            list.add(Raven.scriptManager.tempDir);
-            list.add("-XDuseUnsharedTable");
+            final ArrayList<String> compilationOptions = new ArrayList<>();
+            compilationOptions.add("-d");
+            compilationOptions.add(Raven.scriptManager.tempDir);
+            compilationOptions.add("-XDuseUnsharedTable");
             if (!(boolean) Launch.blackboard.get("fml.deobfuscatedEnvironment")) {
-                list.add("-classpath");
+                compilationOptions.add("-classpath");
                 String s = Raven.scriptManager.b;
                 try {
                     s = URLDecoder.decode(s, "UTF-8");
                 }
                 catch (UnsupportedOperationException ex2) {}
-                list.add(s);
+                compilationOptions.add(s);
             }
-            boolean success = Raven.scriptManager.compiler.getTask(null, standardFileManager, bp, list, null, Arrays.asList(new ClassObject(this.scriptName, this.codeStr, this.extraLines))).call();
+            boolean success = Raven.scriptManager.compiler.getTask(null, standardFileManager, bp, compilationOptions, null, Arrays.asList(new ClassObject(this.scriptName, this.codeStr, this.extraLines))).call();
             if (!success) {
                 this.error = true;
                 return false;

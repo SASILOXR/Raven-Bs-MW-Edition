@@ -20,11 +20,11 @@ public class BindComponent extends Component {
     public BindComponent(ModuleComponent moduleComponent, int bind) {
         this.moduleComponent = moduleComponent;
         this.x = moduleComponent.categoryComponent.getX() + moduleComponent.categoryComponent.getWidth();
-        this.y = moduleComponent.categoryComponent.getY() + moduleComponent.o;
+        this.y = moduleComponent.categoryComponent.getY() + moduleComponent.yPos;
         this.bind = bind;
     }
 
-    public void so(int n) {
+    public void updateHeight(int n) {
         this.bind = n;
     }
 

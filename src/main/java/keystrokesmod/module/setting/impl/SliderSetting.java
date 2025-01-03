@@ -117,7 +117,7 @@ public class SliderSetting extends Setting {
                 newValue = data.getAsJsonPrimitive(getName()).getAsDouble();
             }
             catch (Exception e) {
-                e.printStackTrace();
+
             }
             if (newValue == -1) {
                 setValueRaw(newValue);

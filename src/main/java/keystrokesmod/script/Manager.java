@@ -24,7 +24,7 @@ public class Manager extends Module {
             }
             else {
                 final long currentTimeMillis = System.currentTimeMillis();
-                if (Utils.getDifference(this.lastLoad, currentTimeMillis) > 1500) {
+                if (Utils.timeBetween(this.lastLoad, currentTimeMillis) > 1500) {
                     this.lastLoad = currentTimeMillis;
                     Raven.scriptManager.loadScripts();
                     if (Raven.scriptManager.scripts.isEmpty()) {

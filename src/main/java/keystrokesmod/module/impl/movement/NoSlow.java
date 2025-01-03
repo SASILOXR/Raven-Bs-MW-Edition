@@ -14,7 +14,6 @@ import net.minecraft.block.BlockStairs;
 import net.minecraft.item.*;
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
 import net.minecraft.util.BlockPos;
-import net.minecraft.util.MovingObjectPosition;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class NoSlow extends Module {
@@ -60,7 +59,7 @@ public class NoSlow extends Module {
         }
         switch ((int) mode.getInput()) {
             case 1:
-                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.badPacketsHandler.C07.get()) {
+                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.get()) {
                     mc.thePlayer.sendQueue.addToSendQueue(new C08PacketPlayerBlockPlacement(mc.thePlayer.getHeldItem()));
                 }
                 break;
@@ -68,7 +67,7 @@ public class NoSlow extends Module {
                 postPlace = true;
                 break;
             case 3:
-                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.badPacketsHandler.C07.get()) {
+                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.get()) {
                     mc.thePlayer.sendQueue.addToSendQueue(new C08PacketPlayerBlockPlacement(new BlockPos(-1, -1, -1), 1, null, 0, 0, 0));
                 }
                 break;
@@ -91,7 +90,7 @@ public class NoSlow extends Module {
     @SubscribeEvent
     public void onPostMotion(PostMotionEvent e) {
         if (postPlace && mode.getInput() == 2) {
-            if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.badPacketsHandler.C07.get()) {
+            if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.get()) {
                 mc.thePlayer.sendQueue.addToSendQueue(new C08PacketPlayerBlockPlacement(mc.thePlayer.getHeldItem()));
             }
             postPlace = false;
@@ -127,7 +126,7 @@ public class NoSlow extends Module {
 
     @SubscribeEvent
     public void onPacketSend(SendPacketEvent e) {
-        if (e.getPacket() instanceof C08PacketPlayerBlockPlacement && mode.getInput() == 4 && getSlowed() != 0.2f && holdingConsumable(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack()) && !lookingAtInteractable() && holdingEdible(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack())) {
+        if (e.getPacket() instanceof C08PacketPlayerBlockPlacement && mode.getInput() == 4 && getSlowed() != 0.2f && holdingConsumable(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack()) && !BlockUtils.isInteractable(mc.objectMouseOver) && holdingEdible(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack())) {
             if (ModuleManager.skyWars.isEnabled() && Utils.getSkyWarsStatus() == 1) {
                 return;
             }
@@ -194,14 +193,6 @@ public class NoSlow extends Module {
             return false;
         }
         return true;
-    }
-
-    private boolean lookingAtInteractable() {
-        MovingObjectPosition mop = mc.objectMouseOver;
-        if (mop != null && mop.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK && BlockUtils.isInteractable(BlockUtils.getBlock(mop.getBlockPos()))) {
-            return true;
-        }
-        return false;
     }
 
     private boolean holdingEdible(ItemStack stack) {

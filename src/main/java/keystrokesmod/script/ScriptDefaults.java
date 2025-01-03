@@ -17,35 +17,43 @@ import keystrokesmod.script.packets.clientbound.SPacket;
 import keystrokesmod.script.packets.serverbound.CPacket;
 import keystrokesmod.script.packets.serverbound.PacketHandler;
 import keystrokesmod.utility.*;
+import keystrokesmod.utility.shader.BlurUtils;
+import keystrokesmod.utility.shader.RoundedUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.*;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderGlobal;
-import net.minecraft.client.renderer.RenderHelper;
+import net.minecraft.client.network.NetworkPlayerInfo;
+import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.client.resources.ResourcePackRepository;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.init.Blocks;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.network.Packet;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.util.*;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.glu.GLU;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ScriptDefaults {
+    private static ExecutorService cachedExecutor;
     private static final Minecraft mc = Minecraft.getMinecraft();
-    private static final World world = new World();
     public static final Bridge bridge = new Bridge();
     private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
 
@@ -77,8 +85,11 @@ public class ScriptDefaults {
             Utils.addFriend(username);
         }
 
-        public static void async(Runnable method) {
-            executor.execute(method);
+        public static void async(final Runnable method) {
+            if (cachedExecutor == null) {
+                cachedExecutor = Executors.newCachedThreadPool();
+            }
+            cachedExecutor.execute(method);
         }
 
         public static int getFPS() {
@@ -118,6 +129,10 @@ public class ScriptDefaults {
             packet.packet.processPacket(mc.getNetHandler());
         }
 
+        public static void processPacketNoEvent(SPacket packet) {
+            PacketUtils.receivePacketNoEvent(packet.packet);
+        }
+
         public static boolean isFlying() {
             return mc.thePlayer.capabilities.isFlying;
         }
@@ -128,6 +143,10 @@ public class ScriptDefaults {
 
         public static boolean isSinglePlayer() {
             return mc.isSingleplayer();
+        }
+
+        public static boolean isSpectator() {
+            return mc.thePlayer.isSpectator();
         }
 
         public static void setFlying(boolean flying) {
@@ -143,11 +162,20 @@ public class ScriptDefaults {
         }
 
         public static void setRenderArmPitch(float pitch) {
+            mc.thePlayer.prevRenderArmPitch = pitch;
             mc.thePlayer.renderArmPitch = pitch;
         }
 
         public static float getRenderArmPitch() {
             return mc.thePlayer.renderArmPitch;
+        }
+
+        public static void setRenderArmYaw(float yaw) {
+            mc.thePlayer.renderArmYaw = yaw;
+        }
+
+        public static float getRenderArmYaw() {
+            return mc.thePlayer.renderArmYaw;
         }
 
         public static long getTotalMemory() {
@@ -162,20 +190,45 @@ public class ScriptDefaults {
             return Runtime.getRuntime().maxMemory();
         }
 
+        public static List<String[]> getResourcePacks() {
+            List<String[]> packs = new ArrayList<>();
+            if (mc.getResourcePackRepository().getRepositoryEntries() == null || mc.getResourcePackRepository().getRepositoryEntries().isEmpty()) {
+                packs.add(new String[] { mc.mcDefaultResourcePack.getPackName(), "" } );
+            }
+            else {
+                for (ResourcePackRepository.Entry entry : mc.getResourcePackRepository().getRepositoryEntries()) {
+                    packs.add(new String[] { entry.getResourcePackName(), entry.getTexturePackDescription() } );
+                }
+            }
+            Collections.reverse(packs); // reverse it to match the correct order
+            return packs;
+        }
+
         public static void jump() {
             mc.thePlayer.jump();
         }
 
+        public static boolean allowEditing() {
+            if (mc.thePlayer == null || mc.thePlayer.capabilities == null) {
+                return false;
+            }
+            return mc.thePlayer.capabilities.allowEdit;
+        }
+
+        public static void setItemInUseCount(int count) {
+            Reflection.setItemInUseCount(count);
+        }
+
+        public static int getItemInUseCount() {
+            return mc.thePlayer.getItemInUseCount();
+        }
+
+        public static int getItemInUseDuration() {
+            return mc.thePlayer.getItemInUseDuration();
+        }
+
         public static void log(String message) {
             System.out.println(message);
-        }
-
-        public static boolean isMouseDown(int button) {
-            return Mouse.isButtonDown(button);
-        }
-
-        public static boolean isKeyDown(int key) {
-            return Keyboard.isKeyDown(key);
         }
 
         public static void setSneaking(boolean sneak) {
@@ -255,6 +308,10 @@ public class ScriptDefaults {
         }
 
         public static void closeScreen() {
+            if (mc.currentScreen instanceof ClickGui) {
+                mc.displayGuiScreen(null);
+                return;
+            }
             mc.thePlayer.closeScreen();
         }
 
@@ -305,7 +362,7 @@ public class ScriptDefaults {
         }
 
         public static String getServerIP() {
-            if (mc.getCurrentServerData() == null) {
+            if (mc.getCurrentServerData() == null || mc.isSingleplayer()) {
                 return "";
             }
             return mc.getCurrentServerData().serverIP;
@@ -320,24 +377,24 @@ public class ScriptDefaults {
             return state.yaw;
         }
 
-        public Object[] raycastBlock(double distance) {
-            return raycastBlock(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
+        public static Object[] raycastBlock(double distance) {
+            return raycastBlock(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, true);
         }
 
-        public Object[] raycastBlock(double distance, float yaw, float pitch) {
-            MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch);
+        public static Object[] raycastBlock(double distance, float yaw, float pitch, boolean collisionCheck) {
+            MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch, collisionCheck);
             if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
                 return null;
             }
             return new Object[]{Vec3.convert(hit.getBlockPos()), new Vec3(hit.hitVec.xCoord, hit.hitVec.yCoord, hit.hitVec.zCoord), hit.sideHit.name()};
         }
 
-        public Object[] raycastEntity(double distance) {
+        public static Object[] raycastEntity(double distance) {
             return raycastEntity(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch);
         }
 
-        public Object[] raycastEntity(double distance, float yaw, float pitch) {
-            MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch);
+        public static Object[] raycastEntity(double distance, float yaw, float pitch) {
+            MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch, true);
             if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY) {
                 return null;
             }
@@ -360,20 +417,104 @@ public class ScriptDefaults {
             mc.thePlayer.swingItem();
         }
 
-        public static World getWorld() {
-            return world;
-        }
-
         public static long time() {
             return System.currentTimeMillis();
         }
 
-        public static boolean isFriend(Entity entity) {
-            return Utils.isFriended(entity.getName());
+        public static boolean isFriend(String username) {
+            return Utils.isFriended(username);
         }
 
-        public static boolean isEnemy(Entity entity) {
-            return Utils.isEnemy(entity.getName());
+        public static boolean isEnemy(String username) {
+            return Utils.isEnemy(username);
+        }
+    }
+
+    public static class world {
+
+        public static Block getBlockAt(int x, int y, int z) {
+            net.minecraft.block.Block block = BlockUtils.getBlock(new BlockPos(x, y, z));
+            if (block == null) {
+                return new Block(Blocks.air, new BlockPos(x, y, z));
+            }
+            return new Block(block, new BlockPos(x, y, z));
+        }
+
+        public static Block getBlockAt(Vec3 pos) {
+            net.minecraft.block.Block block = BlockUtils.getBlock(new BlockPos(pos.x, pos.y, pos.z));
+            if (block == null) {
+                return new Block(Blocks.air, new BlockPos(pos.x, pos.y, pos.z));
+            }
+            return new Block(block, new BlockPos(pos.x, pos.y, pos.z));
+        }
+
+        public static String getDimension() {
+            if (mc.theWorld == null) {
+                return "";
+            }
+            return mc.theWorld.provider.getDimensionName();
+        }
+
+        public static List<Entity> getEntities() {
+            List<Entity> entities = new ArrayList<>();
+            if (mc.theWorld == null) {
+                return entities;
+            }
+            for (net.minecraft.entity.Entity entity : mc.theWorld.loadedEntityList) {
+                entities.add(Entity.convert(entity));
+            }
+            return entities;
+        }
+
+        public static Entity getEntityById(int entityId) {
+            if (mc.theWorld == null) {
+                return null;
+            }
+            return Entity.convert(mc.theWorld.getEntityByID(entityId));
+        }
+
+        public static List<NetworkPlayer> getNetworkPlayers() {
+            List<NetworkPlayer> entities = new ArrayList<>();
+            for (NetworkPlayerInfo networkPlayerInfo : Utils.getTablist(false)) {
+                entities.add(new NetworkPlayer(networkPlayerInfo));
+            }
+            return entities;
+        }
+
+        public static List<Entity> getPlayerEntities() {
+            List<Entity> entities = new ArrayList<>();
+            for (net.minecraft.entity.Entity entity : mc.theWorld.playerEntities) {
+                entities.add(Entity.convert(entity));
+            }
+            return entities;
+        }
+
+        public static List<String> getScoreboard() {
+            List<String> sidebarLines = Utils.getSidebarLines();
+            if (sidebarLines.isEmpty()) {
+                return null;
+            }
+            return sidebarLines;
+        }
+
+        public static Map<String, List<String>> getTeams() {
+            Map<String, List<String>> teams = new HashMap<>();
+            for (Team team : mc.theWorld.getScoreboard().getTeams()) {
+                List<String> members = new ArrayList<>();
+                for (String member : team.getMembershipCollection()) {
+                    members.add(member);
+                }
+                teams.put(team.getRegisteredName(), members);
+            }
+            return teams;
+        }
+
+        public static List<TileEntity> getTileEntities() {
+            List<TileEntity> tileEntities = new ArrayList<>();
+            for (net.minecraft.tileentity.TileEntity entity : mc.theWorld.loadedTileEntityList) {
+                tileEntities.add(new TileEntity(entity));
+            }
+            return tileEntities;
         }
     }
 
@@ -383,18 +524,16 @@ public class ScriptDefaults {
         public modules(String superName) {
             this.superName = superName;
         }
+
         private Module getModule(String moduleName) {
-            boolean found = false;
             for (Module module : Raven.getModuleManager().getModules()) {
                 if (module.getName().equals(moduleName)) {
                     return module;
                 }
             }
-            if (!found) {
-                for (Module module : Raven.scriptManager.scripts.values()) {
-                    if (module.getName().equals(moduleName)) {
-                        return module;
-                    }
+            for (Module module : Raven.scriptManager.scripts.values()) {
+                if (module.getName().equals(moduleName)) {
+                    return module;
                 }
             }
             return null;
@@ -447,6 +586,23 @@ public class ScriptDefaults {
                 return null;
             }
             return Entity.convert(KillAura.target);
+        }
+
+        public Map<String, Object> getSettings(String name) {
+            Map<String, Object> settings = new HashMap<>();
+            Module module = getModule(name);
+            if (module == null) {
+                return settings;
+            }
+            for (Setting setting : module.getSettings()) {
+                if (setting instanceof SliderSetting) {
+                    settings.put(setting.getName(), ((SliderSetting) setting).getInput());
+                }
+                else if (setting instanceof ButtonSetting) {
+                    settings.put(setting.getName(), ((ButtonSetting) setting).isToggled());
+                }
+            }
+            return settings;
         }
 
         public Map<String, List<String>> getCategories() {
@@ -702,17 +858,63 @@ public class ScriptDefaults {
     }
 
     public static class render {
+        private static final IntBuffer VIEWPORT = GLAllocation.createDirectIntBuffer(16);
+        private static final FloatBuffer MODELVIEW = GLAllocation.createDirectFloatBuffer(16);
+        private static final FloatBuffer PROJECTION = GLAllocation.createDirectFloatBuffer(16);
+        private static final FloatBuffer SCREEN_COORDS = GLAllocation.createDirectFloatBuffer(3);
+
 
         public static void block(Vec3 position, int color, boolean outline, boolean shade) {
             RenderUtils.renderBlock(new BlockPos(position.x, position.y, position.z), color, outline, shade);
         }
 
-        public static void entityGui(Entity en, int x, int y, float mouseX, float mouseY, int scale) {
-            GuiInventory.drawEntityOnScreen(x, y, scale, mouseX, mouseY, (EntityLivingBase) en.entity);
+        public static void block(int x, int y, int z, int color, boolean outline, boolean shade) {
+            RenderUtils.renderBlock(new BlockPos(x, y, z), color, outline, shade);
         }
 
-        public static void text(String text, float x, float y, int color, boolean shadow) {
-            mc.fontRendererObj.drawString(text, x, y, color, shadow);
+        public static void entity(Entity en, int color, float partialTicks, boolean outline, boolean shade) {
+            net.minecraft.entity.Entity e = en.entity;
+            double x = e.lastTickPosX + (e.posX - e.lastTickPosX) * partialTicks - mc.getRenderManager().viewerPosX;
+            double y = e.lastTickPosY + (e.posY - e.lastTickPosY) * partialTicks - mc.getRenderManager().viewerPosY;
+            double z = e.lastTickPosZ + (e.posZ - e.lastTickPosZ) * partialTicks - mc.getRenderManager().viewerPosZ;
+            AxisAlignedBB bbox = e.getEntityBoundingBox().expand(0.1, 0.1, 0.1);
+            AxisAlignedBB axis = new AxisAlignedBB(bbox.minX - e.posX + x, bbox.minY - e.posY + y, bbox.minZ - e.posZ + z, bbox.maxX - e.posX + x, bbox.maxY - e.posY + y, bbox.maxZ - e.posZ + z);
+            GL11.glPushMatrix();
+            GL11.glBlendFunc(770, 771);
+            GL11.glEnable(3042);
+            GL11.glDisable(3553);
+            GL11.glDisable(2929);
+            GL11.glDepthMask(false);
+            GL11.glLineWidth(2.0f);
+            float a = (color >> 24 & 0xFF) / 255.0f;
+            float r = (color >> 16 & 0xFF) / 255.0f;
+            float g = (color >> 8 & 0xFF) / 255.0f;
+            float b = (color & 0xFF) / 255.0f;
+            GL11.glColor4f(r, g, b, a);
+            if (outline) {
+                RenderGlobal.drawSelectionBoundingBox(axis);
+            }
+            if (shade) {
+                RenderUtils.drawBoundingBox(axis, r, g, b);
+            }
+            GL11.glEnable(3553);
+            GL11.glEnable(2929);
+            GL11.glDepthMask(true);
+            GL11.glDisable(3042);
+            GL11.glPopMatrix();
+        }
+
+        public static void entityGui(Entity en, int x, int y, float mouseX, float mouseY, int scale) {
+            if (!en.isLiving) {
+                return;
+            }
+            GL11.glPushMatrix();
+            GuiInventory.drawEntityOnScreen(x, y, scale, mouseX, mouseY, (EntityLivingBase) en.entity);
+            GL11.glPopMatrix();
+        }
+
+        public static void resetEquippedProgress() {
+            mc.getItemRenderer().resetEquippedProgress();
         }
 
         public static void tracer(Entity entity, float lineWidth, int color, float partialTicks) {
@@ -720,37 +922,80 @@ public class ScriptDefaults {
         }
 
         public static void item(ItemStack item, float x, float y, float scale) {
-            GlStateManager.scale(scale, scale, scale);
-            mc.getRenderItem().renderItemAndEffectIntoGUI(item.itemStack, (int) x, (int) y);
-            GlStateManager.scale(1, 1, 1);
+            GlStateManager.pushMatrix();
+            Reflection.setupCameraTransform(mc.entityRenderer, Utils.getTimer().renderPartialTicks, 0);
+            mc.entityRenderer.setupOverlayRendering();
+            if (scale != 1.0f) {
+                GlStateManager.scale(scale, scale, scale);
+            }
+            RenderHelper.enableGUIStandardItemLighting();
+            GlStateManager.disableBlend();
+            GlStateManager.translate(x / scale, y / scale, 0);
+            mc.getRenderItem().renderItemIntoGUI(item.itemStack, 0, 0);
+            GlStateManager.enableBlend();
+            RenderHelper.disableStandardItemLighting();
+            if (scale != 1.0f) {
+                GlStateManager.scale(scale, scale, scale);
+            }
+            GlStateManager.popMatrix();
+        }
+
+        public static void image(Image image, float x, float y, float width, float height) {
+            if (image == null || !image.isLoaded()) {
+                return;
+            }
+            if (image.textureId == -1) {
+                final DynamicTexture dynamicTexture = new DynamicTexture(image.bufferedImage);
+                GL11.glTexParameteri(3553, 10240, 9728);
+                dynamicTexture.updateDynamicTexture();
+                image.textureId = dynamicTexture.getGlTextureId();
+            }
+            GlStateManager.pushMatrix();
+            GlStateManager.enableTexture2D();
+            GlStateManager.bindTexture(image.textureId);
+            GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+            GL11.glTexParameteri(3553, 10240, 9728);
+            Tessellator tessellator = Tessellator.getInstance();
+            WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+            worldrenderer.begin(7, DefaultVertexFormats.POSITION_TEX_COLOR);
+            worldrenderer.pos(x, (y + height), 0.0).tex(0.0, 1.0).color(255, 255, 255, 255).endVertex();
+            worldrenderer.pos((x + width), (y + height), 0.0).tex(1.0, 1.0).color(255, 255, 255, 255).endVertex();
+            worldrenderer.pos((x + width), y, 0.0).tex(1.0, 0.0).color(255, 255, 255, 255).endVertex();
+            worldrenderer.pos(x, y, 0.0).tex(0.0, 0.0).color(255, 255, 255, 255).endVertex();
+            tessellator.draw();
+            GlStateManager.popMatrix();
         }
 
         public static Vec3 worldToScreen(double x, double y, double z, int scaleFactor, float partialTicks) {
-            double interpolatedX = x * partialTicks - mc.getRenderManager().viewerPosX;
-            double interpolatedY = y * partialTicks - mc.getRenderManager().viewerPosY;
-            double interpolatedZ = z * partialTicks - mc.getRenderManager().viewerPosZ;
-
-            double[] screenCoords = RenderUtils.convertTo2D(interpolatedX, interpolatedY, interpolatedZ);
-            if (screenCoords == null) {
-                return null;
+            x -= mc.getRenderManager().viewerPosX;
+            y -= mc.getRenderManager().viewerPosY;
+            z -= mc.getRenderManager().viewerPosZ;
+            Reflection.setupCameraTransform(mc.entityRenderer, partialTicks, 0);
+            GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, MODELVIEW);
+            GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, PROJECTION);
+            GL11.glGetInteger(GL11.GL_VIEWPORT, VIEWPORT);
+            if (GLU.gluProject((float)x, (float)y, (float)z, render.MODELVIEW, render.PROJECTION, render.VIEWPORT, render.SCREEN_COORDS)) {
+                Vec3 vec = new Vec3(render.SCREEN_COORDS.get(0) / scaleFactor, (Display.getHeight() - render.SCREEN_COORDS.get(1)) / scaleFactor, render.SCREEN_COORDS.get(2));
+                mc.entityRenderer.setupOverlayRendering();
+                return vec;
             }
-            double screenX = screenCoords[0] / scaleFactor;
-            double screenY = screenCoords[1] / scaleFactor;
-            double depth = screenCoords[2];
-
-            return new Vec3(screenX, screenY, depth);
+            return null;
         }
 
         public static void roundedRect(float startX, float startY, float endX, float endY, float radius, int color) {
-            RenderUtils.drawRoundedRectangle(startX, startY, endX, endY, radius, color);
+            RoundedUtils.drawRoundedRectRise(startX, startY, Math.abs(startX - endX), Math.abs(startY - endY), radius, color);
         }
 
         public static double[] getRotations() {
-            return new double[] { mc.thePlayer.cameraYaw, mc.thePlayer.cameraPitch };
+            return new double[] { mc.getRenderManager().playerViewY, mc.getRenderManager().playerViewX };
+        }
+
+        public static double[] getCameraRotations() {
+            return new double[] { Utils.getCameraYaw(), Utils.getCameraPitch() };
         }
 
         public static int getFontWidth(String text) {
-            return mc.fontRendererObj.getStringWidth(text);
+            return mc.fontRendererObj.getStringWidth(text) + Utils.getBoldWidth(text);
         }
 
         public static int getFontHeight() {
@@ -758,48 +1003,40 @@ public class ScriptDefaults {
         }
 
         public static Vec3 getPosition() {
-            return new Vec3(mc.getRenderManager().viewerPosX, mc.getRenderManager().viewerPosY, mc.getRenderManager().viewerPosZ);
+            net.minecraft.util.Vec3 position = Utils.getCameraPos(Utils.getTimer().renderPartialTicks);
+            return new Vec3(position);
         }
 
-        public static void text(String text, float x, float y, double scale, int color, boolean shadow) {
-            GlStateManager.pushMatrix();
-            GL11.glScaled(scale, scale, scale);
-            mc.fontRendererObj.drawString(text, x, y, color, shadow);
-            GlStateManager.popMatrix();
-        }
-
-        public static void player(Entity entity, int color, float partialTicks, boolean outline, boolean shade) {
-            net.minecraft.entity.Entity e = entity.entity;
-            if (e instanceof EntityLivingBase) {
-                double x = e.lastTickPosX + (e.posX - e.lastTickPosX) * partialTicks - mc.getRenderManager().viewerPosX;
-                double y = e.lastTickPosY + (e.posY - e.lastTickPosY) * partialTicks - mc.getRenderManager().viewerPosY;
-                double z = e.lastTickPosZ + (e.posZ - e.lastTickPosZ) * partialTicks - mc.getRenderManager().viewerPosZ;
+        public static void text2d(String text, float x, float y, float scale, int color, boolean shadow) {
+            if (scale != 1.0f) {
                 GlStateManager.pushMatrix();
-                float a = (float) (color >> 24 & 255) / 255.0F;
-                float r = (float) (color >> 16 & 255) / 255.0F;
-                float g = (float) (color >> 8 & 255) / 255.0F;
-                float b = (float) (color & 255) / 255.0F;
-                AxisAlignedBB bbox = e.getEntityBoundingBox().expand(0.1D, 0.1D, 0.1D);
-                AxisAlignedBB axis = new AxisAlignedBB(bbox.minX - e.posX + x, bbox.minY - e.posY + y, bbox.minZ - e.posZ + z, bbox.maxX - e.posX + x, bbox.maxY - e.posY + y, bbox.maxZ - e.posZ + z);
-                GL11.glBlendFunc(770, 771);
-                GL11.glEnable(3042);
-                GL11.glDisable(3553);
-                GL11.glDisable(2929);
-                GL11.glDepthMask(false);
-                GL11.glLineWidth(2.0F);
-                GL11.glColor4f(r, g, b, a);
-                if (outline) {
-                    RenderGlobal.drawSelectionBoundingBox(axis);
-                }
-                if (shade) {
-                    RenderUtils.drawBoundingBox(axis, r, g, b);
-                }
-                GL11.glEnable(3553);
-                GL11.glEnable(2929);
-                GL11.glDepthMask(true);
-                GL11.glDisable(3042);
+                GlStateManager.scale(scale, scale, scale);
+            }
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            mc.fontRendererObj.drawString(text, x / scale, y / scale, color, shadow);
+            GlStateManager.disableBlend();
+            if (scale != 1.0f) {
+                GlStateManager.scale(1.0f, 1.0f, 1.0f);
                 GlStateManager.popMatrix();
             }
+        }
+
+        public static void text3d(String text, float x, float y, float scale, int color, boolean shadow) {
+            GlStateManager.pushMatrix();
+            Reflection.setupCameraTransform(mc.entityRenderer, Utils.getTimer().renderPartialTicks, 0);
+            mc.entityRenderer.setupOverlayRendering();
+            if (scale != 1.0f) {
+                GlStateManager.scale(scale, scale, scale);
+            }
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            mc.fontRendererObj.drawString(text, x, y, color, shadow);
+            GlStateManager.disableBlend();
+            if (scale != 1.0f) {
+                GlStateManager.scale(1.0f, 1.0f, 1.0f);
+            }
+            GlStateManager.popMatrix();
         }
 
         public static void rect(float startX, float startY, float endX, float endY, int color) {
@@ -823,8 +1060,60 @@ public class ScriptDefaults {
             GL11.glPopMatrix();
         }
 
+        public static void line3D(Vec3 pos1, Vec3 pos2, float lineWidth, int color) {
+            line3D(pos1.x, pos1.y, pos1.z, pos2.x, pos2.y, pos2.z, lineWidth, color);
+        }
+
+        public static void line3D(final double startX, final double startY, final double startZ, double endX, double endY, double endZ, final float lineWidth, final int color) {
+            endX -= mc.getRenderManager().viewerPosX;
+            endY -= mc.getRenderManager().viewerPosY;
+            endZ -= mc.getRenderManager().viewerPosZ;
+            final float a = (color >> 24 & 0xFF) / 255.0f;
+            final float r = (color >> 16 & 0xFF) / 255.0f;
+            final float g = (color >> 8 & 0xFF) / 255.0f;
+            final float b = (color & 0xFF) / 255.0f;
+            GL11.glPushMatrix();
+            GL11.glEnable(3042);
+            GL11.glEnable(2848);
+            GL11.glDisable(2929);
+            GL11.glDisable(3553);
+            GL11.glBlendFunc(770, 771);
+            GL11.glLineWidth(lineWidth);
+            GlStateManager.color(r, g, b, a);
+            GL11.glBegin(2);
+            GL11.glVertex3d(startX - mc.thePlayer.posX, startY - mc.thePlayer.posY, startZ - mc.thePlayer.posZ);
+            GL11.glVertex3d(endX, endY, endZ);
+            GL11.glEnd();
+            GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
+            GL11.glEnable(3553);
+            GL11.glEnable(2929);
+            GL11.glDisable(2848);
+            GL11.glDisable(3042);
+            GL11.glPopMatrix();
+        }
+
         public static boolean isInView(Entity en) {
             return RenderUtils.isInViewFrustum(en.entity);
+        }
+
+        public static class blur {
+            public static void prepare() {
+                BlurUtils.prepareBlur();
+            }
+
+            public static void apply(final int passes, final float radius) {
+                BlurUtils.blurEnd(passes, radius);
+            }
+        }
+
+        public static class bloom {
+            public static void prepare() {
+                BlurUtils.prepareBloom();
+            }
+
+            public static void apply(final int passes, final float radius) {
+                BlurUtils.bloomEnd(passes, radius);
+            }
         }
     }
 
@@ -909,7 +1198,7 @@ public class ScriptDefaults {
             if (mc.thePlayer.inventory.getStackInSlot(slot) == null) {
                 return null;
             }
-            return new ItemStack(mc.thePlayer.inventory.getStackInSlot(slot));
+            return new ItemStack(mc.thePlayer.inventory.getStackInSlot(slot), (byte) 0);
         }
 
         public static ItemStack getStackInChestSlot(int slot) {
@@ -918,7 +1207,7 @@ public class ScriptDefaults {
                 if (chest.getLowerChestInventory().getStackInSlot(slot) == null) {
                     return null;
                 }
-                return new ItemStack(chest.getLowerChestInventory().getStackInSlot(slot));
+                return new ItemStack(chest.getLowerChestInventory().getStackInSlot(slot), (byte) 0);
             }
             return null;
         }
@@ -947,26 +1236,34 @@ public class ScriptDefaults {
         public static int[] getMousePosition() {
             return new int[] { Mouse.getX(), Mouse.getY() };
         }
-        public static boolean isPressed(String key) {
-            for (Map.Entry<KeyBinding, String> map : Reflection.keyBindings.entrySet()) {
-                if (map.getValue().equals(key)) {
-                    return map.getKey().isKeyDown();
-                }
-            }
-            return false;
+
+        public static boolean isPressed(final String key) {
+            KeyBinding keyBind = Reflection.keybinds.get(key);
+            return keyBind != null && keyBind.isKeyDown();
         }
 
-        public static void setPressed(String key, boolean pressed) {
-            for (Map.Entry<KeyBinding, String> map : Reflection.keyBindings.entrySet()) {
-                if (map.getValue().equals(key)) {
-                    KeyBinding.setKeyBindState(map.getKey().getKeyCode(), pressed);
+        public static void setPressed(final String key, final boolean pressed) {
+            KeyBinding keyBind = Reflection.keybinds.get(key);
+            if (keyBind != null) {
+                KeyBinding.setKeyBindState(keyBind.getKeyCode(), pressed);
+                if (pressed) {
+                    KeyBinding.onTick(keyBind.getKeyCode());
                 }
             }
         }
 
-        public static int getKeyCode(String key) {
+        public static int getKeyCode(final String key) {
+            final KeyBinding keyBind = Reflection.keybinds.get(key);
+            if (keyBind != null) {
+                return keyBind.getKeyCode();
+            }
+            return -1;
+        }
+
+        public static int getKeyIndex(String key) {
             return Keyboard.getKeyIndex(key);
         }
+
         public static boolean isMouseDown(int mouseButton) {
             return Mouse.isButtonDown(mouseButton);
         }
@@ -990,6 +1287,7 @@ public class ScriptDefaults {
         public static String color(String message) {
             return Utils.formatColor(message);
         }
+
         public static String strip(String string) {
             return Utils.stripColor(string);
         }

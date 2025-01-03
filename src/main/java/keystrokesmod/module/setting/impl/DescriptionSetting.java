@@ -15,10 +15,6 @@ public class DescriptionSetting extends Setting {
         return this.desc;
     }
 
-    public void setDesc(String t) {
-        this.desc = t;
-    }
-
     @Override
     public void loadProfile(JsonObject data) {
     }

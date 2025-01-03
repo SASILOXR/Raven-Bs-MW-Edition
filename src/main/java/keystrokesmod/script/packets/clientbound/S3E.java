@@ -1,5 +1,6 @@
 package keystrokesmod.script.packets.clientbound;
 
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S3EPacketTeams;
 
 import java.util.Collection;
@@ -26,5 +27,18 @@ public class S3E extends SPacket {
         this.action = packet.func_149307_h();
         this.friendlyFlags = packet.func_149308_i();
         this.color = packet.func_179813_h();
+    }
+
+    public S3E(Packet packet, String name, String displayName, String prefix, String suffix, String nametagVisibility, Collection<String> playerList, int action, int friendlyFlags, int color) {
+        super(packet);
+        this.name = name;
+        this.displayName = displayName;
+        this.prefix = prefix;
+        this.suffix = suffix;
+        this.nametagVisibility = nametagVisibility;
+        this.playerList = playerList;
+        this.action = action;
+        this.friendlyFlags = friendlyFlags;
+        this.color = color;
     }
 }

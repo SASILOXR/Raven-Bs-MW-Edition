@@ -36,7 +36,7 @@ public class AimAssist extends Module {
                 if (!clickAim.isToggled() || Utils.isClicking()) {
                     Entity en = this.getEnemy();
                     if (en != null) {
-                        if (Raven.debugger) {
+                        if (Raven.debug) {
                             Utils.sendMessage(this.getName() + " &e" + en.getName());
                         }
                         if (blatantMode.isToggled()) {

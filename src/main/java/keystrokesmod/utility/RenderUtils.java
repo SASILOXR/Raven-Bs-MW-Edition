@@ -1,7 +1,6 @@
 package keystrokesmod.utility;
 
 import keystrokesmod.module.impl.player.Freecam;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
@@ -11,13 +10,16 @@ import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.resources.model.IBakedModel;
+import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Vec3;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.GLU;
 
@@ -31,10 +33,10 @@ public class RenderUtils {
     private static Minecraft mc = Minecraft.getMinecraft();
     public static boolean ring_c = false;
     private static Frustum frustum = new Frustum();
-    private static final FloatBuffer MODELVIEW_BUFFER = BufferUtils.createFloatBuffer(16);
-    private static final FloatBuffer PROJECTION_BUFFER = BufferUtils.createFloatBuffer(16);
-    private static final IntBuffer VIEWPORT_BUFFER = BufferUtils.createIntBuffer(16);
-    private static final FloatBuffer SCREEN_COORDS_BUFFER = BufferUtils.createFloatBuffer(3);
+    private static final FloatBuffer MODELVIEW = BufferUtils.createFloatBuffer(16);
+    private static final FloatBuffer PROJECTION = BufferUtils.createFloatBuffer(16);
+    private static final IntBuffer VIEWPORT = BufferUtils.createIntBuffer(16);
+    private static final FloatBuffer SCREEN_COORDS = BufferUtils.createFloatBuffer(3);
 
     public static void renderBlock(BlockPos blockPos, int color, boolean outline, boolean shade) {
         renderBox(blockPos.getX(), blockPos.getY(), blockPos.getZ(), 1, 1, 1, color, outline, shade);
@@ -49,17 +51,15 @@ public class RenderUtils {
     }
 
     public static void scissor(double x, double y, double width, double height) {
-        final ScaledResolution sr = new ScaledResolution(mc);
-        final double scale = sr.getScaleFactor();
+        ScaledResolution sr = new ScaledResolution(mc);
+        double scale = sr.getScaleFactor();
 
-        y = sr.getScaledHeight() - y;
+        int scaledX = (int) (x * scale);
+        int scaledY = (int) ((sr.getScaledHeight() - y) * scale);
+        int scaledWidth = (int) (width * scale);
+        int scaledHeight = (int) (height * scale);
 
-        x *= scale;
-        y *= scale;
-        width *= scale;
-        height *= scale;
-
-        GL11.glScissor((int) x, (int) (y - height), (int) width, (int) height);
+        GL11.glScissor(scaledX, scaledY - scaledHeight, scaledWidth, scaledHeight);
     }
 
     public static boolean isInViewFrustum(final Entity entity) {
@@ -711,31 +711,96 @@ public class RenderUtils {
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    public static double[] convertTo2D(double x, double y, double z) {
-        MODELVIEW_BUFFER.clear();
-        PROJECTION_BUFFER.clear();
-        VIEWPORT_BUFFER.clear();
-        SCREEN_COORDS_BUFFER.clear();
+    public static void draw2DPolygon(final double x, final double y, final double radius, final int sides, final int color) {
+        if (sides < 3) {
+            return;
+        }
+        final float a = (color >> 24 & 0xFF) / 255.0f;
+        final float r = (color >> 16 & 0xFF) / 255.0f;
+        final float g = (color >> 8 & 0xFF) / 255.0f;
+        final float b = (color & 0xFF) / 255.0f;
+        final Tessellator tessellator = Tessellator.getInstance();
+        final WorldRenderer worldrenderer = tessellator.getWorldRenderer();
+        GlStateManager.enableBlend();
+        GlStateManager.disableTexture2D();
+        GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+        GL11.glColor4f(r, g, b, a);
+        final double rad180 = Math.toRadians(180.0);
+        worldrenderer.begin(6, DefaultVertexFormats.POSITION);
+        for (int i = 0; i < sides; ++i) {
+            final double angle = 6.283185307179586 * i / sides + rad180;
+            worldrenderer.pos(x + Math.sin(angle) * radius, y + Math.cos(angle) * radius, 0.0).endVertex();
+        }
+        tessellator.draw();
+        GlStateManager.enableTexture2D();
+        GlStateManager.disableBlend();
+    }
 
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, MODELVIEW_BUFFER);
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, PROJECTION_BUFFER);
-        GL11.glGetInteger(GL11.GL_VIEWPORT, VIEWPORT_BUFFER);
+    public static Framebuffer createFrameBuffer(Framebuffer framebuffer) {
+        return createFrameBuffer(framebuffer, false);
+    }
+
+    public static Framebuffer createFrameBuffer(Framebuffer framebuffer, boolean depth) {
+        if (needsNewFramebuffer(framebuffer)) {
+            if (framebuffer != null) {
+                framebuffer.deleteFramebuffer();
+            }
+            return new Framebuffer(mc.displayWidth, mc.displayHeight, depth);
+        }
+        return framebuffer;
+    }
+
+    public static boolean needsNewFramebuffer(Framebuffer framebuffer) {
+        return framebuffer == null || framebuffer.framebufferWidth != mc.displayWidth || framebuffer.framebufferHeight != mc.displayHeight;
+    }
+
+    public static void bindTexture(int texture) {
+        glBindTexture(GL_TEXTURE_2D, texture);
+    }
+
+    public static void setAlphaLimit(float limit) {
+        GlStateManager.enableAlpha();
+        GlStateManager.alphaFunc(GL_GREATER, (float) (limit * .01));
+    }
+
+    public static Color interpolateColorC(Color color1, Color color2, float amount) {
+        amount = Math.min(1, Math.max(0, amount));
+        return new Color(interpolateInt(color1.getRed(), color2.getRed(), amount),
+                interpolateInt(color1.getGreen(), color2.getGreen(), amount),
+                interpolateInt(color1.getBlue(), color2.getBlue(), amount),
+                interpolateInt(color1.getAlpha(), color2.getAlpha(), amount));
+    }
+
+    public static int interpolateInt(int oldValue, int newValue, double interpolationValue) {
+        return interpolate(oldValue, newValue, (float) interpolationValue).intValue();
+    }
+
+    public static Double interpolate(double oldValue, double newValue, double interpolationValue) {
+        return (oldValue + (newValue - oldValue) * interpolationValue);
+    }
+
+    public static void resetColor() {
+        GlStateManager.color(1, 1, 1, 1);
+    }
+
+
+    public static Vec3 convertTo2D(int scaleFactor, double x, double y, double z) {
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, MODELVIEW);
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, PROJECTION);
+        GL11.glGetInteger(GL11.GL_VIEWPORT, VIEWPORT);
 
         boolean result = GLU.gluProject(
                 (float) x,
                 (float) y,
                 (float) z,
-                MODELVIEW_BUFFER,
-                PROJECTION_BUFFER,
-                VIEWPORT_BUFFER,
-                SCREEN_COORDS_BUFFER
+                MODELVIEW,
+                PROJECTION,
+                VIEWPORT,
+                SCREEN_COORDS
         );
 
         if (result) {
-            double screenX = SCREEN_COORDS_BUFFER.get(0);
-            double screenY = Minecraft.getMinecraft().displayHeight - SCREEN_COORDS_BUFFER.get(1);
-            double depth = SCREEN_COORDS_BUFFER.get(2);
-            return new double[]{screenX, screenY, depth};
+            return new Vec3(SCREEN_COORDS.get(0) / scaleFactor, (Display.getHeight() - SCREEN_COORDS.get(1)) / scaleFactor, SCREEN_COORDS.get(2));
         }
 
         return null;

@@ -23,7 +23,7 @@ public class ViewPackets extends Module {
     private ButtonSetting ignoreC0F;
     private ButtonSetting received;
     private Packet packet;
-    private long tick;
+    public static long tick;
 
     public ViewPackets() {
         super("View Packets", category.other);

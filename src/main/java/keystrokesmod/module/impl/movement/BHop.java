@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.movement;
 
+import keystrokesmod.event.JumpEvent;
 import keystrokesmod.event.PostPlayerInputEvent;
 import keystrokesmod.event.PreMotionEvent;
 import keystrokesmod.module.Module;
@@ -126,7 +127,9 @@ public class BHop extends Module {
                             e.posY -= 1E-5;
                         }
 
-                        if (simpleY == 3426) strafe = true;
+                        if (simpleY == 3426) {
+                            strafe = true;
+                        }
                         if (strafe) {
                             Utils.setSpeed(Utils.getHorizontalSpeed());
                         }

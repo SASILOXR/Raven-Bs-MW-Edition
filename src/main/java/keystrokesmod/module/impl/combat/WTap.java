@@ -48,7 +48,7 @@ public class WTap extends Module {
         }
         final long currentTimeMillis = System.currentTimeMillis();
         final Long n = this.targets.get(event.target.getEntityId());
-        if (n != null && Utils.getDifference(n, currentTimeMillis) <= 200L) {
+        if (n != null && Utils.timeBetween(n, currentTimeMillis) <= 200L) {
             return;
         }
         if (chance.getInput() != 100.0D) {

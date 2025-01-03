@@ -3,6 +3,7 @@ package keystrokesmod.script.classes;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import keystrokesmod.utility.Utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,71 +11,76 @@ import java.util.List;
 import java.util.Map;
 
 public class Json {
-    private JsonObject jsonObject;
+    private JsonElement json;
 
     public Json(String jsonString) {
-        this.jsonObject = (new JsonParser()).parse(jsonString).getAsJsonObject();
+        this.json = (new JsonParser()).parse(jsonString);
     }
 
-    protected Json(JsonObject jsonObject, int s) {
-        this.jsonObject = jsonObject;
+    protected Json(JsonElement json, byte s) {
+        this.json = json;
     }
 
-    public boolean equals(Object object) {
-        if (!(object instanceof Json)) {
-            return false;
-        }
-        return this.jsonObject.equals(((Json) object).jsonObject);
+    public boolean equals(final Json json) {
+        return json != null && (this.json == json.json || (this.exists() && json.exists() && this.string().equals(json.string())));
     }
 
     public boolean exists() {
-        return jsonObject != null;
+        return json != null;
     }
 
     public String string() {
-        return this.jsonObject.toString().replace("\"", "");
+        if (this.exists()) {
+            if (!this.json.isJsonArray()) {
+                try {
+                    return this.json.getAsString();
+                }
+                catch (UnsupportedOperationException ex) {}
+            }
+            return this.json.toString();
+        }
+        return "";
     }
 
-    public String get(String key) {
-        return this.jsonObject.get(key).toString().replace("\"", "");
+    public String get(final String member) {
+        return Utils.getString((JsonObject)this.json, member);
     }
 
-    public String get(String key, String defaultValue) {
-        try {
-            return this.jsonObject.get(key).toString().replace("\"", "");
-        }
-        catch (NullPointerException e) {
-            return defaultValue;
-        }
-    }
-
-    public Json object(String name) {
-        if (this.jsonObject == null || this.jsonObject.get(name) == null) {
-            return new Json(null, 0);
-        }
-        return new Json(this.jsonObject.get(name).getAsJsonObject(), 0);
+    public String get(final String member, final String defaultValue) {
+        final String value = this.get(member);
+        return value.isEmpty() ? defaultValue : value;
     }
 
     public Json object() {
-        return new Json(this.jsonObject == null ? null : this.jsonObject.getAsJsonObject(), 0);
+        return this.object(null);
     }
 
-    public List<Json> array(String name) {
-        List<Json> list = new ArrayList<>();
-        if (this.jsonObject.getAsJsonArray(name) == null) {
-            return list;
+    public Json object(final String member) {
+        return new Json((member == null) ? this.json.getAsJsonObject() : ((JsonObject)this.json).getAsJsonObject(member), (byte) 0);
+    }
+
+    public List<Json> array() {
+        return this.array(null);
+    }
+
+    public List<Json> array(final String member) {
+        final List<Json> jsonList = new ArrayList<>();
+        for (final JsonElement element : (member == null) ? this.json.getAsJsonArray() : ((JsonObject)this.json).getAsJsonArray(member)) {
+            jsonList.add(new Json(element, (byte) 0));
         }
-        for (JsonElement element : this.jsonObject.getAsJsonArray(name)) {
-            list.add(new Json(element.getAsJsonObject(), 0));
-        }
-        return list;
+        return jsonList;
     }
 
     public Map<String, Json> map() {
-        Map<String, Json> map = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : this.jsonObject.entrySet()) {
-            map.put(entry.getKey(), new Json(entry.getValue().getAsJsonObject(), 0));
+        final HashMap<String, Json> map = new HashMap<>();
+        for (final Map.Entry<String, JsonElement> entry : ((JsonObject)this.json).entrySet()) {
+            map.put(entry.getKey(), new Json(entry.getValue(), (byte) 0));
         }
         return map;
+    }
+
+    @Override
+    public String toString() {
+        return this.json.toString();
     }
 }

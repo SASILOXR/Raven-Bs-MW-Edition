@@ -24,7 +24,7 @@ public class ButtonComponent extends Component {
         this.buttonSetting = op;
         this.p = b;
         this.x = b.categoryComponent.getX() + b.categoryComponent.getWidth();
-        this.y = b.categoryComponent.getY() + b.o;
+        this.y = b.categoryComponent.getY() + b.yPos;
         this.o = o;
     }
 
@@ -35,7 +35,7 @@ public class ButtonComponent extends Component {
         GL11.glPopMatrix();
     }
 
-    public void so(int n) {
+    public void updateHeight(int n) {
         this.o = n;
     }
 

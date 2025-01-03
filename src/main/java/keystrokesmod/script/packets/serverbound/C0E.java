@@ -27,7 +27,7 @@ public class C0E extends CPacket {
         this.button = packet.getUsedButton();
         this.mode = packet.getMode();
         this.action = packet.getActionNumber();
-        this.itemStack = new ItemStack(packet.getClickedItem());
+        this.itemStack = new ItemStack(packet.getClickedItem(), (byte) 0);
     }
 
     @Override

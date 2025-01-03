@@ -44,7 +44,7 @@ public class AutoWho extends Module {
     private void artificial() {
         if (artifical.isToggled()) {
             String online = hideMessage.isToggled() ? "ONLINE: " : "&b&lONLINE: &r";
-            for (NetworkPlayerInfo networkPlayerInfo : Utils.getTablist()) {
+            for (NetworkPlayerInfo networkPlayerInfo : Utils.getTablist(true)) {
                 if (removeBots.isToggled() && networkPlayerInfo.getResponseTime() > 1) {
                     continue;
                 }
