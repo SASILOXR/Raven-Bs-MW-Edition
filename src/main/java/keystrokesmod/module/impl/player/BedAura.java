@@ -203,7 +203,7 @@ public class BedAura extends Module {
     }
 
     private void resetSlot() {
-        if (Raven.packetsHandler.playerSlot.get() != mc.thePlayer.inventory.currentItem && mode.getInput() == 2) {
+        if (Raven.packetsHandler != null && Raven.packetsHandler.playerSlot != null && Utils.nullCheck() && Raven.packetsHandler.playerSlot.get() != mc.thePlayer.inventory.currentItem && mode.getInput() == 2) {
             setPacketSlot(mc.thePlayer.inventory.currentItem);
         }
         else if (lastSlot != -1) {
