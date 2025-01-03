@@ -17,7 +17,6 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.client.C0BPacketEntityAction;
-import net.minecraft.network.play.client.C0CPacketInput;
 import net.minecraft.potion.Potion;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.MovementInput;
@@ -27,6 +26,9 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EntityPlayerSP.class)
 public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
@@ -95,23 +97,19 @@ public abstract class MixinEntityPlayerSP extends AbstractClientPlayer {
     @Shadow
     private int positionUpdateTicks;
 
-    @Overwrite
-    public void onUpdate() {
+    @Inject(method = "onUpdate", at = @At("HEAD"))
+    private void onPreUpdate(CallbackInfo ci) {
         if (this.worldObj.isBlockLoaded(new BlockPos(this.posX, 0.0, this.posZ))) {
             RotationUtils.prevRenderPitch = RotationUtils.renderPitch;
             RotationUtils.prevRenderYaw = RotationUtils.renderYaw;
 
             net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new PreUpdateEvent());
+        }
+    }
 
-            super.onUpdate();
-
-            if (this.isRiding()) {
-                this.sendQueue.addToSendQueue(new C03PacketPlayer.C05PacketPlayerLook(this.rotationYaw, this.rotationPitch, this.onGround));
-                this.sendQueue.addToSendQueue(new C0CPacketInput(this.moveStrafing, this.moveForward, this.movementInput.jump, this.movementInput.sneak));
-            } else {
-                this.onUpdateWalkingPlayer();
-            }
-
+    @Inject(method = "onUpdate", at = @At("TAIL"))
+    private void onPostUpdate(CallbackInfo ci) {
+        if (this.worldObj.isBlockLoaded(new BlockPos(this.posX, 0.0, this.posZ))) {
             net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new PostUpdateEvent());
         }
     }

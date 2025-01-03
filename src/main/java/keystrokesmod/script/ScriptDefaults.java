@@ -373,7 +373,7 @@ public class ScriptDefaults {
             return new int[]{scaledResolution.getScaledWidth(), scaledResolution.getScaledHeight(), scaledResolution.getScaleFactor()};
         }
 
-        public float getServerDirection(PlayerState state) {
+        public static float getServerDirection(PlayerState state) {
             return state.yaw;
         }
 
