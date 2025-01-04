@@ -381,6 +381,10 @@ public class ScriptDefaults {
             return raycastBlock(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, true);
         }
 
+        public static Object[] raycastBlock(double distance, float yaw, float pitch) {
+            return raycastBlock(distance, mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch, true);
+        }
+
         public static Object[] raycastBlock(double distance, float yaw, float pitch, boolean collisionCheck) {
             MovingObjectPosition hit = RotationUtils.rayCast(distance, yaw, pitch, collisionCheck);
             if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {

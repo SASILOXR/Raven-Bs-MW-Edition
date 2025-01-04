@@ -17,6 +17,8 @@ import net.minecraft.entity.ai.EntityAIAttackOnCollide;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITasks;
+import net.minecraft.entity.monster.EntityIronGolem;
+import net.minecraft.entity.monster.EntitySilverfish;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
@@ -27,6 +29,7 @@ import net.minecraft.network.play.client.*;
 import net.minecraft.util.*;
 import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.living.LivingSetAttackTargetEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -73,7 +76,8 @@ public class KillAura extends Module {
     // target variables
     public static EntityLivingBase target;
     public static EntityLivingBase attackingEntity;
-    private HashMap<Integer, Integer> hitMap = new HashMap<>(); // entity id, ticks existed client
+    private HashMap<Integer, Integer> hitMap = new HashMap<>(); // entity id, ticks existed client\
+    private List<Entity> hostileMobs = new ArrayList<>();
 
     // blocking related
     public boolean blockingClient;
@@ -187,6 +191,10 @@ public class KillAura extends Module {
             lastPressedLeft = pressedLeft;
         }
         if (sendUnBlock) {
+            if (Raven.packetsHandler.C07.get()) {
+                sendUnBlock = false;
+                return;
+            }
             Reflection.setItemInUse(blockingClient = false);
             sendDigPacket();
             sendUnBlock = false;
@@ -343,6 +351,22 @@ public class KillAura extends Module {
     }
 
     @SubscribeEvent
+    public void onSetAttackTarget(LivingSetAttackTargetEvent e) {
+        if (e.entity != null && !hostileMobs.contains(e.entity)) {
+            if (!(e.target instanceof EntityPlayer) || !e.target.getName().equals(mc.thePlayer.getName())) {
+                return;
+            }
+            hostileMobs.add(e.entity);
+        }
+        if (e.target == null && hostileMobs.contains(e.entity)) {
+            hostileMobs.remove(e.entity);
+            if (Raven.debug) {
+                Utils.sendModuleMessage(this, "&7mob stopped attack player");
+            }
+        }
+    }
+
+    @SubscribeEvent
     public void onMouse(MouseEvent e) {
         if (e.button == 0 || e.button == 1) {
             if (!Utils.holdingWeapon() || target == null || rotationMode.getInput() != 0) {
@@ -390,23 +414,9 @@ public class KillAura extends Module {
                 KeyBinding.setKeyBindState(mc.gameSettings.keyBindAttack.getKeyCode(), true);
                 KeyBinding.onTick(mc.gameSettings.keyBindAttack.getKeyCode());
             }
-//            Utils.sendMessage(!mc.thePlayer.isBlocking() + " " + (mc.objectMouseOver != null) + " " + (mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) + " " + state);
-//            if (!state) {
-//                delayTicks = 2;
-//            }
-//            if (state) {
-//                if (target == null) {
-//
-//                }
-//                else {
-//                    // cancel
-//                    if (!mc.thePlayer.isBlocking() && mc.objectMouseOver != null && mc.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
-//                        int key = mc.gameSettings.keyBindAttack.getKeyCode();
-//                        KeyBinding.setKeyBindState(key, true);
-//                        Utils.sendMessage("set to true");
-//                    }
-//                }
-//            }
+            else if (!state) {
+                KeyBinding.setKeyBindState(mc.gameSettings.keyBindAttack.getKeyCode(), false);
+            }
         }
     }
 
@@ -414,6 +424,7 @@ public class KillAura extends Module {
     public void onWorldJoin(EntityJoinWorldEvent e) {
         if (e.entity == mc.thePlayer) {
             hitMap.clear();
+            hostileMobs.clear();
         }
     }
 
@@ -458,14 +469,14 @@ public class KillAura extends Module {
                     continue;
                 }
             }
-//            else if (entity instanceof EntityCreature && attackMobs.isToggled()) {
-//                if (((EntityCreature) entity).tasks == null || ((EntityCreature) entity).isAIDisabled() || ((EntityCreature) entity).deathTime != 0) { // no ai
-//                    continue;
-//                }
-//                if (!entity.getClass().getCanonicalName().startsWith("net.minecraft.entity.monster.")) {
-//                    continue;
-//                }
-//            }
+            else if (entity instanceof EntityCreature && attackMobs.isToggled()) {
+                if (((EntityCreature) entity).tasks == null || ((EntityCreature) entity).isAIDisabled() || ((EntityCreature) entity).deathTime != 0) { // no ai
+                    continue;
+                }
+                if (!entity.getClass().getCanonicalName().startsWith("net.minecraft.entity.monster.")) {
+                    continue;
+                }
+            }
             else {
                 continue;
             }
@@ -487,7 +498,7 @@ public class KillAura extends Module {
             if (distanceRayCasted > maxRange) {
                 continue;
             }
-            if (target instanceof EntityCreature && !isHostile((EntityCreature) target)) {
+            if (!(target instanceof EntityPlayer) && attackMobs.isToggled() && !isHostile((EntityCreature) target)) {
                 continue;
             }
             if (!hitThroughBlocks.isToggled() && (!Utils.canPlayerBeSeen(target) || !inRange(target, attackRange.getInput() - 0.005))) {
@@ -1075,37 +1086,17 @@ public class KillAura extends Module {
     }
 
     private boolean isHostile(EntityCreature entityCreature) {
-        try {
-            EntityAITasks targetTasks = (EntityAITasks) Reflection.targetTasks.get(entityCreature);
-            if (targetTasks == null) {
+        if (entityCreature instanceof EntityIronGolem || entityCreature instanceof EntitySilverfish) {
+            String teamColor = Utils.getFirstColorCode(entityCreature.getCustomNameTag());
+            String teamColorSelf = Utils.getFirstColorCode(mc.thePlayer.getDisplayName().getFormattedText());
+            if (!teamColor.isEmpty() && teamColorSelf.equals(teamColor)) { // same team
                 return false;
             }
-            List<EntityAITasks.EntityAITaskEntry> executingTasks = targetTasks.taskEntries;
-            if (executingTasks == null || executingTasks.isEmpty()) {
-                return false;
-            }
-            for (EntityAITasks.EntityAITaskEntry task : executingTasks) {
-                EntityAIBase action = task.action;
-                if (action instanceof EntityAIAttackOnCollide) {
-                    Entity target = Reflection.getClassTarget((EntityAIAttackOnCollide) action);
-                    if (target == null || target != mc.thePlayer) {
-                        continue;
-                    }
-                    return true;
-                }
-                else if (action instanceof EntityAINearestAttackableTarget) {
-                    EntityLivingBase target = (EntityLivingBase) Reflection.targetEntity.get((EntityAINearestAttackableTarget) action);
-                    if (target == null) {
-                        continue;
-                    }
-                    return true;
-                }
-            }
+            return true;
         }
-        catch (Exception ex) {
-            ex.printStackTrace();
+        else {
+            return hostileMobs.contains(entityCreature);
         }
-        return false;
     }
 
     private boolean manualBlock() {
