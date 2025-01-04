@@ -11,11 +11,8 @@ import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.ai.EntityAIAttackOnCollide;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
-import net.minecraft.entity.ai.EntityAITasks;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.inventory.*;
@@ -58,14 +55,11 @@ public class Reflection {
     public static Field S08PacketPlayerPosLookPitch;
     public static Field C02PacketUseEntityEntityId;
     public static Field bookContents;
-    public static Field classTarget;
     public static Field fallDistance;
     public static Field thirdPersonDistance;
     public static Field alwaysEdible;
     public static Field mcGuiInGame;
     public static Field targetEntity;
-    public static Field targetTasks;
-    public static Field executingTaskEntries;
     public static Field C01PacketChatMessageMessage;
     public static HashMap<Class, Field> containerInventoryPlayer = new HashMap<>();
     private static List<Class> containerClasses = Arrays.asList(GuiFurnace.class, GuiBrewingStand.class, GuiEnchantment.class, ContainerHopper.class, GuiDispenser.class, ContainerWorkbench.class, ContainerMerchant.class, ContainerHorseInventory.class);
@@ -107,11 +101,6 @@ public class Reflection {
                 curBlockDamageMP.setAccessible(true);
             }
 
-            classTarget = ReflectionHelper.findField(EntityAIAttackOnCollide.class, "field_75444_h", "classTarget");
-            if (classTarget != null) {
-                classTarget.setAccessible(true);
-            }
-
             blockHitDelay = ReflectionHelper.findField(PlayerControllerMP.class, "field_78781_i", "blockHitDelay");
             if (blockHitDelay != null) {
                 blockHitDelay.setAccessible(true);
@@ -122,11 +111,6 @@ public class Reflection {
                 targetEntity.setAccessible(true);
             }
 
-            targetTasks = ReflectionHelper.findField(EntityLiving.class, "targetTasks", "field_70715_bh");
-            if (targetTasks != null) {
-                targetTasks.setAccessible(true);
-            }
-
             fallDistance = ReflectionHelper.findField(Entity.class, "fallDistance", "field_70143_R");
             if (fallDistance != null) {
                 fallDistance.setAccessible(true);
@@ -135,11 +119,6 @@ public class Reflection {
             mcGuiInGame = ReflectionHelper.findField(GuiIngame.class, "mc", "field_73839_d");
             if (mcGuiInGame != null) {
                 mcGuiInGame.setAccessible(true);
-            }
-
-            executingTaskEntries = ReflectionHelper.findField(EntityAITasks.class, "executingTaskEntries", "field_75780_b");
-            if (executingTaskEntries != null) {
-                executingTaskEntries.setAccessible(true);
             }
 
             shaderResourceLocations = ReflectionHelper.findField(EntityRenderer.class, "shaderResourceLocations", "field_147712_ad");
@@ -352,18 +331,5 @@ public class Reflection {
             e.printStackTrace();
         }
         return false;
-    }
-
-    public static Entity getClassTarget(EntityAIAttackOnCollide task) {
-        try {
-            if (classTarget != null) {
-                Entity targetEntity = (Entity) classTarget.get(task);
-                return targetEntity;
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 }
