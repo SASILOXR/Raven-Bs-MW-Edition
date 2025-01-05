@@ -20,6 +20,7 @@ public class CommandManager {
         registerCommand(new Debug());
         registerCommand(new Friend());
         registerCommand(new Enemy());
+        registerCommand(new Profiles());
     }
 
     public void executeCommand(String input) {
