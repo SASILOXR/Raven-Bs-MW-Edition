@@ -58,7 +58,7 @@ public class ClickAssist extends Module {
             return;
         }
         if (ev.button >= 0 && ev.buttonstate && Utils.nullCheck()) {
-            if (mc.currentScreen == null && !mc.thePlayer.isEating()) {
+            if (mc.currentScreen == null && !Utils.isConsuming(mc.thePlayer)) {
                 double ch;
                 if (ev.button == 0 && leftClick.isToggled() && chanceLeft.getInput() != 0.0D) {
                     if (this.ignNL) {

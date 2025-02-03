@@ -22,7 +22,7 @@ import java.util.List;
 
 public class ModuleManager {
     public static List<Module> modules = new ArrayList<>();
-    public static List<Module> organizedModules = new ArrayList<>();
+    public static List<Module> organizedModules = Collections.synchronizedList(new ArrayList<>());
     public static Module nameHider;
     public static Module fastPlace;
     public static MurderMystery murderMystery;
@@ -34,18 +34,21 @@ public class ModuleManager {
     public static FastMine fastMine;
     public static Module antiShuffle;
     public static Module commandLine;
+    public static LongJump longJump;
     public static Module antiBot;
-    public static Module noSlow;
+    public static NoSlow noSlow;
     public static KillAura killAura;
     public static Module autoClicker;
     public static Module hitBox;
     public static Module reach;
+    public static NoRotate noRotate;
     public static BedESP bedESP;
     public static Chams chams;
     public static HUD hud;
-    public static Module timer;
-    public static Module fly;
-    public static Module wTap;
+    public static Timer timer;
+    public static Fly fly;
+    public static WTap wTap;
+    public static Velocity velocity;
     public static Potions potions;
     public static TargetHUD targetHUD;
     public static NoFall noFall;
@@ -58,7 +61,7 @@ public class ModuleManager {
     public static InvManager invManager;
     public static Tower tower;
     public static NoCameraClip noCameraClip;
-    public static Module bedwars;
+    public static BedWars bedwars;
     public static BHop bHop;
     public static NoHurtCam noHurtCam;
     public static Scaffold scaffold;
@@ -69,7 +72,7 @@ public class ModuleManager {
 
     public void register() {
         this.addModule(autoClicker = new AutoClicker());
-        this.addModule(new LongJump());
+        this.addModule(longJump = new LongJump());
         this.addModule(new AimAssist());
         this.addModule(new Blink());
         this.addModule(new BurstClicker());
@@ -85,11 +88,12 @@ public class ModuleManager {
         this.addModule(reach = new Reach());
         this.addModule(extendCamera = new ExtendCamera());
         this.addModule(new RodAimbot());
-        this.addModule(new Velocity());
+        this.addModule(velocity = new Velocity());
         this.addModule(bHop = new BHop());
+        this.addModule(new Arrows());
         this.addModule(invManager = new InvManager());
         this.addModule(new ChatBypass());
-        this.addModule(new NoRotate());
+        this.addModule(noRotate = new NoRotate());
         this.addModule(scaffold = new Scaffold());
         this.addModule(new AutoRequeue());
         this.addModule(new AntiAFK());
@@ -167,6 +171,10 @@ public class ModuleManager {
         Collections.sort(this.modules, Comparator.comparing(Module::getName));
     }
 
+    public boolean isVelocityEnabled() {
+        return velocity.isEnabled() || antiKnockback.isEnabled();
+    }
+
     public void addModule(Module m) {
         modules.add(m);
     }
@@ -207,9 +215,10 @@ public class ModuleManager {
 
     public static void sort() {
         if (HUD.alphabeticalSort.isToggled()) {
-            Collections.sort(organizedModules, Comparator.comparing(Module::getName));
-        } else {
-            organizedModules.sort((o1, o2) -> Utils.mc.fontRendererObj.getStringWidth(o2.getName() + ((HUD.showInfo.isToggled() && !o2.getInfo().isEmpty()) ? " " + o2.getInfo() : "")) - Utils.mc.fontRendererObj.getStringWidth(o1.getName() + (HUD.showInfo.isToggled() && !o1.getInfo().isEmpty() ? " " + o1.getInfo() : "")));
+            Collections.sort(organizedModules, Comparator.comparing(Module::getNameInHud));
+        }
+        else {
+            organizedModules.sort((o1, o2) -> Utils.mc.fontRendererObj.getStringWidth(o2.getNameInHud() + ((HUD.showInfo.isToggled() && !o2.getInfo().isEmpty()) ? " " + o2.getInfo() : "")) - Utils.mc.fontRendererObj.getStringWidth(o1.getNameInHud() + (HUD.showInfo.isToggled() && !o1.getInfo().isEmpty() ? " " + o1.getInfo() : "")));
         }
     }
 

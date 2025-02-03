@@ -54,6 +54,25 @@ public class RotationUtils {
         return new float[] { yaw, pitch };
     }
 
+    public static float[] getRotations(double posX, double posY, double posZ) {
+        double x = posX + 1.0 - mc.thePlayer.posX;
+        double y = posY + 1.0 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
+        double z = posZ + 1.0 - mc.thePlayer.posZ;
+
+        float angleToBlock = (float) (Math.atan2(z, x) * (180 / Math.PI)) - 90.0f;
+        float deltaYaw = MathHelper.wrapAngleTo180_float(angleToBlock - mc.thePlayer.rotationYaw);
+        float yaw = mc.thePlayer.rotationYaw + deltaYaw;
+
+        double distance = MathHelper.sqrt_double(x * x + z * z);
+        float angleToBlockPitch = (float) (-(Math.atan2(y, distance) * (180 / Math.PI)));
+        float deltaPitch = MathHelper.wrapAngleTo180_float(angleToBlockPitch - mc.thePlayer.rotationPitch);
+        float pitch = mc.thePlayer.rotationPitch + deltaPitch;
+
+        pitch = clampTo90(pitch);
+
+        return new float[] { yaw, pitch };
+    }
+
     public static float[] getRotations(Vec3 vec3) {
         double x = vec3.xCoord + 0.45 - mc.thePlayer.posX;
         double y = vec3.yCoord + 0.45 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
@@ -182,6 +201,10 @@ public class RotationUtils {
     }
 
     public static float[] getRotations(final Entity entity) {
+        return getRotations(entity, PLAYER_OFFSETS.NONE);
+    }
+
+    public static float[] getRotations(final Entity entity, PLAYER_OFFSETS playerOffset) {
         if (entity == null) {
             return null;
         }
@@ -190,8 +213,9 @@ public class RotationUtils {
         double n3;
         if (entity instanceof EntityLivingBase) {
             final EntityLivingBase entityLivingBase = (EntityLivingBase) entity;
-            n3 = entityLivingBase.posY + entityLivingBase.getEyeHeight() * 0.9 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
-        } else {
+            n3 = entityLivingBase.posY + playerOffset.getHeightOffset(entityLivingBase) * 0.9 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
+        }
+        else {
             n3 = (entity.getEntityBoundingBox().minY + entity.getEntityBoundingBox().maxY) / 2.0 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
         }
         return new float[] { mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float((float) (Math.atan2(n2, n) * 57.295780181884766) - 90.0f - mc.thePlayer.rotationYaw), clampTo90(mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float((float) (-(Math.atan2(n3, MathHelper.sqrt_double(n * n + n2 * n2)) * 57.295780181884766)) - mc.thePlayer.rotationPitch) + 3.0f)};
@@ -420,5 +444,25 @@ public class RotationUtils {
 
     public static float applyVanilla(float yaw) {
         return applyVanilla(yaw, false);
+    }
+
+    public static enum PLAYER_OFFSETS {
+        EYE,
+        CHEST,
+        FOOT,
+        NONE;
+
+        public double getHeightOffset(Entity entity) {
+            switch (this) {
+                case NONE:
+                case EYE:
+                    return entity.getEyeHeight();
+                case CHEST:
+                    return entity.height / 2;
+                case FOOT:
+                    return 0;
+            }
+            return entity.getEyeHeight();
+        }
     }
 }

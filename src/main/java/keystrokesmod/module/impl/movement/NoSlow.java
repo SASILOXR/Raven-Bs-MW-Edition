@@ -8,13 +8,12 @@ import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.BlockUtils;
-import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.Utils;
-import net.minecraft.block.BlockStairs;
 import net.minecraft.item.*;
 import net.minecraft.network.play.client.C08PacketPlayerBlockPlacement;
 import net.minecraft.util.BlockPos;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.lwjgl.input.Mouse;
 
 public class NoSlow extends Module {
     public static SliderSetting mode;
@@ -23,11 +22,13 @@ public class NoSlow extends Module {
     public static ButtonSetting disablePotions;
     public static ButtonSetting swordOnly;
     public static ButtonSetting vanillaSword;
-    private String[] modes = new String[]{"Vanilla", "Pre", "Post", "Alpha", "Float"};
+
+    private String[] modes = new String[] { "Vanilla", "Pre", "Post", "Alpha", "Float" };
+
     private boolean postPlace;
     private boolean canFloat;
     private boolean reSendConsume;
-    private int ticksOffStairs;
+    public boolean noSlowing;
 
     public NoSlow() {
         super("NoSlow", category.movement, 0);
@@ -43,6 +44,7 @@ public class NoSlow extends Module {
     @Override
     public void onDisable() {
         resetFloat();
+        noSlowing = false;
     }
 
     public void onUpdate() {
@@ -59,7 +61,7 @@ public class NoSlow extends Module {
         }
         switch ((int) mode.getInput()) {
             case 1:
-                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.get()) {
+                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.sentCurrentTick.get()) {
                     mc.thePlayer.sendQueue.addToSendQueue(new C08PacketPlayerBlockPlacement(mc.thePlayer.getHeldItem()));
                 }
                 break;
@@ -67,7 +69,7 @@ public class NoSlow extends Module {
                 postPlace = true;
                 break;
             case 3:
-                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.get()) {
+                if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.sentCurrentTick.get()) {
                     mc.thePlayer.sendQueue.addToSendQueue(new C08PacketPlayerBlockPlacement(new BlockPos(-1, -1, -1), 1, null, 0, 0, 0));
                 }
                 break;
@@ -90,7 +92,7 @@ public class NoSlow extends Module {
     @SubscribeEvent
     public void onPostMotion(PostMotionEvent e) {
         if (postPlace && mode.getInput() == 2) {
-            if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.get()) {
+            if (mc.thePlayer.ticksExisted % 3 == 0 && !Raven.packetsHandler.C07.sentCurrentTick.get()) {
                 mc.thePlayer.sendQueue.addToSendQueue(new C08PacketPlayerBlockPlacement(mc.thePlayer.getHeldItem()));
             }
             postPlace = false;
@@ -103,13 +105,12 @@ public class NoSlow extends Module {
             resetFloat();
             return;
         }
-        if (BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)) instanceof BlockStairs || BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ)) instanceof BlockStairs) {
-            ticksOffStairs = 0;
-        }
-        else {
-            ticksOffStairs++;
-        }
         postPlace = false;
+        if (!Mouse.isButtonDown(1)) {
+            resetFloat();
+            noSlowing = false;
+            return;
+        }
         if (vanillaSword.isToggled() && Utils.holdingSword()) {
             resetFloat();
             return;
@@ -119,15 +120,16 @@ public class NoSlow extends Module {
             resetFloat();
             return;
         }
-        if ((canFloat && canFloat() && mc.thePlayer.onGround && ticksOffStairs >= 30)) {
+        if ((canFloat && canFloat() && mc.thePlayer.onGround)) {
             e.setPosY(e.getPosY() + 1E-12);
+            noSlowing = true;
         }
     }
 
     @SubscribeEvent
     public void onPacketSend(SendPacketEvent e) {
-        if (e.getPacket() instanceof C08PacketPlayerBlockPlacement && mode.getInput() == 4 && getSlowed() != 0.2f && holdingConsumable(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack()) && !BlockUtils.isInteractable(mc.objectMouseOver) && holdingEdible(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack())) {
-            if (ModuleManager.skyWars.isEnabled() && Utils.getSkyWarsStatus() == 1) {
+        if (e.getPacket() instanceof C08PacketPlayerBlockPlacement && mode.getInput() == 4 && getSlowed() != 0.2f && holdingUsable(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack()) && !BlockUtils.isInteractable(mc.objectMouseOver) && Utils.holdingEdible(((C08PacketPlayerBlockPlacement) e.getPacket()).getStack())) {
+            if (((C08PacketPlayerBlockPlacement) e.getPacket()).getStack().getItem() instanceof ItemFood && mc.thePlayer.capabilities.isCreativeMode) {
                 return;
             }
             if (!mc.thePlayer.onGround) {
@@ -180,33 +182,17 @@ public class NoSlow extends Module {
         canFloat = false;
     }
 
-    private boolean holdingConsumable(ItemStack itemStack) {
+    private boolean holdingUsable(ItemStack itemStack) {
         Item heldItem = itemStack.getItem();
-        if (heldItem instanceof ItemFood || heldItem instanceof ItemBow || (heldItem instanceof ItemPotion && !ItemPotion.isSplash(mc.thePlayer.getHeldItem().getItemDamage())) || (heldItem instanceof ItemSword && !vanillaSword.isToggled())) {
+        if (heldItem instanceof ItemFood || (heldItem instanceof ItemBow && Utils.hasArrows(itemStack)) || (heldItem instanceof ItemPotion && !ItemPotion.isSplash(mc.thePlayer.getHeldItem().getItemDamage())) || (heldItem instanceof ItemSword && !vanillaSword.isToggled())) {
             return true;
         }
         return false;
     }
 
     private boolean canFloat() {
-        if (mc.thePlayer.isOnLadder() || ticksOffStairs == 0) {
+        if (mc.thePlayer.isOnLadder() || mc.thePlayer.isInLava() || mc.thePlayer.isInWater()) {
             return false;
-        }
-        return true;
-    }
-
-    private boolean holdingEdible(ItemStack stack) {
-        if (stack.getItem() instanceof ItemFood && mc.thePlayer.getFoodStats().getFoodLevel() == 20) {
-            ItemFood food = (ItemFood) stack.getItem();
-            boolean alwaysEdible = false;
-            try {
-                alwaysEdible = Reflection.alwaysEdible.getBoolean(food);
-            }
-            catch (Exception e) {
-                Utils.sendMessage("&cError checking food edibility, check logs.");
-                e.printStackTrace();
-            }
-            return alwaysEdible;
         }
         return true;
     }

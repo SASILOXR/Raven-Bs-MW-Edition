@@ -1,6 +1,7 @@
 package keystrokesmod.module.impl.combat;
 
 import keystrokesmod.Raven;
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
@@ -31,7 +32,7 @@ public class BurstClicker extends Module {
 
     public void onEnable() {
         if (clicks.getInput() != 0.0D && mc.currentScreen == null && mc.inGameHasFocus) {
-            Raven.getExecutor().execute(() -> {
+            Raven.getScheduledExecutor().execute(() -> {
                 try {
                     int cl = (int) clicks.getInput();
                     int del = (int) delay.getInput();
@@ -87,8 +88,9 @@ public class BurstClicker extends Module {
     private void c(boolean st) {
         boolean r = placeWhenBlock.isToggled() && mc.thePlayer.getHeldItem() != null && mc.thePlayer.getHeldItem().getItem() instanceof ItemBlock;
         if (r) {
-            Reflection.rightClick();
-        } else {
+            ((IAccessorMinecraft) mc).callRightClickMouse();
+        }
+        else {
             int key = mc.gameSettings.keyBindAttack.getKeyCode();
             KeyBinding.setKeyBindState(key, st);
             if (st) {

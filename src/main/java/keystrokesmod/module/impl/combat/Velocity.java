@@ -16,6 +16,7 @@ public class Velocity extends Module {
     private SliderSetting chance;
     private ButtonSetting onlyWhileTargeting;
     private ButtonSetting disableS;
+    public boolean disable;
 
     public Velocity() {
         super("Velocity", category.combat, 0);
@@ -32,14 +33,9 @@ public class Velocity extends Module {
         return (int) horizontal.getInput() + "%" + " " + (int) vertical.getInput() + "%";
     }
 
-    @Override
-    public int getInfoType() {
-        return 1;
-    }
-
     @SubscribeEvent
     public void onLivingUpdate(LivingEvent.LivingUpdateEvent ev) {
-        if (Utils.nullCheck() && !LongJump.stopModules && !ModuleManager.bedAura.cancelKnockback()) {
+        if (Utils.nullCheck() && !LongJump.stopVelocity && !ModuleManager.bedAura.cancelKnockback()) {
             if (ev.entity != mc.thePlayer) {
                 return;
             }

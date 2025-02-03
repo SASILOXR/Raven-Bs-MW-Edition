@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "keystrokesmod.mixins.impl",
+  "package": "keystrokesmod.mixin.impl",
   "refmap": "mixins.raven.refmap.json",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
@@ -8,7 +8,6 @@
     "render.MixinFontRenderer",
     "entity.MixinEntityPlayerSP",
     "render.MixinLayerCape",
-    "render.MixinModelBiped",
     "entity.MixinEntityLivingBase",
     "network.MixinNetworkManager",
     "entity.MixinEntityPlayer",
@@ -22,6 +21,25 @@
     "client.MixinWorldInfo",
     "client.MixinWorld",
     "render.MixinGuiChat",
-    "render.MixinGuiScreen"
+    "render.MixinGuiScreen",
+    "network.MixinNetHandlerPlayClient",
+    "render.MixinRenderManager",
+    "render.MixinCustomSky",
+    "client.MixinPlayerControllerMP",
+
+    "accessor.IAccessorEntityPlayerSP",
+    "accessor.IAccessorEntityArrow",
+    "accessor.IAccessorEntityLivingBase",
+    "accessor.IAccessorMinecraft",
+    "accessor.IAccessorPlayerControllerMP",
+    "accessor.IAccessorGuiPlayerTabOverlay",
+    "accessor.IAccessorGuiIngame",
+    "accessor.IAccessorEntityRenderer",
+    "accessor.IAccessorItemFood",
+    "accessor.IAccessorGuiScreenBook",
+    "accessor.IAccessorEntityPlayer",
+    "accessor.IAccessorGuiScreen",
+    "accessor.IAccessorS14PacketEntity",
+    "accessor.IAccessorRenderManager"
   ]
 }

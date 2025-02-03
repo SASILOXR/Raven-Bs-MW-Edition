@@ -40,7 +40,7 @@ public class AntiKnockback extends Module {
 
     @SubscribeEvent
     public void onReceivePacket(ReceivePacketEvent e) {
-        if (!Utils.nullCheck() || LongJump.stopModules || e.isCanceled()) {
+        if (!Utils.nullCheck() || LongJump.stopVelocity || e.isCanceled()) {
             return;
         }
         if (e.getPacket() instanceof S12PacketEntityVelocity) {
@@ -71,7 +71,6 @@ public class AntiKnockback extends Module {
                     mc.thePlayer.motionY = ((double) s12PacketEntityVelocity.getMotionY() / 8000) * vertical.getInput() / 100.0;
                     mc.thePlayer.motionZ = ((double) s12PacketEntityVelocity.getMotionZ() / 8000) * horizontal.getInput() / 100.0;
                 }
-                e.setCanceled(true);
                 if (boostMultiplier.getInput() != 1) {
                     if (boostWithLMB.isToggled() && !Mouse.isButtonDown(0)) {
                         return;
@@ -104,7 +103,6 @@ public class AntiKnockback extends Module {
                 mc.thePlayer.motionY += s27PacketExplosion.func_149144_d() * vertical.getInput() / 100.0;
                 mc.thePlayer.motionZ += s27PacketExplosion.func_149147_e() * horizontal.getInput() / 100.0;
             }
-            e.setCanceled(true);
         }
     }
 
@@ -115,11 +113,6 @@ public class AntiKnockback extends Module {
     @Override
     public String getInfo() {
         return (int) horizontal.getInput() + "%" + " " + (int) vertical.getInput() + "%";
-    }
-
-    @Override
-    public int getInfoType() {
-        return 1;
     }
 
     private boolean cancelConditions() {

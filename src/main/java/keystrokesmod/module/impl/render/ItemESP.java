@@ -1,12 +1,14 @@
 package keystrokesmod.module.impl.render;
 
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
+import keystrokesmod.module.impl.player.Freecam;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.utility.RenderUtils;
-import keystrokesmod.utility.Utils;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.util.AxisAlignedBB;
@@ -64,7 +66,7 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
             }
         }
         if (!hashMap.isEmpty()) {
-            float renderPartialTicks = Utils.getTimer().renderPartialTicks;
+            float renderPartialTicks = ((IAccessorMinecraft) mc).getTimer().renderPartialTicks;
             for (Map.Entry<Item, ArrayList<EntityItem>> entry : hashMap.entrySet()) {
                 Item item = entry.getKey();
                 int n4;
@@ -89,9 +91,10 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
                     double n5 = entityItem2.lastTickPosX + (entityItem2.posX - entityItem2.lastTickPosX) * renderPartialTicks;
                     double n6 = entityItem2.lastTickPosY + (entityItem2.posY - entityItem2.lastTickPosY) * renderPartialTicks;
                     double n7 = entityItem2.lastTickPosZ + (entityItem2.posZ - entityItem2.lastTickPosZ) * renderPartialTicks;
-                    double n8 = mc.thePlayer.lastTickPosX + (mc.thePlayer.posX - mc.thePlayer.lastTickPosX) * renderPartialTicks - n5;
-                    double n9 = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * renderPartialTicks - n6;
-                    double n10 = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * renderPartialTicks - n7;
+                    EntityPlayer selfPlayer = (Freecam.freeEntity == null) ? mc.thePlayer : Freecam.freeEntity;
+                    double n8 = selfPlayer.lastTickPosX + (selfPlayer.posX - selfPlayer.lastTickPosX) * renderPartialTicks - n5;
+                    double n9 = selfPlayer.lastTickPosY + (selfPlayer.posY - selfPlayer.lastTickPosY) * renderPartialTicks - n6;
+                    double n10 = selfPlayer.lastTickPosZ + (selfPlayer.posZ - selfPlayer.lastTickPosZ) * renderPartialTicks - n7;
                     GlStateManager.pushMatrix();
                     drawBox(n4, n3, hashMap2.get(a2), n5, n6, n7, MathHelper.sqrt_double(n8 * n8 + n9 * n9 + n10 * n10));
                     GlStateManager.popMatrix();
@@ -151,7 +154,7 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
         GlStateManager.pushMatrix();
         GlStateManager.translate((float) n4, (float) n5 + 0.3, (float) n6);
         GlStateManager.rotate(-mc.getRenderManager().playerViewY, 0.0f, 1.0f, 0.0f);
-        GlStateManager.rotate(mc.getRenderManager().playerViewX, 1.0f, 0.0f, 0.0f);
+        GlStateManager.rotate((mc.gameSettings.thirdPersonView == 2 ? -1 : 1) * mc.getRenderManager().playerViewX, 1.0f, 0.0f, 0.0f);
         float min2 = Math.min(Math.max(0.02266667f, (float) (0.001500000013038516 * n7)), 0.07f);
         GlStateManager.scale(-min2, -min2, -min2);
         GlStateManager.depthMask(false);

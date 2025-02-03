@@ -1,6 +1,8 @@
 package keystrokesmod.clickgui.components;
 
 public class Component {
+    public boolean visible = true;
+
     public void render() {
     }
 
@@ -26,4 +28,6 @@ public class Component {
 
     public void onGuiClosed() {
     }
+
+    public void onScroll(int scroll) {}
 }

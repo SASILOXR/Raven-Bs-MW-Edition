@@ -16,9 +16,11 @@ public class SliderSetting extends Setting {
     public boolean isString;
     private String suffix = "";
     public boolean canBeDisabled;
+    public GroupSetting groupSetting;
 
-    public SliderSetting(String settingName, double defaultValue, double min, double max, double intervals) {
+    public SliderSetting(GroupSetting groupSetting, String settingName, double defaultValue, double min, double max, double intervals) {
         super(settingName);
+        this.groupSetting = groupSetting;
         this.settingName = settingName;
         this.defaultValue = defaultValue;
         this.min = min;
@@ -27,13 +29,27 @@ public class SliderSetting extends Setting {
         this.isString = false;
     }
 
+    public SliderSetting(String settingName, double defaultValue, double min, double max, double intervals) {
+        this((GroupSetting) null, settingName, defaultValue, min, max, intervals);
+    }
+
+    public SliderSetting(GroupSetting groupSetting, String settingName, String suffix, double defaultValue, double min, double max, double intervals) {
+        this(groupSetting, settingName, defaultValue, min, max, intervals);
+        this.suffix = suffix;
+    }
+
     public SliderSetting(String settingName, String suffix, double defaultValue, double min, double max, double intervals) {
-        this(settingName, defaultValue, min, max, intervals);
+        this((GroupSetting) null, settingName, defaultValue, min, max, intervals);
         this.suffix = suffix;
     }
 
     public SliderSetting(String settingName, boolean canBeDisabled, double defaultValue, double min, double max, double intervals) {
         this(settingName, defaultValue, min, max, intervals);
+        this.canBeDisabled = canBeDisabled;
+    }
+
+    public SliderSetting(GroupSetting group, String settingName, boolean canBeDisabled, double defaultValue, double min, double max, double intervals) {
+        this(group, settingName, defaultValue, min, max, intervals);
         this.canBeDisabled = canBeDisabled;
     }
 
@@ -43,8 +59,9 @@ public class SliderSetting extends Setting {
         this.canBeDisabled = canBeDisabled;
     }
 
-    public SliderSetting(String settingName, int defaultValue, String[] options) {
+    public SliderSetting(GroupSetting groupSetting, String settingName, int defaultValue, String[] options) {
         super(settingName);
+        this.groupSetting = groupSetting;
         this.settingName = settingName;
         this.options = options;
         this.defaultValue = defaultValue;
@@ -54,8 +71,17 @@ public class SliderSetting extends Setting {
         this.isString = true;
     }
 
+    public SliderSetting(String settingName, int defaultValue, String[] options) {
+        this((GroupSetting) null, settingName, defaultValue, options);
+    }
+
     public SliderSetting(String settingName, String suffix, int defaultValue, String[] options) {
-        this(settingName, defaultValue, options);
+        this((GroupSetting) null, settingName, defaultValue, options);
+        this.suffix = suffix;
+    }
+
+    public SliderSetting(GroupSetting groupSetting, String settingName, String suffix, int defaultValue, String[] options) {
+        this(groupSetting, settingName, defaultValue, options);
         this.suffix = suffix;
     }
 
@@ -97,6 +123,10 @@ public class SliderSetting extends Setting {
         v = Math.max(i, v);
         v = Math.min(a, v);
         return v;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
     }
 
     public static double roundToInterval(double v, int p) {

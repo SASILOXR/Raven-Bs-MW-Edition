@@ -1,8 +1,9 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.mixin.impl.accessor.IAccessorEntityLivingBase;
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
-import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.Utils;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -23,18 +24,10 @@ public class DelayRemover extends Module {
             return;
         }
         if (oldReg.isToggled()) {
-            try {
-                Reflection.leftClickCounter.set(mc, 0);
-            } catch (IllegalAccessException ex) {
-            } catch (IndexOutOfBoundsException ex2) {
-            }
+            ((IAccessorMinecraft) mc).setLeftClickCounter(0);
         }
         if (removeJumpTicks.isToggled()) {
-            try {
-                Reflection.jumpTicks.set(mc.thePlayer, 0);
-            } catch (IllegalAccessException ex3) {
-            } catch (IndexOutOfBoundsException ex4) {
-            }
+            ((IAccessorEntityLivingBase) mc.thePlayer).setJumpTicks(0);
         }
     }
 }

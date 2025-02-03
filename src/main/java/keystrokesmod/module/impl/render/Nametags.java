@@ -1,12 +1,14 @@
 package keystrokesmod.module.impl.render;
 
+import keystrokesmod.mixin.impl.accessor.IAccessorEntityRenderer;
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
+import keystrokesmod.module.impl.minigames.SkyWars;
 import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
-import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.gui.ScaledResolution;
@@ -38,14 +40,16 @@ public class Nametags extends Module {
     private ButtonSetting showEnchants;
     private ButtonSetting showDurability;
     private ButtonSetting showStackSize;
+
     private int backGroundColor = new Color(0, 0, 0, 100).getRGB();
     private int friendColor = new Color(0, 255, 0, 255).getRGB();
     private int enemyColor = new Color(255, 0, 0, 255).getRGB();
+
     private double normalizedThreshold = 8;
 
     public Nametags() {
         super("Nametags", category.render, 0);
-        this.registerSetting(scale = new SliderSetting("Scale", 1.0, 0.5, 5.0, 0.1));
+        this.registerSetting(scale = new SliderSetting("Scale", 1.0, 0.1, 5.0, 0.1));
         this.registerSetting(autoScale = new ButtonSetting("Auto-scale", true));
         this.registerSetting(drawBackground = new ButtonSetting("Draw background", true));
         this.registerSetting(onlyRenderName = new ButtonSetting("Only render name", false));
@@ -85,7 +89,7 @@ public class Nametags extends Module {
             interpolatedY = mc.thePlayer.lastTickPosY + (mc.thePlayer.posY - mc.thePlayer.lastTickPosY) * ev.partialTicks + mc.thePlayer.getEyeHeight();
             interpolatedZ = mc.thePlayer.lastTickPosZ + (mc.thePlayer.posZ - mc.thePlayer.lastTickPosZ) * ev.partialTicks;
         }
-
+        long strengthDuration = SkyWars.isSkyWarsTeams ? 2 : 5;
         ScaledResolution scaledResolution = new ScaledResolution(mc);
 
         for (EntityPlayer en : mc.theWorld.playerEntities) {
@@ -108,20 +112,17 @@ public class Nametags extends Module {
             double renderHeightOffset = (playerY - mc.getRenderManager().viewerPosY) + (!en.isSneaking() ? en.height : en.height - 0.3) + 0.294;
             double heightOffset = playerY + (!en.isSneaking() ? en.height : en.height - 0.3) + 0.294;
 
-            if (!Reflection.setupCameraTransform(mc.entityRenderer, ev.partialTicks, 0)) {
-                continue;
-            }
+            ((IAccessorEntityRenderer) mc.entityRenderer).callSetupCameraTransform(((IAccessorMinecraft) mc).getTimer().renderPartialTicks, 0);
 
             Vec3 screenCords = RenderUtils.convertTo2D(scaledResolution.getScaleFactor(), playerX - mc.getRenderManager().viewerPosX, renderHeightOffset, playerZ - mc.getRenderManager().viewerPosZ);
+            if (screenCords == null) {
+                continue;
+            }
             boolean inFrustum = screenCords.zCoord < 1.0003684;
             if (!inFrustum) {
                 continue;
             }
             mc.entityRenderer.setupOverlayRendering();
-
-            if (screenCords == null) {
-                continue;
-            }
 
             float scaleSetting = (float) scale.getInput();
             float newScale = scaleSetting;
@@ -163,7 +164,7 @@ public class Nametags extends Module {
                 name = name + " " + Utils.getHealthStr(en, false);
             }
             if (showHitsToKill.isToggled()) {
-                name = name + " " + Utils.getHitsToKill(en, mc.thePlayer.getCurrentEquippedItem());
+                name = name + " " + Utils.getHitsToKillStr(en, mc.thePlayer.getCurrentEquippedItem());
             }
             if (showDistance.isToggled()) {
                 int distance = Math.round(mc.thePlayer.getDistanceToEntity(en));
@@ -188,8 +189,8 @@ public class Nametags extends Module {
             if (ModuleManager.skyWars.isEnabled() && ModuleManager.skyWars.strengthIndicator.isToggled() && !ModuleManager.skyWars.strengthPlayers.isEmpty() && ModuleManager.skyWars.strengthPlayers.get(en) != null) {
                 double startTime = ModuleManager.skyWars.strengthPlayers.get(en);
                 double timePassed = (System.currentTimeMillis() - startTime) / 1000;
-                double strengthRemaining = Math.max(0, Utils.round(5.0 - timePassed, 1));
-                String strengthInfo = "§4" + (Utils.isWholeNumber(strengthRemaining) ? (int) strengthRemaining + "" : strengthRemaining) + "s§r ";
+                double strengthRemaining = Math.max(0, Utils.round(strengthDuration - timePassed, 1));
+                String strengthInfo = "§4" + Utils.asWholeNum(strengthRemaining) + "s§r ";
                 name = strengthInfo + name;
             }
 

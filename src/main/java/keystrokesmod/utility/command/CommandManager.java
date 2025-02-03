@@ -43,7 +43,7 @@ public class CommandManager {
             }
         }
 
-        Utils.sendMessage("§cunknown command. use .help for a list of commands.");
+        Utils.sendMessage("§cUnknown command. Use .help for a list of commands.");
     }
 
     public boolean autoComplete(String input) {

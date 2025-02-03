@@ -3,6 +3,7 @@ package keystrokesmod.utility;
 import keystrokesmod.module.ModuleManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -72,7 +73,7 @@ public class ScaffoldBlockCount {
     }
 
     public void onDisable() {
-        FMLCommonHandler.instance().bus().unregister(this);
+        MinecraftForge.EVENT_BUS.unregister(this);
         fadeInTimer = null;
         fadeTimer = null;
     }

@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.movement;
 
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
@@ -30,7 +31,7 @@ public class Boost extends Module {
 
     public void onDisable() {
         this.i = 0;
-        if (Utils.getTimer().timerSpeed != 1.0F) {
+        if (((IAccessorMinecraft) mc).getTimer().timerSpeed != 1.0F) {
             Utils.resetTimer();
         }
 
@@ -46,7 +47,7 @@ public class Boost extends Module {
             this.i = mc.thePlayer.ticksExisted;
         }
 
-        Utils.getTimer().timerSpeed = (float) a.getInput();
+        ((IAccessorMinecraft) mc).getTimer().timerSpeed = (float) a.getInput();
         if ((double) this.i == (double) mc.thePlayer.ticksExisted - b.getInput()) {
             Utils.resetTimer();
             this.disable();

@@ -5,8 +5,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.projectile.EntityFishHook;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.AxisAlignedBB;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,10 +76,11 @@ public class Entity {
     }
 
     public boolean isHoldingBlock() {
-        if (this.isLiving) {
-            return ((EntityLivingBase) this.entity).getHeldItem() != null && ((EntityLivingBase) this.entity).getHeldItem().getItem() instanceof ItemBlock;
-        }
-        return false;
+        return this.isLiving && ((EntityLivingBase)this.entity).getHeldItem() != null && ((EntityLivingBase)this.entity).getHeldItem().getItem() instanceof ItemBlock;
+    }
+
+    public boolean isHoldingWeapon() {
+        return this.isLiving && Utils.holdingWeapon((EntityLivingBase)this.entity);
     }
 
     public float getAbsorption() {
@@ -130,6 +133,10 @@ public class Entity {
 
     public String getUUID() {
         return this.entity.getUniqueID().toString();
+    }
+
+    public String getCustomNameTag() {
+        return this.entity.getCustomNameTag();
     }
 
     public double getBPS() {
@@ -201,7 +208,7 @@ public class Entity {
     }
 
     public boolean isConsuming() {
-        return this.entity.isEating();
+        return Utils.isConsuming(this.entity);
     }
 
     public Vec3 getLastPosition() {
@@ -230,7 +237,7 @@ public class Entity {
     }
 
     public NetworkPlayer getNetworkPlayer() {
-        return new NetworkPlayer(Minecraft.getMinecraft().getNetHandler().getPlayerInfo(this.entity.getUniqueID()));
+        return NetworkPlayer.convert(Minecraft.getMinecraft().getNetHandler().getPlayerInfo(this.entity.getUniqueID()));
     }
 
     public float getPitch() {
@@ -264,11 +271,8 @@ public class Entity {
         return Utils.getHorizontalSpeed(entity);
     }
 
-    public double getSwingProgress() {
-        if (!(entity instanceof EntityLivingBase)) {
-            return -1;
-        }
-        return ((EntityLivingBase) entity).swingProgress;
+    public int getSwingProgress() {
+        return this.isLiving ? ((EntityLivingBase)this.entity).swingProgressInt : -1;
     }
 
     public int getTicksExisted() {
@@ -299,6 +303,9 @@ public class Entity {
     }
 
     public boolean isCollided() {
+        if (!(entity instanceof EntityPlayer)) {
+            return Minecraft.getMinecraft().theWorld.checkBlockCollision(this.entity.getEntityBoundingBox().expand(0.05, 0.0, 0.05));
+        }
         return entity.isCollided;
     }
 
@@ -342,6 +349,13 @@ public class Entity {
 
     public boolean isInLava() {
         return entity.isInLava();
+    }
+
+    public Entity getFisher() {
+        if (this.entity instanceof EntityFishHook) {
+            return convert(((EntityFishHook) this.entity).angler);
+        }
+        return null;
     }
 
     public boolean isInLiquid() {
