@@ -10,6 +10,7 @@ import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.PacketUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.network.Packet;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -97,9 +98,9 @@ public class FakeLag extends Module {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPacketSent(SendPacketEvent e) {
-        if (!Utils.nullCheck() || mc.isSingleplayer() || (int) packetDelaySlider.getInput() == 0L) {
+        if (!Utils.nullCheck() || mc.isSingleplayer() || (int) packetDelaySlider.getInput() == 0 || e.isCanceled()) {
             return;
         }
         long time = System.currentTimeMillis() + (int) packetDelaySlider.getInput();
