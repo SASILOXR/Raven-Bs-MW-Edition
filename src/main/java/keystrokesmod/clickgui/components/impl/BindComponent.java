@@ -46,7 +46,7 @@ public class BindComponent extends Component {
             this.drawString(!this.moduleComponent.mod.canBeEnabled() && this.moduleComponent.mod.script == null ? "Module cannot be bound." : this.isBinding ? "Press a key..." : "Current bind: '§e" + getKeyAsStr(false) + "§r'");
         }
         else {
-            this.drawString(this.isBinding ? "Press a key..." : this.keySetting.getName() + ": '§e" + getKeyAsStr(true) + "§r'");
+            Minecraft.getMinecraft().fontRendererObj.drawStringWithShadow(this.isBinding ? "Press a key..." : this.keySetting.getName() + ": '§e" + getKeyAsStr(true) + "§r'", (float) ((this.moduleComponent.categoryComponent.getX() + 4) * 2) + xOffset, (float) ((this.moduleComponent.categoryComponent.getY() + this.o + (this.keySetting == null ? 3 : 4)) * 2), Theme.getGradient(Theme.descriptor[0], Theme.descriptor[1], 0));
         }
         GL11.glPopMatrix();
     }
@@ -139,7 +139,7 @@ public class BindComponent extends Component {
     }
 
     public String getKeyAsStr(boolean isKey) {
-        int key = isKey ? this.keySetting.getKey() : this.moduleComponent.mod.getKeycode();;
+        int key = isKey ? this.keySetting.getKey() : this.moduleComponent.mod.getKeycode();
         return (key >= 1000 ? ((key == 1069 || key == 1070) ? getScroll(key) : "M" + (key - 1000)) : Keyboard.getKeyName(key));
     }
 
