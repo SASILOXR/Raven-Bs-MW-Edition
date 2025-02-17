@@ -27,6 +27,7 @@
     "render.MixinCustomSky",
     "client.MixinPlayerControllerMP",
     "world.MixinBlock",
+    "render.MixinRenderPlayer",
 
     "accessor.IAccessorEntityPlayerSP",
     "accessor.IAccessorEntityArrow",
@@ -41,6 +42,7 @@
     "accessor.IAccessorEntityPlayer",
     "accessor.IAccessorGuiScreen",
     "accessor.IAccessorS14PacketEntity",
-    "accessor.IAccessorRenderManager"
+    "accessor.IAccessorRenderManager",
+    "accessor.IAccessorItemRenderer"
   ]
 }
