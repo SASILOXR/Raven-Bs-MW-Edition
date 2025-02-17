@@ -42,7 +42,6 @@
     "accessor.IAccessorEntityPlayer",
     "accessor.IAccessorGuiScreen",
     "accessor.IAccessorS14PacketEntity",
-    "accessor.IAccessorRenderManager",
-    "accessor.IAccessorItemRenderer"
+    "accessor.IAccessorRenderManager"
   ]
 }
