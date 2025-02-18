@@ -74,6 +74,7 @@ dependencies {
         exclude(module = "slf4j-api")
     }
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT")
+    shadowImpl("org.java-websocket:Java-WebSocket:1.6.0")
 }
 
 tasks.withType(JavaCompile::class) {
