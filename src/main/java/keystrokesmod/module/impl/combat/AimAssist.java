@@ -8,6 +8,11 @@ import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.Utils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+
 public class AimAssist extends Module {
     private SliderSetting speed;
     private SliderSetting fov;
@@ -17,6 +22,8 @@ public class AimAssist extends Module {
     private ButtonSetting aimInvis;
     private ButtonSetting blatantMode;
     private ButtonSetting ignoreTeammates;
+    private ButtonSetting rangeFirst;
+    private ButtonSetting aimNecessary;
 
     public AimAssist() {
         super("AimAssist", category.combat, 0);
@@ -28,6 +35,8 @@ public class AimAssist extends Module {
         this.registerSetting(aimInvis = new ButtonSetting("Aim invis", false));
         this.registerSetting(blatantMode = new ButtonSetting("Blatant mode", false));
         this.registerSetting(ignoreTeammates = new ButtonSetting("Ignore teammates", false));
+        this.registerSetting(rangeFirst = new ButtonSetting("Range First", false));
+        this.registerSetting(aimNecessary = new ButtonSetting("Aim Necessary", false));
     }
 
     public void onUpdate() {
@@ -57,6 +66,7 @@ public class AimAssist extends Module {
 
     private Entity getEnemy() {
         final int n = (int)fov.getInput();
+        ArrayList<Entity> players = new ArrayList<>();
         for (final EntityPlayer entityPlayer : mc.theWorld.playerEntities) {
             if (entityPlayer != mc.thePlayer && entityPlayer.deathTime == 0) {
                 if (Utils.isFriended(entityPlayer)) {
@@ -77,8 +87,16 @@ public class AimAssist extends Module {
                 if (!blatantMode.isToggled() && n != 360 && !Utils.inFov((float)n, entityPlayer)) {
                     continue;
                 }
-                return entityPlayer;
+                if (aimNecessary.isToggled() && mc.objectMouseOver.entityHit != null) {
+                    continue;
+                }
+//                return entityPlayer;
+                players.add(entityPlayer);
             }
+        }
+        if (!players.isEmpty()) {
+            Entity selectEntity = players.stream().min(Comparator.comparingDouble(entity -> mc.thePlayer.getDistanceToEntity(entity))).get();
+            return selectEntity;
         }
         return null;
     }
