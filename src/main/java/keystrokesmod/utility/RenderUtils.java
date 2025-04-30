@@ -953,4 +953,37 @@ public class RenderUtils {
 
         return rgba;
     }
+
+    public static void renderItemTag(Entity entity, String tag, int color, float partialTicks, float addScale) {
+        float x = (float)(entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double)partialTicks - mc.getRenderManager().viewerPosX);
+        float y = (float)(entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double)partialTicks - mc.getRenderManager().viewerPosY);
+        float z = (float)(entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double)partialTicks - mc.getRenderManager().viewerPosZ);
+        float size = mc.thePlayer.getDistanceToEntity(entity) / 10.0F;
+        if (size < 1.1F) {
+            size = 1.1F;
+        }
+
+        float scale = size * 1.8F;
+        scale /= 100.0F;
+        scale += addScale / 50.0F;
+        GL11.glPushMatrix();
+        GL11.glTranslatef(x, y + 0.5F, z);
+        GL11.glRotatef(-mc.getRenderManager().playerViewY, 0.0F, 1.0F, 0.0F);
+        if (mc.gameSettings.thirdPersonView == 2) {
+            GL11.glRotatef(-mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
+        } else {
+            GL11.glRotatef(mc.getRenderManager().playerViewX, 1.0F, 0.0F, 0.0F);
+        }
+
+        GL11.glScalef(-scale, -scale, scale);
+        GL11.glDisable(2929);
+        GL11.glEnable(3042);
+        float left = (float)(-mc.fontRendererObj.getStringWidth(tag) / 2) - 4.6F;
+        mc.fontRendererObj.drawString(tag, left + 4.0F, -12.5F, color, false);
+        GL11.glEnable(2929);
+        GL11.glDisable(3042);
+        GlStateManager.resetColor();
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+        GlStateManager.popMatrix();
+    }
 }

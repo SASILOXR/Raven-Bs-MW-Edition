@@ -70,7 +70,9 @@ public class ItemESP extends Module { // entirely skidded from raven b4 source l
                 int n4;
                 int n3;
                 if (item == Items.iron_ingot && renderIron.isToggled()) {
-                    n3 = (n4 = -1);
+                    //n3 = (n4 = -1);
+                    n4 = -331703;
+                    n3 = -152;
                 } else if (item == Items.gold_ingot && renderGold.isToggled()) {
                     n4 = -331703;
                     n3 = -152;

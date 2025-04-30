@@ -31,6 +31,7 @@ public class Xray extends Module {
     private ButtonSetting coal;
     private ButtonSetting spawner;
     private ButtonSetting obsidian;
+    public ButtonSetting translucent;
     private Set<BlockPos> blocks = ConcurrentHashMap.newKeySet();
     private long lastCheck = 0;
 
@@ -47,10 +48,16 @@ public class Xray extends Module {
         this.registerSetting(obsidian = new ButtonSetting("Obsidian", true));
         this.registerSetting(redstone = new ButtonSetting("Redstone", true));
         this.registerSetting(spawner = new ButtonSetting("Spawner", true));
+        this.registerSetting(translucent = new ButtonSetting("Translucent", true));
     }
 
     public void onDisable() {
+        mc.renderGlobal.loadRenderers();
         this.blocks.clear();
+    }
+
+    public void onEnable() {
+        mc.renderGlobal.loadRenderers();
     }
 
     public void onUpdate() {
@@ -107,6 +114,11 @@ public class Xray extends Module {
         }
     }
 
+    public static int setXRayAlpha(final int j) {
+        final Color c = new Color(j);
+        return new Color(c.getRed(), c.getGreen(), c.getBlue(), 140).getRGB();
+    }
+
     private void drawBox(BlockPos p) {
         if (p == null) {
             return;
@@ -125,27 +137,21 @@ public class Xray extends Module {
             red = 255;
             green = 255;
             blue = 255;
-        }
-        else if (b.equals(Blocks.gold_ore)) {
+        } else if (b.equals(Blocks.gold_ore)) {
             red = 255;
             green = 255;
-        }
-        else if (b.equals(Blocks.diamond_ore)) {
+        } else if (b.equals(Blocks.diamond_ore)) {
             green = 220;
             blue = 255;
-        }
-        else if (b.equals(Blocks.emerald_ore)) {
+        } else if (b.equals(Blocks.emerald_ore)) {
             red = 35;
             green = 255;
-        }
-        else if (b.equals(Blocks.lapis_ore)) {
+        } else if (b.equals(Blocks.lapis_ore)) {
             green = 50;
             blue = 255;
-        }
-        else if (b.equals(Blocks.redstone_ore)) {
+        } else if (b.equals(Blocks.redstone_ore)) {
             red = 255;
-        }
-        else if (b.equals(Blocks.mob_spawner)) {
+        } else if (b.equals(Blocks.mob_spawner)) {
             red = 30;
             blue = 135;
         }

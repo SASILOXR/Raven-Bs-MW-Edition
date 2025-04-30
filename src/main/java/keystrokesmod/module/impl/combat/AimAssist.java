@@ -7,8 +7,11 @@ import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.Utils;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 
+import javax.rmi.CORBA.Util;
+import javax.swing.plaf.SplitPaneUI;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +27,8 @@ public class AimAssist extends Module {
     private ButtonSetting ignoreTeammates;
     private ButtonSetting rangeFirst;
     private ButtonSetting aimNecessary;
+    public static EntityLivingBase targetEntity;
+    private static boolean shouldRender;
 
     public AimAssist() {
         super("AimAssist", category.combat, 0);
@@ -45,23 +50,32 @@ public class AimAssist extends Module {
                 if (!clickAim.isToggled() || Utils.isClicking()) {
                     Entity en = this.getEnemy();
                     if (en != null) {
+                        if (en instanceof EntityLivingBase) {
+                            targetEntity = (EntityLivingBase) en;
+                        }
                         if (Raven.debug) {
                             Utils.sendMessage(this.getName() + " &e" + en.getName());
                         }
                         if (blatantMode.isToggled()) {
                             Utils.aim(en, 0.0F, false);
+                        } else if (speed.getInput() == 100){
+                            Utils.aim(en, 0.0F, false);
                         } else {
                             double n = Utils.n(en);
                             if (n > 1.0D || n < -1.0D) {
-                                float val = (float) (-(n / (101.0D - (speed.getInput()))));
+                                float val = (float) (-(n / (100.0D - (speed.getInput()))));
                                 mc.thePlayer.rotationYaw += val;
                             }
                         }
+                        return;
                     }
-
+                    if (shouldRender) {
+                        return;
+                    }
                 }
             }
         }
+        targetEntity = null;
     }
 
     private Entity getEnemy() {
@@ -87,10 +101,14 @@ public class AimAssist extends Module {
                 if (!blatantMode.isToggled() && n != 360 && !Utils.inFov((float)n, entityPlayer)) {
                     continue;
                 }
-                if (aimNecessary.isToggled() && mc.objectMouseOver.entityHit != null) {
-                    continue;
+                if (aimNecessary.isToggled() && mc.objectMouseOver.entityHit instanceof EntityPlayer) {
+                    targetEntity = (EntityLivingBase) mc.objectMouseOver.entityHit;
+                    shouldRender = true;
+                    return null;
                 }
-//                return entityPlayer;
+                if (!rangeFirst.isToggled()) {
+                    return entityPlayer;
+                }
                 players.add(entityPlayer);
             }
         }
@@ -98,6 +116,7 @@ public class AimAssist extends Module {
             Entity selectEntity = players.stream().min(Comparator.comparingDouble(entity -> mc.thePlayer.getDistanceToEntity(entity))).get();
             return selectEntity;
         }
+        shouldRender = false;
         return null;
     }
 }

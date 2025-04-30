@@ -11,12 +11,13 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 public class DelayRemover extends Module {
     public static ButtonSetting oldReg, removeJumpTicks;
     public static SliderSetting jumpDelay;
+    public static int countTicks = 0;
 
     public DelayRemover() {
         super("Delay Remover", category.player, 0);
         this.registerSetting(oldReg = new ButtonSetting("1.7 hitreg", true));
         this.registerSetting(removeJumpTicks = new ButtonSetting("Remove jump ticks", false));
-        this.registerSetting(jumpDelay = new SliderSetting("Jump Delay",0, 0, 5, 1));
+        this.registerSetting(jumpDelay = new SliderSetting("Jump Delay",0, 0, 10, 1));
         this.closetModule = true;
     }
 
@@ -35,9 +36,12 @@ public class DelayRemover extends Module {
         if (removeJumpTicks.isToggled()) {
             int jumpTick = (int)jumpDelay.getInput();
             try {
-                Reflection.jumpTicks.setInt(mc.thePlayer, jumpTick);
-            } catch (IllegalAccessException ex3) {
-            } catch (IndexOutOfBoundsException ex4) {
+                int currentJumpTick = (int)Reflection.jumpTicks.get(mc.thePlayer);
+                if (currentJumpTick > jumpTick) {
+                    Reflection.jumpTicks.setInt(mc.thePlayer, jumpTick);
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
             }
         }
     }

@@ -11,7 +11,8 @@ import keystrokesmod.module.impl.movement.*;
 import keystrokesmod.module.impl.other.*;
 import keystrokesmod.module.impl.player.*;
 import keystrokesmod.module.impl.render.*;
-import keystrokesmod.module.impl.world.*;
+import keystrokesmod.module.impl.world.AntiBot;
+import keystrokesmod.module.impl.world.Weather;
 import keystrokesmod.utility.Utils;
 import keystrokesmod.utility.profile.Manager;
 
@@ -65,6 +66,8 @@ public class ModuleManager {
     public static AutoTool autoTool;
     public static Sprint sprint;
     public static Weather weather;
+    public static Xray xray;
+    public static Barrier barrier;
     public static ChatCommands chatCommands;
 
     public void register() {
@@ -134,7 +137,7 @@ public class ModuleManager {
         this.addModule(new Anticheat());
         this.addModule(new BreakProgress());
         this.addModule(wTap = new WTap());
-        this.addModule(new Xray());
+        this.addModule(xray = new Xray());
         this.addModule(new BridgeInfo());
         this.addModule(targetHUD = new TargetHUD());
         this.addModule(new DuelsStats());
@@ -163,6 +166,8 @@ public class ModuleManager {
         this.addModule(new AutoWho());
         this.addModule(new Gui());
         this.addModule(new Shaders());
+        this.addModule(new MegaWallsItemESP());
+        this.addModule(barrier = new Barrier());
         antiBot.enable();
         Collections.sort(this.modules, Comparator.comparing(Module::getName));
     }

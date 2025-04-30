@@ -32,8 +32,7 @@ public class MixinRenderGlobal { // credit: pablolnmak
     private boolean forceIsSpectator(EntityPlayerSP instance) {
         if (shouldRender()) {
             return true;
-        }
-        else {
+        } else {
             return instance.isSpectator();
         }
     }
@@ -42,8 +41,7 @@ public class MixinRenderGlobal { // credit: pablolnmak
     private boolean forceIsKeyDown(KeyBinding instance) {
         if (shouldRender()) {
             return true;
-        }
-        else {
+        } else {
             return instance.isKeyDown();
         }
     }
@@ -52,8 +50,7 @@ public class MixinRenderGlobal { // credit: pablolnmak
     private boolean forceShouldRenderInPass(Entity instance, int pass, Entity renderViewEntity, ICamera camera, float partialTicks) {
         if (pass == 1) {
             return true;
-        }
-        else {
+        } else {
             return instance.shouldRenderInPass(pass);
         }
     }
@@ -68,15 +65,12 @@ public class MixinRenderGlobal { // credit: pablolnmak
         boolean flag = viewer instanceof EntityLivingBase && ((EntityLivingBase) viewer).isPlayerSleeping();
         if (entityIn == viewer && this.mc.gameSettings.thirdPersonView == 0 && !flag) {
             return false;
-        }
-        else if (shouldRender()) {
+        } else if (shouldRender()) {
             return (entityIn != viewer && !AntiBot.isBot(entityIn)) || (entityIn == viewer && ModuleManager.playerESP.renderSelf.isToggled());
-        }
-        else {
+        } else {
             if (this.mc.thePlayer.isSpectator() && this.mc.gameSettings.keyBindSpectatorOutlines.isKeyDown() && entityIn instanceof EntityPlayer) {
                 return entityIn.ignoreFrustumCheck || camera.isBoundingBoxInFrustum(entityIn.getEntityBoundingBox()) || entityIn.isRiding();
-            }
-            else {
+            } else {
                 return false;
             }
         }

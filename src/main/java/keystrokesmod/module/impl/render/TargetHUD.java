@@ -1,6 +1,7 @@
 package keystrokesmod.module.impl.render;
 
 import keystrokesmod.module.Module;
+import keystrokesmod.module.impl.combat.AimAssist;
 import keystrokesmod.module.impl.combat.KillAura;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.DescriptionSetting;
@@ -44,7 +45,7 @@ public class TargetHUD extends Module {
 
     public TargetHUD() {
         super("TargetHUD", category.render);
-        this.registerSetting(new DescriptionSetting("Only works with KillAura."));
+        this.registerSetting(new DescriptionSetting("Only works with KillAura or AimAssist."));
         this.registerSetting(mode = new SliderSetting("Mode", 1, modes));
         this.registerSetting(theme = new SliderSetting("Theme", 0, Theme.themes));
         this.registerSetting(new ButtonSetting("Edit position", () -> {
@@ -72,6 +73,10 @@ public class TargetHUD extends Module {
             }
             if (KillAura.attackingEntity != null) {
                 target = KillAura.attackingEntity;
+                lastAliveMS = System.currentTimeMillis();
+                fadeTimer = null;
+            } else if (AimAssist.targetEntity != null) {
+                target = AimAssist.targetEntity;
                 lastAliveMS = System.currentTimeMillis();
                 fadeTimer = null;
             } else if (target != null) {
@@ -103,6 +108,8 @@ public class TargetHUD extends Module {
         }
         if (KillAura.target != null) {
             RenderUtils.renderEntity(KillAura.target, 2, 0.0, 0.0, Theme.getGradient((int) theme.getInput(), 0), false);
+        } else if (AimAssist.targetEntity != null) {
+            RenderUtils.renderEntity(AimAssist.targetEntity, 2, 0.0, 0.0, Theme.getGradient((int) theme.getInput(), 0), false);
         }
         else if (renderEntity != null) {
             RenderUtils.renderEntity(renderEntity, 2, 0.0, 0.0, Theme.getGradient((int) theme.getInput(), 0), false);
