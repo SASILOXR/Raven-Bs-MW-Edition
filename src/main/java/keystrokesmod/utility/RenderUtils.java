@@ -3,7 +3,9 @@ package keystrokesmod.utility;
 import keystrokesmod.module.impl.player.Freecam;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -163,17 +165,13 @@ public class RenderUtils {
             final double t = Utils.gbps((Freecam.freeEntity == null) ? mc.thePlayer : Freecam.freeEntity, 2);
             if (t < 10.0) {
                 n = Color.green.getRGB();
-            }
-            else if (t < 30.0) {
+            } else if (t < 30.0) {
                 n = Color.yellow.getRGB();
-            }
-            else if (t < 60.0) {
+            } else if (t < 60.0) {
                 n = Color.orange.getRGB();
-            }
-            else if (t < 160.0) {
+            } else if (t < 160.0) {
                 n = Color.red.getRGB();
-            }
-            else {
+            } else {
                 n = Color.black.getRGB();
             }
             s = s + t + "bps";
@@ -185,7 +183,7 @@ public class RenderUtils {
             }
             s += Utils.round(h, 3);
         }
-        mc.fontRendererObj.drawString(s, (float)(scaledResolution.getScaledWidth() / 2 - mc.fontRendererObj.getStringWidth(s) / 2), (float)(scaledResolution.getScaledHeight() / 2 + 15), n, false);
+        mc.fontRendererObj.drawString(s, (float) (scaledResolution.getScaledWidth() / 2 - mc.fontRendererObj.getStringWidth(s) / 2), (float) (scaledResolution.getScaledHeight() / 2 + 15), n, false);
     }
 
     public static void renderEntity(Entity e, int type, double expand, double shift, int color, boolean damage) {
@@ -380,7 +378,7 @@ public class RenderUtils {
 
         float a = ((color >> 24) & 0xFF) / 255.0f;
         float r = ((color >> 16) & 0xFF) / 255.0f;
-        float g = ((color >> 8)  & 0xFF) / 255.0f;
+        float g = ((color >> 8) & 0xFF) / 255.0f;
         float b = (color & 0xFF) / 255.0f;
 
         GlStateManager.pushMatrix();
@@ -523,8 +521,7 @@ public class RenderUtils {
                 x = bX;
                 y += fontRenderer.FONT_HEIGHT + 5;
                 r = shift * (long) l;
-            }
-            else {
+            } else {
                 fontRenderer.drawString(String.valueOf(c), (float) x, (float) y, Utils.getChroma(s, r), rect);
                 x += fontRenderer.getCharWidth(c);
                 if (c != ' ') {
@@ -955,9 +952,9 @@ public class RenderUtils {
     }
 
     public static void renderItemTag(Entity entity, String tag, int color, float partialTicks, float addScale) {
-        float x = (float)(entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double)partialTicks - mc.getRenderManager().viewerPosX);
-        float y = (float)(entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double)partialTicks - mc.getRenderManager().viewerPosY);
-        float z = (float)(entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double)partialTicks - mc.getRenderManager().viewerPosZ);
+        float x = (float) (entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * (double) partialTicks - mc.getRenderManager().viewerPosX);
+        float y = (float) (entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * (double) partialTicks - mc.getRenderManager().viewerPosY);
+        float z = (float) (entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * (double) partialTicks - mc.getRenderManager().viewerPosZ);
         float size = mc.thePlayer.getDistanceToEntity(entity) / 10.0F;
         if (size < 1.1F) {
             size = 1.1F;
@@ -978,12 +975,20 @@ public class RenderUtils {
         GL11.glScalef(-scale, -scale, scale);
         GL11.glDisable(2929);
         GL11.glEnable(3042);
-        float left = (float)(-mc.fontRendererObj.getStringWidth(tag) / 2) - 4.6F;
+        float left = (float) (-mc.fontRendererObj.getStringWidth(tag) / 2) - 4.6F;
         mc.fontRendererObj.drawString(tag, left + 4.0F, -12.5F, color, false);
         GL11.glEnable(2929);
         GL11.glDisable(3042);
         GlStateManager.resetColor();
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.popMatrix();
+    }
+
+    public static void renderPlayer2D(float x, float y, float width, float height, AbstractClientPlayer player) {
+        GlStateManager.enableBlend();
+        GlStateManager.blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        mc.getTextureManager().bindTexture(player.getLocationSkin());
+        Gui.drawScaledCustomSizeModalRect((int) x, (int) y, 8.0F, 8.0F, 8, 8, (int) width, (int) height, 64.0F, 64.0F);
+        GlStateManager.disableBlend();
     }
 }

@@ -12,7 +12,7 @@ public class Reduce extends Module {
     public Reduce() {
         super("Reduce", category.combat);
         this.registerSetting(new DescriptionSetting("Overrides KeepSprint."));
-        this.registerSetting(reduction = new SliderSetting("Attack reduction %", 60.0, 60.0, 100.0, 0.5));
+        this.registerSetting(reduction = new SliderSetting("Attack reduction %", 40.0, 0.0, 100.0, 0.5));
         this.registerSetting(chance = new SliderSetting("Chance", "%", 100.0, 0.0, 100.0, 1.0));
         this.closetModule = true;
     }
@@ -26,7 +26,7 @@ public class Reduce extends Module {
             mc.thePlayer.motionZ *= 0.6;
             return;
         }
-        double n = (100.0 - (float)reduction.getInput()) / 100.0;
+        double n = (100.0 - (float) reduction.getInput()) / 100.0;
         mc.thePlayer.motionX *= n;
         mc.thePlayer.motionZ *= n;
     }

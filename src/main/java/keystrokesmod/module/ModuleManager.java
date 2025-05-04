@@ -68,12 +68,13 @@ public class ModuleManager {
     public static Weather weather;
     public static Xray xray;
     public static Barrier barrier;
+    public static AimAssist aimAssist;
     public static ChatCommands chatCommands;
 
     public void register() {
         this.addModule(autoClicker = new AutoClicker());
         this.addModule(new LongJump());
-        this.addModule(new AimAssist());
+        this.addModule(aimAssist = new AimAssist());
         this.addModule(new Blink());
         this.addModule(new BurstClicker());
         this.addModule(weather = new Weather());

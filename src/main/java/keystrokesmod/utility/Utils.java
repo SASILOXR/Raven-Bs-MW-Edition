@@ -3,7 +3,6 @@ package keystrokesmod.utility;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
-import keystrokesmod.Raven;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.client.Settings;
@@ -29,7 +28,10 @@ import net.minecraft.item.*;
 import net.minecraft.network.play.client.C03PacketPlayer.C05PacketPlayerLook;
 import net.minecraft.network.play.client.C0APacketAnimation;
 import net.minecraft.potion.Potion;
-import net.minecraft.scoreboard.*;
+import net.minecraft.scoreboard.Score;
+import net.minecraft.scoreboard.ScoreObjective;
+import net.minecraft.scoreboard.ScorePlayerTeam;
+import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.util.*;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import org.apache.logging.log4j.LogManager;
@@ -40,9 +42,13 @@ import org.lwjgl.input.Mouse;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class Utils {
@@ -100,7 +106,7 @@ public class Utils {
         float cameraPitch = Utils.getCameraPitch();
 
         double offsetX = -MathHelper.sin(cameraYaw / 180.0F * (float) Math.PI) * MathHelper.cos(cameraPitch / 180.0F * (float) Math.PI) * adjustedDistance;
-        double offsetZ =  MathHelper.cos(cameraYaw / 180.0F * (float) Math.PI) * MathHelper.cos(cameraPitch / 180.0F * (float) Math.PI) * adjustedDistance;
+        double offsetZ = MathHelper.cos(cameraYaw / 180.0F * (float) Math.PI) * MathHelper.cos(cameraPitch / 180.0F * (float) Math.PI) * adjustedDistance;
         double offsetY = -MathHelper.sin(cameraPitch / 180.0F * (float) Math.PI) * adjustedDistance;
 
         if (ModuleManager.noHurtCam == null || !ModuleManager.noHurtCam.isEnabled()) {
@@ -197,7 +203,7 @@ public class Utils {
 
     public static boolean onCursor(Entity entity) {
         MovingObjectPosition movingObjectPosition = mc.objectMouseOver;
-        if (entity == null || movingObjectPosition == null || movingObjectPosition.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY || movingObjectPosition.entityHit == null ) {
+        if (entity == null || movingObjectPosition == null || movingObjectPosition.typeOfHit != MovingObjectPosition.MovingObjectType.ENTITY || movingObjectPosition.entityHit == null) {
             return false;
         }
         return movingObjectPosition.entityHit == entity;
@@ -247,6 +253,14 @@ public class Utils {
         return false;
     }
 
+    public static double fovOffset(Entity entity) {
+        double entityX = entity.posX;
+        double entityZ = entity.posZ;
+
+        final double wrapAngleTo180_double = MathHelper.wrapAngleTo180_double((mc.thePlayer.rotationYaw - RotationUtils.angle(entityX, entityZ)) % 360.0f);
+        return Math.abs(wrapAngleTo180_double);
+    }
+
     public static void sendMessage(String txt) {
         if (nullCheck()) {
             String m = formatColor("&7[&dR&7]&r " + txt);
@@ -268,8 +282,7 @@ public class Utils {
     public static void attackEntity(Entity e, boolean clientSwing, boolean silentSwing) {
         if (clientSwing) {
             mc.thePlayer.swingItem();
-        }
-        else if (silentSwing || (!silentSwing && !clientSwing)) {
+        } else if (silentSwing || (!silentSwing && !clientSwing)) {
             mc.thePlayer.sendQueue.addToSendQueue(new C0APacketAnimation());
         }
         mc.playerController.attackEntity(mc.thePlayer, e);
@@ -339,7 +352,7 @@ public class Utils {
 
     public static String getColorForHealth(double n, double n2) {
         double health = round(n2, 1);
-        return ((n < 0.3) ? "§c" : ((n < 0.5) ? "§6" : ((n < 0.7) ? "§e" : "§a"))) + (isWholeNumber(health) ? (int) health + "": health);
+        return ((n < 0.3) ? "§c" : ((n < 0.5) ? "§6" : ((n < 0.7) ? "§e" : "§a"))) + (isWholeNumber(health) ? (int) health + "" : health);
     }
 
     public static int getColorForHealth(double health) {
@@ -376,8 +389,7 @@ public class Utils {
                     bold = true;
                 }
                 ++i;
-            }
-            else {
+            } else {
                 if (bold) {
                     ++additionalWidth;
                 }
@@ -430,7 +442,7 @@ public class Utils {
     }
 
     public static String getHitsToKill(final EntityPlayer entityPlayer, final ItemStack itemStack) {
-        final int n = (int)Math.ceil(ap(entityPlayer, itemStack));
+        final int n = (int) Math.ceil(ap(entityPlayer, itemStack));
         return "§" + ((n <= 1) ? "c" : ((n <= 3) ? "6" : ((n <= 5) ? "e" : "a"))) + n;
     }
 
@@ -445,7 +457,7 @@ public class Utils {
             final ItemStack armorItemInSlot = entityPlayer.inventory.armorItemInSlot(i);
             if (armorItemInSlot != null) {
                 if (armorItemInSlot.getItem() instanceof ItemArmor) {
-                    n2 += ((ItemArmor)armorItemInSlot.getItem()).damageReduceAmount * 0.04;
+                    n2 += ((ItemArmor) armorItemInSlot.getItem()).damageReduceAmount * 0.04;
                     final int getEnchantmentLevel = EnchantmentHelper.getEnchantmentLevel(Enchantment.protection.effectId, armorItemInSlot);
                     if (getEnchantmentLevel != 0) {
                         n3 += Math.floor(0.75 * (6 + getEnchantmentLevel * getEnchantmentLevel) / 3.0);
@@ -453,7 +465,7 @@ public class Utils {
                 }
             }
         }
-        return round((double)getCompleteHealth(entityPlayer) / (n * (1.0 - (n2 + 0.04 * Math.min(Math.ceil(Math.min(n3, 25.0) * 0.75), 20.0) * (1.0 - n2)))), 1);
+        return round((double) getCompleteHealth(entityPlayer) / (n * (1.0 - (n2 + 0.04 * Math.min(Math.ceil(Math.min(n3, 25.0) * 0.75), 20.0) * (1.0 - n2)))), 1);
     }
 
     public static float n() {
@@ -487,19 +499,19 @@ public class Utils {
 
     public static int darkenColor(int color, double percent) {
         int alpha = (color >> 24) & 0xFF;
-        int red   = (color >> 16) & 0xFF;
-        int green = (color >> 8)  & 0xFF;
-        int blue  = color & 0xFF;
+        int red = (color >> 16) & 0xFF;
+        int green = (color >> 8) & 0xFF;
+        int blue = color & 0xFF;
 
         percent = (100 - percent) / 100;
 
-        red   = (int)(red * percent);
-        green = (int)(green * percent);
-        blue  = (int)(blue * percent);
+        red = (int) (red * percent);
+        green = (int) (green * percent);
+        blue = (int) (blue * percent);
 
-        red   = clamp(red);
+        red = clamp(red);
         green = clamp(green);
-        blue  = clamp(blue);
+        blue = clamp(blue);
 
         int darkenedColor = (alpha << 24) | (red << 16) | (green << 8) | blue;
         return darkenedColor;
@@ -508,10 +520,68 @@ public class Utils {
     public static boolean isTeamMate(Entity entity) {
         try {
             Entity teamMate = entity;
-            if (mc.thePlayer.isOnSameTeam((EntityLivingBase) entity) || mc.thePlayer.getDisplayName().getUnformattedText().startsWith(teamMate.getDisplayName().getUnformattedText().substring(0, 2))) {
+            if (mc.thePlayer.isOnSameTeam((EntityLivingBase) entity) || (isSameColorWithPlayer(teamMate) && isPrefixSameWithPlayer(teamMate))) {
                 return true;
             }
         } catch (Exception e) {
+        }
+        return false;
+    }
+
+    public static boolean isSameColorWithPlayer(Entity entity) {
+        if (!(entity instanceof EntityPlayer)) {
+            return false;
+        }
+        String playerName = mc.thePlayer.getDisplayName().getUnformattedText();
+        int index = playerName.indexOf(mc.thePlayer.getDisplayNameString());
+        if (index < 1) {
+            return false;
+        }
+        String playerColorstring = playerName.substring(0, index);
+        int index2 = playerColorstring.lastIndexOf("§");
+        if (index2 < 0) {
+            return false;
+        }
+        String playerColor = playerColorstring.substring(index2, index2 + 2);
+        String entityName = entity.getDisplayName().getUnformattedText();
+        int index1 = entityName.indexOf(((EntityPlayer) entity).getDisplayNameString());
+        if (index1 < 1) {
+            return false;
+        }
+        String entityColorString = entityName.substring(0, index1);
+        int index3 = entityColorString.lastIndexOf("§");
+        if (index3 < 0) {
+            return false;
+        }
+        String entityColor = entityColorString.substring(index3, index3 + 2);
+        return playerColor.equals(entityColor);
+    }
+
+    public static boolean isPrefixSameWithPlayer(Entity entity) {
+        if (!(entity instanceof EntityPlayer)) {
+            return false;
+        }
+        Pattern pattern = Pattern.compile("\\[(.*?)\\]");
+
+        ArrayList<String> prefixes = new ArrayList<>();
+        String playerName = mc.thePlayer.getDisplayName().getUnformattedText();
+        Matcher matcher = pattern.matcher(playerName);
+        while (matcher.find()) {
+            prefixes.add(matcher.group(0));
+        }
+        if (prefixes.isEmpty()) {
+            return true;
+        }
+
+        String entityName = entity.getDisplayName().getUnformattedText();
+        Matcher matcher1 = pattern.matcher(entityName);
+        while (matcher1.find()) {
+            String context = matcher1.group(0);
+            for (String prefix : prefixes) {
+                if (prefix.equals(context)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -551,8 +621,7 @@ public class Utils {
                 line = Utils.stripColor(line);
                 if (line.equals("Waiting...") || line.startsWith("Starting in ")) {
                     return 1;
-                }
-                else if (line.startsWith("Players left: ")) {
+                } else if (line.startsWith("Players left: ")) {
                     return 2;
                 }
             }
@@ -564,8 +633,7 @@ public class Utils {
     public static String getString(final JsonObject type, final String member) {
         try {
             return type.get(member).getAsString();
-        }
-        catch (Exception er) {
+        } catch (Exception er) {
             return "";
         }
     }
@@ -589,11 +657,9 @@ public class Utils {
                 if (parts[1].startsWith("L")) {
                     return 0;
                 }
-            }
-            else if (line.equals("Waiting...") || line.startsWith("Starting in")) {
+            } else if (line.equals("Waiting...") || line.startsWith("Starting in")) {
                 return 1;
-            }
-            else if (line.startsWith("R Red:") || line.startsWith("B Blue:")) {
+            } else if (line.startsWith("R Red:") || line.startsWith("B Blue:")) {
                 return 2;
             }
         }
@@ -665,8 +731,7 @@ public class Utils {
                 float p = t[1] + 4.0F + ps;
                 if (pc) {
                     mc.getNetHandler().addToSendQueue(new C05PacketPlayerLook(y, p, mc.thePlayer.onGround));
-                }
-                else {
+                } else {
                     mc.thePlayer.rotationYaw = y;
                     mc.thePlayer.rotationPitch = p;
                 }
@@ -678,8 +743,7 @@ public class Utils {
     public static float[] getRotationsOld(Entity q) {
         if (q == null) {
             return null;
-        }
-        else {
+        } else {
             double diffX = q.posX - mc.thePlayer.posX;
             double diffY;
             if (q instanceof EntityLivingBase) {
@@ -693,7 +757,7 @@ public class Utils {
             double dist = MathHelper.sqrt_double(diffX * diffX + diffZ * diffZ);
             float yaw = (float) (Math.atan2(diffZ, diffX) * 180.0D / 3.141592653589793D) - 90.0F;
             float pitch = (float) (-(Math.atan2(diffY, dist) * 180.0D / 3.141592653589793D));
-            return new float[] { mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float(yaw - mc.thePlayer.rotationYaw) , mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float(pitch - mc.thePlayer.rotationPitch)};
+            return new float[]{mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float(yaw - mc.thePlayer.rotationYaw), mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float(pitch - mc.thePlayer.rotationPitch)};
         }
     }
 
@@ -824,8 +888,7 @@ public class Utils {
                 if (processedLine.contains("*/")) {
                     inBlockComment = false;
                     processedLine = processedLine.substring(processedLine.indexOf("*/") + 2).trim();
-                }
-                else {
+                } else {
                     continue;
                 }
             }
@@ -862,8 +925,7 @@ public class Utils {
             for (char ch : lineWithoutStrings.toCharArray()) {
                 if (ch == '{') {
                     openBraces++;
-                }
-                else if (ch == '}') {
+                } else if (ch == '}') {
                     closeBraces++;
                 }
             }
@@ -911,9 +973,9 @@ public class Utils {
         float yaw = ((mc.thePlayer.rotationYaw % 360) + 360) % 360;
         yaw = yaw > 180 ? yaw - 360 : yaw;
         boolean isYawDiagonal = inBetween(-170, 170, yaw) && !inBetween(-10, 10, yaw) && !inBetween(80, 100, yaw) && !inBetween(-100, -80, yaw);
-       if (strict) {
-           isYawDiagonal = inBetween(-178.5, 178.5, yaw) && !inBetween(-1.5, 1.5, yaw) && !inBetween(88.5, 91.5, yaw) && !inBetween(-91.5, -88.5, yaw);
-       }
+        if (strict) {
+            isYawDiagonal = inBetween(-178.5, 178.5, yaw) && !inBetween(-1.5, 1.5, yaw) && !inBetween(88.5, 91.5, yaw) && !inBetween(-91.5, -88.5, yaw);
+        }
         boolean isStrafing = Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
         return isYawDiagonal || isStrafing;
     }
@@ -939,8 +1001,7 @@ public class Utils {
     public static boolean isClicking() {
         if (ModuleManager.autoClicker.isEnabled() && AutoClicker.leftClick.isToggled()) {
             return Mouse.isButtonDown(0);
-        }
-        else {
+        } else {
             return CPSCalculator.f() > 1 && System.currentTimeMillis() - CPSCalculator.LL < 300L;
         }
     }
@@ -965,23 +1026,23 @@ public class Utils {
 
     public static EntityLivingBase raytrace(final int n) {
         Entity entity = null;
-        MovingObjectPosition rayTrace = mc.thePlayer.rayTrace((double)n, 1.0f);
+        MovingObjectPosition rayTrace = mc.thePlayer.rayTrace((double) n, 1.0f);
         final Vec3 getPositionEyes = mc.thePlayer.getPositionEyes(1.0f);
         final float rotationYaw = mc.thePlayer.rotationYaw;
         final float rotationPitch = mc.thePlayer.rotationPitch;
         final float cos = MathHelper.cos(-rotationYaw * 0.017453292f - 3.1415927f);
         final float sin = MathHelper.sin(-rotationYaw * 0.017453292f - 3.1415927f);
         final float n2 = -MathHelper.cos(-rotationPitch * 0.017453292f);
-        final Vec3 vec3 = new Vec3((double)(sin * n2), (double)MathHelper.sin(-rotationPitch * 0.017453292f), (double)(cos * n2));
-        final Vec3 addVector = getPositionEyes.addVector(vec3.xCoord * (double)n, vec3.yCoord * (double)n, vec3.zCoord * (double)n);
+        final Vec3 vec3 = new Vec3((double) (sin * n2), (double) MathHelper.sin(-rotationPitch * 0.017453292f), (double) (cos * n2));
+        final Vec3 addVector = getPositionEyes.addVector(vec3.xCoord * (double) n, vec3.yCoord * (double) n, vec3.zCoord * (double) n);
         Vec3 vec4 = null;
-        final List getEntitiesWithinAABBExcludingEntity = mc.theWorld.getEntitiesWithinAABBExcludingEntity(mc.getRenderViewEntity(), mc.getRenderViewEntity().getEntityBoundingBox().addCoord(vec3.xCoord * (double)n, vec3.yCoord * (double)n, vec3.zCoord * (double)n).expand(1.0, 1.0, 1.0));
-        double n3 = (double)n;
+        final List getEntitiesWithinAABBExcludingEntity = mc.theWorld.getEntitiesWithinAABBExcludingEntity(mc.getRenderViewEntity(), mc.getRenderViewEntity().getEntityBoundingBox().addCoord(vec3.xCoord * (double) n, vec3.yCoord * (double) n, vec3.zCoord * (double) n).expand(1.0, 1.0, 1.0));
+        double n3 = (double) n;
         for (int i = 0; i < getEntitiesWithinAABBExcludingEntity.size(); ++i) {
-            final Entity entity2 = (Entity)getEntitiesWithinAABBExcludingEntity.get(i);
+            final Entity entity2 = (Entity) getEntitiesWithinAABBExcludingEntity.get(i);
             if (entity2.canBeCollidedWith()) {
                 final float getCollisionBorderSize = entity2.getCollisionBorderSize();
-                final AxisAlignedBB expand = entity2.getEntityBoundingBox().expand((double)getCollisionBorderSize, (double)getCollisionBorderSize, (double)getCollisionBorderSize);
+                final AxisAlignedBB expand = entity2.getEntityBoundingBox().expand((double) getCollisionBorderSize, (double) getCollisionBorderSize, (double) getCollisionBorderSize);
                 final MovingObjectPosition calculateIntercept = expand.calculateIntercept(getPositionEyes, addVector);
                 if (expand.isVecInside(getPositionEyes)) {
                     if (0.0 < n3 || n3 == 0.0) {
@@ -989,8 +1050,7 @@ public class Utils {
                         vec4 = ((calculateIntercept == null) ? getPositionEyes : calculateIntercept.hitVec);
                         n3 = 0.0;
                     }
-                }
-                else if (calculateIntercept != null) {
+                } else if (calculateIntercept != null) {
                     final double distanceTo = getPositionEyes.distanceTo(calculateIntercept.hitVec);
                     if (distanceTo < n3 || n3 == 0.0) {
                         if (entity2 == mc.getRenderViewEntity().ridingEntity && !entity2.canRiderInteract()) {
@@ -998,8 +1058,7 @@ public class Utils {
                                 entity = entity2;
                                 vec4 = calculateIntercept.hitVec;
                             }
-                        }
-                        else {
+                        } else {
                             entity = entity2;
                             vec4 = calculateIntercept.hitVec;
                             n3 = distanceTo;
@@ -1012,7 +1071,7 @@ public class Utils {
             rayTrace = new MovingObjectPosition(entity, vec4);
         }
         if (rayTrace != null && rayTrace.typeOfHit == MovingObjectPosition.MovingObjectType.ENTITY && rayTrace.entityHit instanceof EntityLivingBase) {
-            return (EntityLivingBase)rayTrace.entityHit;
+            return (EntityLivingBase) rayTrace.entityHit;
         }
         return null;
     }
@@ -1025,8 +1084,7 @@ public class Utils {
     public static double round(double n, int d) {
         if (d == 0) {
             return (double) Math.round(n);
-        }
-        else {
+        } else {
             double p = Math.pow(10.0D, (double) d);
             return (double) Math.round(n * p) / p;
         }
@@ -1051,8 +1109,7 @@ public class Utils {
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
             StringSelection stringSelection = new StringSelection(string);
             clipboard.setContents(stringSelection, null);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Utils.sendMessage("&cFailed to copy &b" + string);
         }
     }

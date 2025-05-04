@@ -10,9 +10,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 
-import javax.rmi.CORBA.Util;
-import javax.swing.plaf.SplitPaneUI;
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 
@@ -26,7 +23,9 @@ public class AimAssist extends Module {
     private ButtonSetting blatantMode;
     private ButtonSetting ignoreTeammates;
     private ButtonSetting rangeFirst;
+    private ButtonSetting fovPriority;
     private ButtonSetting aimNecessary;
+    public ButtonSetting hitThroughBlock;
     public static EntityLivingBase targetEntity;
     private static boolean shouldRender;
 
@@ -41,7 +40,9 @@ public class AimAssist extends Module {
         this.registerSetting(blatantMode = new ButtonSetting("Blatant mode", false));
         this.registerSetting(ignoreTeammates = new ButtonSetting("Ignore teammates", false));
         this.registerSetting(rangeFirst = new ButtonSetting("Range First", false));
+        this.registerSetting(fovPriority = new ButtonSetting("Fov Priority", false));
         this.registerSetting(aimNecessary = new ButtonSetting("Aim Necessary", false));
+        this.registerSetting(hitThroughBlock = new ButtonSetting("Hit Through Block", false));
     }
 
     public void onUpdate() {
@@ -58,7 +59,7 @@ public class AimAssist extends Module {
                         }
                         if (blatantMode.isToggled()) {
                             Utils.aim(en, 0.0F, false);
-                        } else if (speed.getInput() == 100){
+                        } else if (speed.getInput() == 100) {
                             Utils.aim(en, 0.0F, false);
                         } else {
                             double n = Utils.n(en);
@@ -79,7 +80,7 @@ public class AimAssist extends Module {
     }
 
     private Entity getEnemy() {
-        final int n = (int)fov.getInput();
+        final int n = (int) fov.getInput();
         ArrayList<Entity> players = new ArrayList<>();
         for (final EntityPlayer entityPlayer : mc.theWorld.playerEntities) {
             if (entityPlayer != mc.thePlayer && entityPlayer.deathTime == 0) {
@@ -98,7 +99,7 @@ public class AimAssist extends Module {
                 if (AntiBot.isBot(entityPlayer)) {
                     continue;
                 }
-                if (!blatantMode.isToggled() && n != 360 && !Utils.inFov((float)n, entityPlayer)) {
+                if (!blatantMode.isToggled() && n != 360 && !Utils.inFov((float) n, entityPlayer)) {
                     continue;
                 }
                 if (aimNecessary.isToggled() && mc.objectMouseOver.entityHit instanceof EntityPlayer) {
@@ -106,15 +107,24 @@ public class AimAssist extends Module {
                     shouldRender = true;
                     return null;
                 }
-                if (!rangeFirst.isToggled()) {
-                    return entityPlayer;
-                }
                 players.add(entityPlayer);
             }
         }
         if (!players.isEmpty()) {
-            Entity selectEntity = players.stream().min(Comparator.comparingDouble(entity -> mc.thePlayer.getDistanceToEntity(entity))).get();
-            return selectEntity;
+
+            if (!(fovPriority.isToggled() || rangeFirst.isToggled())) {
+                return players.get(0);
+            }
+
+            if (fovPriority.isToggled()) {
+                Entity selectEntity = players.stream().min(Comparator.comparingDouble(Utils::fovOffset)).get();
+                return selectEntity;
+            }
+
+            if (rangeFirst.isToggled()) {
+                Entity selectEntity = players.stream().min(Comparator.comparingDouble(entity -> mc.thePlayer.getDistanceToEntity(entity))).get();
+                return selectEntity;
+            }
         }
         shouldRender = false;
         return null;

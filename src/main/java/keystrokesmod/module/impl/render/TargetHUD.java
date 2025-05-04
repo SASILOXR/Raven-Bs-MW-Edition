@@ -12,9 +12,11 @@ import keystrokesmod.utility.Timer;
 import keystrokesmod.utility.Utils;
 import keystrokesmod.utility.shader.BlurUtils;
 import keystrokesmod.utility.shader.RoundedUtils;
+import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
@@ -41,7 +43,7 @@ public class TargetHUD extends Module {
     public EntityLivingBase renderEntity;
     public int posX = 70;
     public int posY = 30;
-    private String[] modes = new String[]{ "Modern", "Legacy" };
+    private String[] modes = new String[]{"Modern", "Legacy", "Myau"};
 
     public TargetHUD() {
         super("TargetHUD", category.render);
@@ -83,8 +85,7 @@ public class TargetHUD extends Module {
                 if (System.currentTimeMillis() - lastAliveMS >= 400 && fadeTimer == null) {
                     (fadeTimer = new Timer(400)).start();
                 }
-            }
-            else {
+            } else {
                 return;
             }
             String playerInfo = target.getDisplayName().getFormattedText();
@@ -97,7 +98,11 @@ public class TargetHUD extends Module {
             }
             lastHealth = health;
             playerInfo += " " + Utils.getHealthStr(target, true);
-            drawTargetHUD(fadeTimer, playerInfo, health);
+            if (mode.getInput() != 2) {
+                drawTargetHUD(fadeTimer, playerInfo, health);
+            } else {
+                drawMyauTargetHUD(target, health, fadeTimer);
+            }
         }
     }
 
@@ -110,8 +115,7 @@ public class TargetHUD extends Module {
             RenderUtils.renderEntity(KillAura.target, 2, 0.0, 0.0, Theme.getGradient((int) theme.getInput(), 0), false);
         } else if (AimAssist.targetEntity != null) {
             RenderUtils.renderEntity(AimAssist.targetEntity, 2, 0.0, 0.0, Theme.getGradient((int) theme.getInput(), 0), false);
-        }
-        else if (renderEntity != null) {
+        } else if (renderEntity != null) {
             RenderUtils.renderEntity(renderEntity, 2, 0.0, 0.0, Theme.getGradient((int) theme.getInput(), 0), false);
         }
     }
@@ -159,18 +163,16 @@ public class TargetHUD extends Module {
             int mergedGradientRight = Utils.mergeAlpha(gradientColors[1], maxAlphaBackground);
             float healthBar = (float) (int) (n14 + (n13 - n14) * (1 - health));
             boolean smoothBack = false;
-            if (healthBar != lastHealthBar && lastHealthBar - n13 >= 3 && healthBarTimer != null ) {
+            if (healthBar != lastHealthBar && lastHealthBar - n13 >= 3 && healthBarTimer != null) {
                 int type = mode.getInput() == 0 ? 4 : 1;
                 float diff = lastHealthBar - healthBar;
                 if (diff > 0) {
                     lastHealthBar = lastHealthBar - healthBarTimer.getValueFloat(0, diff, type);
-                }
-                else {
+                } else {
                     smoothBack = true;
                     lastHealthBar = healthBarTimer.getValueFloat(lastHealthBar, healthBar, type);
                 }
-            }
-            else {
+            } else {
                 lastHealthBar = healthBar;
             }
             if (healthColor.isToggled()) {
@@ -194,11 +196,85 @@ public class TargetHUD extends Module {
             mc.fontRendererObj.drawString(string, (float) x, (float) y, (new Color(220, 220, 220, 255).getRGB() & 0xFFFFFF) | Utils.clamp(alpha + 15) << 24, true);
             GL11.glDisable(GL11.GL_BLEND);
             GL11.glPopMatrix();
-        }
-        else {
+        } else {
             target = null;
             healthBarTimer = null;
         }
+    }
+
+    private void drawMyauTargetHUD(EntityLivingBase target, double health, Timer fadeTimer) {
+
+        final int alpha = (fadeTimer == null) ? 255 : (255 - fadeTimer.getValueInt(0, 255, 1));
+        if (alpha > 0) {
+            String TargetName = target.getDisplayName().getFormattedText();
+            String TargetHealth = String.format("%.1f", target.getHealth()) + "§c❤ ";
+            final int maxAlphaOutline = (alpha > 110) ? 110 : alpha;
+            final int[] gradientColors = Theme.getGradients((int) theme.getInput());
+
+            if (showStatus.isToggled() && mc.thePlayer != null) {
+                String status = (health <= Utils.getCompleteHealth(mc.thePlayer) / mc.thePlayer.getMaxHealth()) ? " §aW" : " §cL";
+                TargetName = TargetName + status;
+            }
+
+            final ScaledResolution scaledResolution = new ScaledResolution(mc);
+            final int n2 = 8;
+            final int n3 = mc.fontRendererObj.getStringWidth(TargetName) + n2 + 20;
+            final int n4 = scaledResolution.getScaledWidth() / 2 - n3 / 2 + posX;
+            final int n5 = scaledResolution.getScaledHeight() / 2 + 15 + posY;
+            int current$minX = n4 - n2;
+            int current$minY = n5 - n2;
+            int current$maxX = n4 + n3;
+            int current$maxY = n5 + (mc.fontRendererObj.FONT_HEIGHT + 5) - 6 + n2;
+
+            final int n10 = 255;
+            final int n11 = Math.min(n10, 110);
+            final int n12 = Math.min(n10, 210);
+
+            RenderUtils.drawRoundedGradientOutlinedRectangle((float) current$minX, (float) current$minY, (float) current$maxX, (float) (current$maxY + 7), 0, Utils.mergeAlpha(Color.black.getRGB(), maxAlphaOutline), Utils.mergeAlpha(gradientColors[0], alpha), Utils.mergeAlpha(gradientColors[1], alpha));
+            final int n13 = current$minX + 6 + 27;
+            final int n14 = current$maxX - 2;
+            final int n15 = (int) (current$maxY + 0.45);
+
+            RenderUtils.drawRect(n13, n15, n14, n15 + 4, Utils.mergeAlpha(Color.black.getRGB(), n11));
+
+            float healthBar = (float) (int) (n14 + (n13 - n14) * (1.0 - ((health < 0.01) ? 0 : health)));
+            if (healthBar - n13 < 1) {
+                healthBar = n13;
+            }
+
+            float displayHealthBar = healthBar;
+
+            RenderUtils.drawRect(n13, n15, displayHealthBar, n15 + 4,
+                    Utils.mergeAlpha(Theme.getGradients((int) theme.getInput())[0], n12));
+            if (healthColor.isToggled()) {
+                int healthTextColor = Utils.getColorForHealth(health);
+                RenderUtils.drawRect(n13, n15, displayHealthBar, n15 + 4, healthTextColor);
+            }
+
+            GlStateManager.pushMatrix();
+            GlStateManager.enableBlend();
+            GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
+            mc.fontRendererObj.drawString(TargetName, (float) (n4 + 25), (float) n5 - 4, (new Color(220, 220, 220, 255).getRGB() & 0xFFFFFF) | Utils.clamp(n10 + 15) << 24, true);
+            mc.fontRendererObj.drawString(TargetHealth, (float) (n4 + 25), (float) n5 + 6, (new Color(220, 220, 220, 255).getRGB() & 0xFFFFFF) | Utils.clamp(n10 + 15) << 24, true);
+            GlStateManager.disableBlend();
+            GlStateManager.popMatrix();
+
+            if (target instanceof AbstractClientPlayer) {
+                AbstractClientPlayer player = (AbstractClientPlayer) target;
+                double targetX = current$minX + 4;
+                double targetY = current$minY + 3;
+                GlStateManager.color(1, 1, 1, 1);
+                RenderUtils.renderPlayer2D((float) targetX, (float) targetY, 25, 25, player);
+                Color dynamicColor = new Color(255, 255 - (player.hurtTime * 10), 255 - (player.hurtTime * 10));
+                GlStateManager.color(dynamicColor.getRed() / 255F, dynamicColor.getGreen() / 255F, dynamicColor.getBlue() / 255F, dynamicColor.getAlpha() / 255F);
+                RenderUtils.renderPlayer2D((float) targetX, (float) targetY, 25, 25, player);
+                GlStateManager.color(1, 1, 1, 1);
+            }
+        } else {
+            target = null;
+            healthBarTimer = null;
+        }
+
     }
 
     private void reset() {
@@ -242,13 +318,17 @@ public class TargetHUD extends Module {
             }
             lastHealth = health;
             playerInfo += " " + Utils.getHealthStr(mc.thePlayer, true);
-            drawTargetHUD(null, playerInfo, health);
+            if (mode.getInput() != 2) {
+                drawTargetHUD(null, playerInfo, health);
+            } else {
+                drawMyauTargetHUD(mc.thePlayer, health, null);
+            }
             if (showStatus.isToggled()) {
                 playerInfo = playerInfo + " " + ((health <= Utils.getCompleteHealth(mc.thePlayer) / mc.thePlayer.getMaxHealth()) ? "§aW" : "§cL");
             }
             int stringWidth = mc.fontRendererObj.getStringWidth(playerInfo) + 8;
             int maX = (res.getScaledWidth() / 2 - stringWidth / 2) + miX + mc.fontRendererObj.getStringWidth(playerInfo) + 8;
-            int maY = (res.getScaledHeight() / 2 + 15) +  miY + (mc.fontRendererObj.FONT_HEIGHT + 5) - 6 + 8;
+            int maY = (res.getScaledHeight() / 2 + 15) + miY + (mc.fontRendererObj.FONT_HEIGHT + 5) - 6 + 8;
             this.miX = miX;
             this.miY = miY;
             this.maX = maX;
@@ -263,8 +343,7 @@ public class TargetHUD extends Module {
 
             try {
                 this.handleInput();
-            }
-            catch (IOException var12) {
+            } catch (IOException var12) {
             }
 
             super.drawScreen(mX, mY, pt);
@@ -276,8 +355,7 @@ public class TargetHUD extends Module {
                 if (this.d) {
                     this.aX = this.laX + (mX - this.lmX);
                     this.aY = this.laY + (mY - this.lmY);
-                }
-                else if (mX > this.clickMinX && mX < this.maX && mY > this.miY && mY < this.maY) {
+                } else if (mX > this.clickMinX && mX < this.maX && mY > this.miY && mY < this.maY) {
                     this.d = true;
                     this.lmX = mX;
                     this.lmY = mY;

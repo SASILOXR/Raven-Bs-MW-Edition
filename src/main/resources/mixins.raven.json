@@ -12,6 +12,7 @@
     "entity.MixinEntityLivingBase",
     "entity.MixinEntityPlayer",
     "entity.MixinEntityPlayerSP",
+    "entity.MixinEntityRenderer",
     "network.MixinModList",
     "network.MixinNetworkManager",
     "render.MixinBarrier",
