@@ -18,6 +18,12 @@ public class Vec3 {
         this.z = minecraftVec3.zCoord;
     }
 
+    public Vec3(BlockPos blockPos) {
+        this.x = blockPos.getX();
+        this.y = blockPos.getY();
+        this.z = blockPos.getZ();
+    }
+
     public boolean equals(Vec3 vector2) {
         if (this == vector2) {
             return true;

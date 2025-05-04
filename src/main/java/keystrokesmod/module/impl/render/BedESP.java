@@ -14,6 +14,7 @@ import net.minecraft.util.BlockPos;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
@@ -28,7 +29,8 @@ public class BedESP extends Module {
     private SliderSetting rate;
     private ButtonSetting firstBed;
     private ButtonSetting renderFullBlock;
-    private BlockPos[] bed = null;
+    private BlockPos[] bed;
+    private Timer firstBedTimer;
     private Map<BlockPos[], Timer> beds = Collections.synchronizedMap(new HashMap<>());
     private long lastCheck = 0;
 
@@ -46,7 +48,7 @@ public class BedESP extends Module {
             return;
         }
         lastCheck = System.currentTimeMillis();
-        Raven.getExecutor().execute(() -> {
+        Raven.getCachedExecutor().execute(() -> {
             int i;
             priorityLoop:
             for (int n = i = (int) range.getInput(); i >= -n; --i) {
@@ -85,16 +87,27 @@ public class BedESP extends Module {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onRenderWorld(RenderWorldLastEvent e) {
         if (Utils.nullCheck()) {
             float blockHeight = getBlockHeight();
             if (firstBed.isToggled() && this.bed != null) {
-                if (!(mc.theWorld.getBlockState(bed[0]).getBlock() instanceof BlockBed)) {
-                    this.bed = null;
-                    return;
+                float customAlpha = 0.25f;
+                if (!isBed(bed[0])) {
+                    if (firstBedTimer == null) {
+                        (firstBedTimer = (new Timer(300))).start();
+                    }
+                    int alpha = firstBedTimer == null ? 230 : 230 - firstBedTimer.getValueInt(0, 230, 1);
+                    if (alpha <= 0) {
+                        this.bed = null;
+                        return;
+                    }
+                    customAlpha = alpha / 255.0f;
                 }
-                renderBed(this.bed, blockHeight, 0.25f);
+                else {
+                    firstBedTimer = null;
+                }
+                renderBed(this.bed, blockHeight, customAlpha);
                 return;
             }
             synchronized (beds) {
@@ -103,7 +116,7 @@ public class BedESP extends Module {
                     float customAlpha = 0.25f;
                     Map.Entry<BlockPos[], Timer> entry = iterator.next();
                     BlockPos[] blockPos = entry.getKey();
-                    if (!(mc.theWorld.getBlockState(blockPos[0]).getBlock() instanceof BlockBed)) {
+                    if (!isBed(blockPos[0])) {
                         if (entry.getValue() == null) {
                             entry.setValue(new Timer(300));
                             entry.getValue().start();
@@ -166,5 +179,9 @@ public class BedESP extends Module {
 
     private float getBlockHeight() {
         return (renderFullBlock.isToggled() ? 1 : 0.5625F);
+    }
+
+    public boolean isBed(BlockPos blockPos) {
+        return mc.theWorld.getBlockState(blockPos).getBlock() instanceof BlockBed;
     }
 }

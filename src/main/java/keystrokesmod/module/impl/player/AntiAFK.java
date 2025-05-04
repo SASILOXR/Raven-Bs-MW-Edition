@@ -1,5 +1,6 @@
 package keystrokesmod.module.impl.player;
 
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
@@ -102,7 +103,7 @@ public class AntiAFK extends Module {
                 mc.thePlayer.inventory.currentItem = Utils.randomizeInt(0, 8);
             }
             if (randomClicks.isToggled()) {
-                Reflection.clickMouse();
+                ((IAccessorMinecraft) mc).callClickMouse();
             }
             this.ticks = this.h();
             this.c = !this.c;

@@ -1,12 +1,12 @@
 package keystrokesmod.module.impl.player;
 
-import keystrokesmod.Raven;
 import keystrokesmod.event.PreMotionEvent;
+import keystrokesmod.event.PreUpdateEvent;
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.BlockUtils;
-import keystrokesmod.utility.PacketUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.init.Blocks;
 import net.minecraft.network.play.client.C03PacketPlayer;
@@ -19,12 +19,15 @@ public class NoFall extends Module {
     private SliderSetting minFallDistance;
     private ButtonSetting disableAdventure;
     private ButtonSetting ignoreVoid;
-    private String[] modes = new String[]{"Spoof", "Extra", "NoGround"};
+    private String[] modes = new String[]{"Spoof", "NoGround", "Packet A", "Packet B"};
+
     private double initialY;
+    private double dynamic;
+    private boolean isFalling;
 
     public NoFall() {
         super("NoFall", category.player);
-        this.registerSetting(mode = new SliderSetting("Mode", 0, modes));
+        this.registerSetting(mode = new SliderSetting("Mode", 2, modes));
         this.registerSetting(minFallDistance = new SliderSetting("Minimum fall distance", 3, 0, 10, 0.1));
         this.registerSetting(disableAdventure = new ButtonSetting("Disable adventure", false));
         this.registerSetting(ignoreVoid = new ButtonSetting("Ignore void", true));
@@ -34,34 +37,58 @@ public class NoFall extends Module {
         Utils.resetTimer();
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onPreMotion(PreMotionEvent e) {
+    @SubscribeEvent
+    public void onPreUpdate(PreUpdateEvent e) {
         if (reset()) {
             Utils.resetTimer();
             initialY = mc.thePlayer.posY;
+            isFalling = false;
             return;
+        }
+        else if ((double) mc.thePlayer.fallDistance >= minFallDistance.getInput()) {
+            isFalling = true;
         }
         double predictedY = mc.thePlayer.posY + mc.thePlayer.motionY;
         double distanceFallen = initialY - predictedY;
-        if (((double) mc.thePlayer.fallDistance > minFallDistance.getInput() || minFallDistance.getInput() == 0) || mode.getInput() == 2) {
-            switch ((int) mode.getInput()) {
-                case 0:
-                    e.setOnGround(true);
-                    break;
-                case 1:
-                    if (distanceFallen >= minFallDistance.getInput()) {
-                        Utils.getTimer().timerSpeed = (float) 0.7;
-                        PacketUtils.sendPacketNoEvent(new C03PacketPlayer(true));
-                        initialY = mc.thePlayer.posY;
-                        if (Raven.debug) {
-                            Utils.sendMessage("&7nofalling");
-                        }
-                    }
-                    break;
-                case 2:
-                    e.setOnGround(false);
-                    break;
+        if (mc.thePlayer.motionY >= -1.0) {
+            dynamic = 3.0;
+        }
+        if (mc.thePlayer.motionY < -1.0) {
+            dynamic = 4.0;
+        }
+        if (mc.thePlayer.motionY < -2.0) {
+            dynamic = 5.0;
+        }
+        if (isFalling && mode.getInput() == 2) {
+            if (distanceFallen >= dynamic) {
+                ((IAccessorMinecraft) mc).getTimer().timerSpeed = (0.7399789F + (float) Utils.randomizeDouble(-0.012, 0.012));
+                mc.getNetHandler().addToSendQueue(new C03PacketPlayer(true));
+                initialY = mc.thePlayer.posY;
             }
+        }
+        if (isFalling && mode.getInput() == 3) {
+            if (mc.thePlayer.ticksExisted % 2 == 0) {
+                ((IAccessorMinecraft) mc).getTimer().timerSpeed = (float) Utils.randomizeDouble(0.5, 0.50201);
+            }
+            else {
+                ((IAccessorMinecraft) mc).getTimer().timerSpeed = (float) 1;
+            }
+            if (distanceFallen >= 3) {
+                mc.getNetHandler().addToSendQueue(new C03PacketPlayer(true));
+                initialY = mc.thePlayer.posY;
+            }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onPreMotion(PreMotionEvent e) {
+        switch ((int) mode.getInput()) {
+            case 0:
+                e.setOnGround(true);
+                break;
+            case 1:
+                e.setOnGround(false);
+                break;
         }
     }
 
@@ -81,16 +108,28 @@ public class NoFall extends Module {
         if (ignoreVoid.isToggled() && isVoid()) {
             return true;
         }
-        if (Utils.isBedwarsPractice()) {
+        if (Utils.isBedwarsPracticeOrReplay()) {
+            return true;
+        }
+        if (Utils.spectatorCheck()) {
             return true;
         }
         if (mc.thePlayer.onGround) {
             return true;
         }
-        if (BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY- 1, mc.thePlayer.posZ)) != Blocks.air) {
+        if (BlockUtils.getBlock(new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY - 1, mc.thePlayer.posZ)) != Blocks.air) {
             return true;
         }
-        if (mc.thePlayer.motionY > 0) {
+        if (mc.thePlayer.motionY > -0.0784) {
+            return true;
+        }
+        if (mc.thePlayer.capabilities.isCreativeMode) {
+            return true;
+        }
+        if (isVoid() && mc.thePlayer.posY <= 41) {
+            return true;
+        }
+        if (mc.thePlayer.capabilities.isFlying) {
             return true;
         }
         return false;

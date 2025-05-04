@@ -1,11 +1,13 @@
 package keystrokesmod.module.impl.render;
 
+import keystrokesmod.mixin.impl.accessor.IAccessorEntityArrow;
+import keystrokesmod.mixin.impl.accessor.IAccessorEntityRenderer;
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
-import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
+import keystrokesmod.module.setting.impl.GroupSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.BlockUtils;
-import keystrokesmod.utility.Reflection;
 import keystrokesmod.utility.RenderUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.block.Block;
@@ -16,11 +18,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityEnderPearl;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.projectile.EntityArrow;
-import net.minecraft.entity.projectile.EntityFireball;
-import net.minecraft.entity.projectile.EntityLargeFireball;
-import net.minecraft.entity.projectile.EntityWitherSkull;
+import net.minecraft.entity.projectile.*;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
@@ -32,35 +30,45 @@ import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Indicators extends Module {
+    private GroupSetting items;
     private ButtonSetting renderArrows;
     private ButtonSetting renderPearls;
     private ButtonSetting renderFireballs;
-    private ButtonSetting renderPlayers;
+    private ButtonSetting renderEggs;
+    private ButtonSetting renderSnowballs;
+
     private SliderSetting arrow;
     private SliderSetting radius;
     private ButtonSetting itemColors;
     private ButtonSetting renderItem;
+    private ButtonSetting renderDistance;
     private ButtonSetting threatsOnly;
+    private ButtonSetting renderOnlyOffScreen;
+
     private HashSet<Entity> threats = new HashSet<>();
     private Map<String, String> lastHeldItems = new ConcurrentHashMap<>();
+
     private String[] arrowTypes = new String[] { "Caret", "Greater than", "Triangle" };
 
     public Indicators() {
         super("Indicators", category.render);
-        this.registerSetting(renderArrows = new ButtonSetting("Render arrows", true));
-        this.registerSetting(renderPearls = new ButtonSetting("Render ender pearls", true));
-        this.registerSetting(renderFireballs = new ButtonSetting("Render fireballs", true));
-        this.registerSetting(renderPlayers = new ButtonSetting("Render players", true));
+        this.registerSetting(items = new GroupSetting("Items"));
+        this.registerSetting(renderArrows = new ButtonSetting(items, "Render arrows", true));
+        this.registerSetting(renderPearls = new ButtonSetting(items, "Render ender pearls", true));
+        this.registerSetting(renderFireballs = new ButtonSetting(items, "Render fireballs", true));
+        this.registerSetting(renderEggs = new ButtonSetting(items, "Render eggs", false));
+        this.registerSetting(renderSnowballs = new ButtonSetting(items, "Render snowballs", false));
         this.registerSetting(arrow = new SliderSetting("Arrow", 0, arrowTypes));
         this.registerSetting(radius = new SliderSetting("Circle radius", 50, 30, 200, 5));
         this.registerSetting(itemColors = new ButtonSetting("Item colors", true));
         this.registerSetting(renderItem = new ButtonSetting("Render item", true));
+        this.registerSetting(renderDistance = new ButtonSetting("Render distance", true));
         this.registerSetting(threatsOnly = new ButtonSetting("Render only threats", true));
+        this.registerSetting(renderOnlyOffScreen = new ButtonSetting("Render only offscreen", false));
     }
 
     public void onDisable() {
@@ -77,15 +85,16 @@ public class Indicators extends Module {
             return;
         }
         try {
-            Iterator<Entity> iterator = threats.iterator();
-            while (iterator.hasNext()) {
-                Entity en = iterator.next();
-                if (en == null || !mc.theWorld.loadedEntityList.contains(en) || !canRender(en) || (en instanceof EntityArrow && Reflection.inGround.getBoolean(en))) {
-                    iterator.remove();
+            for (Entity en : mc.theWorld.loadedEntityList) {
+                if (en == null || en == mc.thePlayer) {
                     continue;
                 }
                 ItemStack itemStack = null;
                 if (en instanceof EntityArrow) {
+                    if (((IAccessorEntityArrow) en).getInGround()) {
+                        threats.remove(en);
+                        continue;
+                    }
                     itemStack = new ItemStack(Items.arrow);
                 }
                 else if (en instanceof EntityFireball) {
@@ -94,7 +103,17 @@ public class Indicators extends Module {
                 else if (en instanceof EntityEnderPearl) {
                     itemStack = new ItemStack(Items.ender_pearl);
                 }
-                if (!mc.theWorld.loadedEntityList.contains(en)) {
+                else if (en instanceof EntityEgg) {
+                    itemStack = new ItemStack(Items.egg);
+                }
+                else if (en instanceof EntitySnowball) {
+                    itemStack = new ItemStack(Items.snowball);
+                }
+                if (!threats.contains(en)) {
+                    continue;
+                }
+                if (!mc.theWorld.loadedEntityList.contains(en) || !canRender(en)) {
+                    threats.remove(en);
                     continue;
                 }
                 this.renderIndicatorFor(en, itemStack, event.renderTickTime);
@@ -111,30 +130,26 @@ public class Indicators extends Module {
         if (e.entity == mc.thePlayer) {
             this.threats.clear();
         }
-        else if (canRender(e.entity) && (mc.thePlayer.getDistanceSqToEntity(e.entity) > 36 || !threatsOnly.isToggled() || e.entity instanceof EntityPlayer)) {
+        else if (canRender(e.entity) && (mc.thePlayer.getDistanceSqToEntity(e.entity) > 36 || !threatsOnly.isToggled())) {
             this.threats.add(e.entity);
         }
     }
 
     private boolean canRender(Entity entity) {
-        try {
-            if (entity instanceof EntityArrow && !Reflection.inGround.getBoolean(entity) && renderArrows.isToggled()) {
-                return true;
-            }
-            else if (entity instanceof EntityLargeFireball && renderFireballs.isToggled()) {
-                return true;
-            }
-            else if (entity instanceof EntityEnderPearl && renderPearls.isToggled()) {
-                return true;
-            }
-            else if (entity instanceof EntityPlayer && renderPlayers.isToggled() && AntiBot.isBot(entity)) {
-                return true;
-            }
+        if (entity instanceof EntityArrow && !((IAccessorEntityArrow) entity).getInGround() && renderArrows.isToggled()) {
+            return true;
         }
-        catch (IllegalAccessException e) {
-            Utils.sendMessage("&cIssue checking entity.");
-            e.printStackTrace();
-            return false;
+        else if (entity instanceof EntityLargeFireball && renderFireballs.isToggled()) {
+            return true;
+        }
+        else if (entity instanceof EntityEnderPearl && renderPearls.isToggled()) {
+            return true;
+        }
+        else if (entity instanceof EntityEgg && renderEggs.isToggled()) {
+            return true;
+        }
+        else if (entity instanceof EntitySnowball && renderSnowballs.isToggled()) {
+            return true;
         }
         return false;
     }
@@ -146,6 +161,9 @@ public class Indicators extends Module {
         if (!this.shouldRender(en, itemStack)) {
             return;
         }
+        if (renderOnlyOffScreen.isToggled() && RenderUtils.isInViewFrustum(en)) {
+            return;
+        }
         Color colorForStack = getColorForItem(itemStack);
         int color = itemColors.isToggled() ? colorForStack.getRGB() : -1;
 
@@ -153,9 +171,7 @@ public class Indicators extends Module {
         double y = en.lastTickPosY + (en.posY - en.lastTickPosY) * partialTicks - mc.getRenderManager().viewerPosY + en.height / 2;
         double z = en.lastTickPosZ + (en.posZ - en.lastTickPosZ) * partialTicks - mc.getRenderManager().viewerPosZ;
 
-        if (!Reflection.setupCameraTransform(mc.entityRenderer, partialTicks, 0)) {
-            return;
-        }
+        ((IAccessorEntityRenderer) mc.entityRenderer).callSetupCameraTransform(((IAccessorMinecraft) mc).getTimer().renderPartialTicks, 0);
 
         ScaledResolution scaledResolution = new ScaledResolution(mc);
         Vec3 vec = RenderUtils.convertTo2D(scaledResolution.getScaleFactor(), x, y, z);
@@ -198,7 +214,9 @@ public class Indicators extends Module {
             GlStateManager.rotate((float) angle2, 0.0f, 0.0f, 1.0f);
             GlStateManager.scale(1.0f, 1.0f, 1.0f);
 
-            if (arrow.getInput() == 0) {
+            int arrowInput = (int) arrow.getInput();
+
+            if (arrowInput == 0) {
                 if (color == -1) {
                     GL11.glColor3d(1.0, 1.0, 1.0);
                 }
@@ -224,13 +242,13 @@ public class Indicators extends Module {
                 GL11.glDisable(GL11.GL_BLEND);
                 GL11.glDisable(GL11.GL_LINE_SMOOTH);
             }
-            else if (arrow.getInput() == 1) {
+            else if (arrowInput == 1) {
                 GlStateManager.rotate(-90.0f, 0.0f, 0.0f, 1.0f);
                 GlStateManager.scale(1.5, 1.5, 1.5);
                 mc.fontRendererObj.drawString(">", -2.0f, -4.0f, color, false);
             }
-            else if (arrow.getInput() == 2) {
-                RenderUtils.draw2DPolygon(0.0, 0.0, 5.0, 3, color);
+            else if (arrowInput == 2) {
+                RenderUtils.draw2DPolygon(0.0, 0.0, 5.0, 3, Utils.mergeAlpha(color, 255));
             }
 
             GlStateManager.popMatrix();
@@ -242,8 +260,10 @@ public class Indicators extends Module {
             GlStateManager.translate(renderX, renderY, 0.0);
             GlStateManager.scale(0.8, 0.8, 0.8);
 
-            String text = (int) mc.thePlayer.getDistanceToEntity(en) + "m";
-            mc.fontRendererObj.drawString(text, (float) (-mc.fontRendererObj.getStringWidth(text) / 2), -4.0f, -1, true);
+            if (renderDistance.isToggled()) {
+                String text = (int) mc.thePlayer.getDistanceToEntity(en) + "m";
+                mc.fontRendererObj.drawString(text, (float) (-mc.fontRendererObj.getStringWidth(text) / 2), -4.0f, -1, true);
+            }
 
             GlStateManager.popMatrix();
 
@@ -270,11 +290,17 @@ public class Indicators extends Module {
     }
 
     private Color getColorForItem(ItemStack itemStack) {
+        if (itemStack == null) {
+            return Color.WHITE;
+        }
         if (itemStack.getItem() == Items.ender_pearl) {
             return new Color(210, 0, 255);
         }
         else if (itemStack.getItem() == Items.fire_charge) {
             return new Color(255, 150, 0);
+        }
+        else if (itemStack.getItem() == Items.egg) {
+            return new Color(255, 238, 154);
         }
         else {
             return Color.WHITE;

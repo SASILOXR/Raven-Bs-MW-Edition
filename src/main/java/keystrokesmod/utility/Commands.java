@@ -50,7 +50,7 @@ public class Commands {
 
                 print("Setting...", 1);
                 n = args[1];
-                Raven.getExecutor().execute(() -> {
+                Raven.getScheduledExecutor().execute(() -> {
                     if (NetworkUtils.isHypixelKeyValid(n)) {
                         NetworkUtils.API_KEY = n;
                         print("&a" + "success!", 0);
@@ -128,7 +128,7 @@ public class Commands {
 
                 n = args[1];
                 print("Retrieving data...", 1);
-                Raven.getExecutor().execute(() -> {
+                Raven.getScheduledExecutor().execute(() -> {
                     int[] s = ProfileUtils.getHypixelStats(n, ProfileUtils.DM.OVERALL);
                     if (s != null) {
                         if (s[0] == -1) {
@@ -175,13 +175,13 @@ public class Commands {
 
                 switch (args[1]) {
                     case "fly":
-                        Fly.horizontalSpeed.setValueRaw(value);
+                        Fly.horizontalSpeed.setValueRawWithEvent(value);
                         break;
                     case "bhop":
-                        BHop.speedSetting.setValueRaw(value);
+                        BHop.speedSetting.setValueRawWithEvent(value);
                         break;
                     case "speed":
-                        Speed.speed.setValueRaw(value);
+                        Speed.speed.setValueRawWithEvent(value);
                         break;
                     default:
                         print(invSyn, 1);
@@ -218,11 +218,11 @@ public class Commands {
                 switch (args[1]) {
                     case "horizontal":
                     case "h":
-                        Velocity.horizontal.setValueRaw(value);
+                        Velocity.horizontal.setValueRawWithEvent(value);
                         break;
                     case "vertical":
                     case "v":
-                        Velocity.vertical.setValueRaw(value);
+                        Velocity.vertical.setValueRawWithEvent(value);
                         break;
                     default:
                         print(invSyn, 1);
@@ -365,7 +365,8 @@ public class Commands {
                         print("&aSaved profile:", 1);
                         print(name, 0);
                         Raven.profileManager.loadProfiles();
-                    } else if (args[1].equals("load") || args[1].equals("l")) {
+                    }
+                    else if (args[1].equals("load") || args[1].equals("l")) {
                         if (args.length != 3) {
                             print(invSyn, 1);
                             return;
@@ -383,7 +384,8 @@ public class Commands {
                             }
                         }
                         print("&cInvalid profile.", 1);
-                    } else if (args[1].equals("remove") || args[1].equals("r")) {
+                    }
+                    else if (args[1].equals("remove") || args[1].equals("r")) {
                         if (args.length != 3) {
                             print(invSyn, 1);
                             return;
@@ -498,7 +500,7 @@ public class Commands {
         ccs = cs.get(val);
     }
 
-    public static void od() {
+    public static void onDisable() {
         Ping.reset(false);
     }
 }

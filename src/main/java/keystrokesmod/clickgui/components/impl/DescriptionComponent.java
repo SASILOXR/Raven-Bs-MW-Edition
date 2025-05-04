@@ -7,11 +7,11 @@ import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL11;
 
 public class DescriptionComponent extends Component {
-    private DescriptionSetting desc;
+    public DescriptionSetting desc;
     private ModuleComponent p;
-    private int o;
-    private int x;
-    private int y;
+    public int o;
+    public int x;
+    public int y;
 
     public DescriptionComponent(DescriptionSetting desc, ModuleComponent b, int o) {
         this.desc = desc;

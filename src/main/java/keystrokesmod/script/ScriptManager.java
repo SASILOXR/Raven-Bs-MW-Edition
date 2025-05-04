@@ -6,7 +6,7 @@ import keystrokesmod.module.Module;
 import keystrokesmod.utility.NetworkUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.common.MinecraftForge;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -32,8 +32,8 @@ public class ScriptManager {
     public boolean deleteTempFiles = true;
     public File directory;
     public List<String> imports = Arrays.asList(Color.class.getName(), Collections.class.getName(), List.class.getName(), ArrayList.class.getName(), Arrays.class.getName(), Map.class.getName(), HashMap.class.getName(), HashSet.class.getName(), ConcurrentHashMap.class.getName(), LinkedHashMap.class.getName(), Iterator.class.getName(), Comparator.class.getName(), AtomicInteger.class.getName(), AtomicLong.class.getName(), AtomicBoolean.class.getName(), Random.class.getName(), Matcher.class.getName());
-    public String tempDir = System.getProperty("java.io.tmpdir") + "cmF2ZW5fc2NyaXB0cw";
-    public String b = ((String[])ScriptManager.class.getProtectionDomain().getCodeSource().getLocation().getPath().split("\\.jar!"))[0].substring(5) + ".jar";
+    public String COMPILED_DIR = Utils.getCompilerDirectory();
+    public String jarPath = ((String[])ScriptManager.class.getProtectionDomain().getCodeSource().getLocation().getPath().split("\\.jar!"))[0].substring(5) + ".jar";
     private Map<String, String> loadedHashes = new HashMap<>();
 
     public ScriptManager() {
@@ -43,9 +43,9 @@ public class ScriptManager {
     public void onEnable(Script dv) {
         if (dv.event == null) {
             dv.event = new ScriptEvents(getModule(dv));
-            FMLCommonHandler.instance().bus().register(dv.event);
+            MinecraftForge.EVENT_BUS.register(dv.event);
         }
-        dv.invokeMethod("onEnable");
+        dv.invoke("onEnable");
     }
 
     public Module getModule(Script dv) {
@@ -64,7 +64,7 @@ public class ScriptManager {
 
         if (deleteTempFiles) {
             deleteTempFiles = false;
-            final File tempDirectory = new File(tempDir);
+            final File tempDirectory = new File(COMPILED_DIR);
             if (tempDirectory.exists() && tempDirectory.isDirectory()) {
                 final File[] tempFiles = tempDirectory.listFiles();
                 if (tempFiles != null) {
@@ -131,8 +131,22 @@ public class ScriptManager {
         }
 
         for (CategoryComponent categoryComponent : Raven.clickGui.categories) {
-            if (categoryComponent.categoryName == Module.category.scripts) {
+            if (categoryComponent.category == Module.category.scripts) {
                 categoryComponent.reloadModules(false);
+            }
+        }
+
+        ScriptDefaults.reloadModules();
+
+        final File tempDirectory = new File(COMPILED_DIR);
+        if (tempDirectory.exists() && tempDirectory.isDirectory()) {
+            final File[] tempFiles = tempDirectory.listFiles();
+            if (tempFiles != null) {
+                for (File tempFile : tempFiles) {
+                    if (!tempFile.delete()) {
+                        System.err.println("Failed to delete temp file: " + tempFile.getAbsolutePath());
+                    }
+                }
             }
         }
     }
@@ -161,7 +175,7 @@ public class ScriptManager {
         for (String line : topLevelLines) {
             if (line.startsWith("load - \"") && line.endsWith("\"")) {
                 String url = line.substring("load - \"".length(), line.length() - 1);
-                String externalContents = NetworkUtils.getTextFromURL(url, true);
+                String externalContents = NetworkUtils.getTextFromURL(url, true, true);
                 if (externalContents.isEmpty()) {
                     break;
                 }
@@ -171,12 +185,16 @@ public class ScriptManager {
                 }
             }
         }
+
+
+
         Script script = new Script(scriptName);
         script.file = file;
-        script.createScript(scriptContents.toString());
+        script.setCode(scriptContents.toString());
         script.run();
         Module module = new Module(script);
         Raven.scriptManager.scripts.put(script, module);
+        ScriptDefaults.reloadModules();
         Raven.scriptManager.invoke("onLoad", module);
         return !script.error;
     }
@@ -184,16 +202,16 @@ public class ScriptManager {
 
     public void onDisable(Script script) {
         if (script.event != null) {
-            FMLCommonHandler.instance().bus().unregister(script.event);
+            MinecraftForge.EVENT_BUS.unregister(script.event);
             script.event = null;
         }
-        script.invokeMethod("onDisable");
+        script.invoke("onDisable");
     }
 
     public void invoke(String methodName, Module module, final Object... args) {
         for (Map.Entry<Script, Module> entry : this.scripts.entrySet()) {
             if (((entry.getValue().canBeEnabled() && entry.getValue().isEnabled()) || methodName.equals("onLoad")) && entry.getValue().equals(module)) {
-                entry.getKey().invokeMethod(methodName, args);
+                entry.getKey().invoke(methodName, args);
             }
         }
     }

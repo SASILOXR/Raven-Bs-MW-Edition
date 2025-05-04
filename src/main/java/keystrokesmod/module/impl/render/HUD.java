@@ -84,6 +84,16 @@ public class HUD extends Module {
         if (mc.currentScreen != null || mc.gameSettings.showDebugInfo) {
             return;
         }
+        for (Module module : ModuleManager.organizedModules) {
+            module.getInfoUpdate();
+            if (Module.sort) {
+                break;
+            }
+        }
+        if (Module.sort) {
+            ModuleManager.sort();
+        }
+        Module.sort = false;
         int yPos = posY;
         double n2 = 0.0;
         String previousModule = "";
@@ -110,7 +120,7 @@ public class HUD extends Module {
                     if (module instanceof Velocity && removeVelocity) {
                         continue;
                     }
-                    String moduleName = module.getName();
+                    String moduleName = module.getNameInHud();
                     if (module instanceof AntiKnockback) {
                         moduleName = "Velocity";
                     }
@@ -277,6 +287,7 @@ public class HUD extends Module {
                 double n2 = 0.0;
                 String previousModule = "";
                 int lastXPos = 0;
+                boolean removeVelocity = ModuleManager.antiKnockback.isEnabled();
                 try {
                     for (Module module : ModuleManager.organizedModules) {
                         if (module.isEnabled() && !(module instanceof HUD)) {
@@ -295,7 +306,13 @@ public class HUD extends Module {
                             if (removeCloset.isToggled() && module.closetModule) {
                                 continue;
                             }
-                            String moduleName = module.getName();
+                            if (module instanceof Velocity && removeVelocity) {
+                                continue;
+                            }
+                            String moduleName = module.getNameInHud();
+                            if (module instanceof AntiKnockback) {
+                                moduleName = "Velocity";
+                            }
                             if (showInfo.isToggled() && !module.getInfo().isEmpty()) {
                                 moduleName += " §7" + module.getInfo();
                             }

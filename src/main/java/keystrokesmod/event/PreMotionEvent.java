@@ -68,8 +68,10 @@ public class PreMotionEvent extends Event {
         setRotations = true;
     }
 
-    public void setYawSilent(float yaw) {
+    public void setRotations(float yaw, float pitch) {
         this.yaw = yaw;
+        this.pitch = pitch;
+        this.setRenderYaw = true;
         setRotations = true;
     }
 

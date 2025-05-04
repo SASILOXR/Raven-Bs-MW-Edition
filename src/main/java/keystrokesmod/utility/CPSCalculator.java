@@ -31,11 +31,12 @@ public class CPSCalculator {
                     }
 
                     Utils.sendMessage("&7&m-------------------------");
-                    Utils.sendMessage("n: " + en.getName());
-                    Utils.sendMessage("rn: " + en.getName().replace("§", "%"));
-                    Utils.sendMessage("d: " + en.getDisplayName().getUnformattedText());
-                    Utils.sendMessage("rd: " + en.getDisplayName().getUnformattedText().replace("§", "%"));
-                    Utils.sendMessage("b?: " + AntiBot.isBot(en));
+                    Utils.sendMessage("&7n: " + en.getName());
+                    Utils.sendMessage("&7rn: " + en.getName().replace("§", "%"));
+                    Utils.sendMessage("&7d: " + en.getDisplayName().getUnformattedText());
+                    Utils.sendMessage("&7rd: " + en.getDisplayName().getUnformattedText().replace("§", "%"));
+                    Utils.sendMessage("&7bot: " + AntiBot.isBot(en));
+                    Utils.sendMessage("&7type: " + en.getClass().getSimpleName());
                 }
             } else if (d.button == 1) {
                 aR();

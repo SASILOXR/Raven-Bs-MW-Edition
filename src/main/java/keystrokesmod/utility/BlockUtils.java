@@ -36,10 +36,8 @@ public class BlockUtils {
         if (mv == null || mv.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK || mv.getBlockPos() == null) {
             return false;
         }
-        IBlockState iblockstate = mc.theWorld.getBlockState(mv.getBlockPos());
-        if (!mc.thePlayer.isSneaking() || mc.thePlayer.getHeldItem() == null || mc.thePlayer.getHeldItem().getItem().doesSneakBypassUse(mc.theWorld, mv.getBlockPos(), mc.thePlayer)) {
-            Vec3 hitVec = getHitVec(mv.hitVec, mv.getBlockPos());
-            return iblockstate.getBlock().onBlockActivated(mc.theWorld, mv.getBlockPos(), iblockstate, mc.thePlayer, mv.sideHit, (float) hitVec.xCoord, (float) hitVec.yCoord, (float) hitVec.zCoord);
+        if (!mc.thePlayer.isSneaking() || mc.thePlayer.getHeldItem() == null) {
+            return isInteractable(BlockUtils.getBlock(mv.getBlockPos()));
         }
         return false;
     }
