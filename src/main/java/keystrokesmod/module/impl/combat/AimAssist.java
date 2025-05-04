@@ -9,6 +9,9 @@ import keystrokesmod.utility.Utils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.Vec3;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -93,7 +96,7 @@ public class AimAssist extends Module {
                 if (!aimInvis.isToggled() && entityPlayer.isInvisible()) {
                     continue;
                 }
-                if (mc.thePlayer.getDistanceToEntity(entityPlayer) > distance.getInput()) {
+                if (getDistanceToBoundingBox(entityPlayer) > distance.getInput()) {
                     continue;
                 }
                 if (AntiBot.isBot(entityPlayer)) {
@@ -128,5 +131,19 @@ public class AimAssist extends Module {
         }
         shouldRender = false;
         return null;
+    }
+
+
+    private double getDistanceToBoundingBox(Entity target) {
+        if (mc.thePlayer == null) {
+            return 0;
+        }
+        Vec3 playerEyePos = mc.thePlayer.getPositionEyes(Utils.getTimer().renderPartialTicks);
+        AxisAlignedBB boundingBox = target.getEntityBoundingBox();
+        double nearestX = MathHelper.clamp_double(playerEyePos.xCoord, boundingBox.minX, boundingBox.maxX);
+        double nearestY = MathHelper.clamp_double(playerEyePos.yCoord, boundingBox.minY, boundingBox.maxY);
+        double nearestZ = MathHelper.clamp_double(playerEyePos.zCoord, boundingBox.minZ, boundingBox.maxZ);
+        Vec3 nearestPoint = new Vec3(nearestX, nearestY, nearestZ);
+        return playerEyePos.distanceTo(nearestPoint);
     }
 }

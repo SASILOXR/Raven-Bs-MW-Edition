@@ -70,8 +70,7 @@ public class Settings extends Module {
                 BufferedImage bufferedImage = ImageIO.read(stream);
                 loadedCapes.add(mc.renderEngine.getDynamicTextureLocation(name, new DynamicTexture(bufferedImage)));
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
