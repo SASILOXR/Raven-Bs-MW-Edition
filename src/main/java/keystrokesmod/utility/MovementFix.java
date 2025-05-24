@@ -1,26 +1,45 @@
 package keystrokesmod.utility;
 
-import keystrokesmod.event.JumpEvent;
-import keystrokesmod.event.PreMotionEvent;
-import keystrokesmod.event.PrePlayerInputEvent;
-import keystrokesmod.event.StrafeEvent;
+import keystrokesmod.event.*;
 import keystrokesmod.module.impl.client.Settings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.MathHelper;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.jetbrains.annotations.Nullable;
 
 public class MovementFix {
     private Minecraft mc;
-    private float yaw;
+    public static @Nullable Float rotationYaw = null;
+    public static @Nullable Float rotationPitch = null;
+    private boolean rotationed;
 
     public MovementFix(Minecraft mc) {
         this.mc = mc;
     }
 
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onPreUpdate(PreUpdateEvent event) {
+        RotationEvent rotationEvent = new RotationEvent(RotationUtils.serverRotations[0], RotationUtils.serverRotations[1]);
+        MinecraftForge.EVENT_BUS.post(rotationEvent);
+        if (rotationEvent.isSet()) {
+            rotationed = true;
+            rotationYaw = rotationEvent.getYaw();
+            rotationPitch = rotationEvent.getPitch();
+        }
+    }
+
+    @SubscribeEvent
+    public void onTick(GameTickEvent event) {
+        rotationPitch = null;
+        rotationYaw = null;
+        rotationed = false;
+    }
+
     @SubscribeEvent(priority = EventPriority.LOWEST) // called last in order to apply fix
     public void onMoveInput(PrePlayerInputEvent event) {
-        if (fixMovement()) {
+        if (fixMovement() && rotationYaw != null && !Settings.strictMove.isToggled()) {
             final float forward = event.getForward();
             final float strafe = event.getStrafe();
 
@@ -36,7 +55,7 @@ public class MovementFix {
                 for (float predictedStrafe = -1F; predictedStrafe <= 1F; predictedStrafe += 1F) {
                     if (predictedStrafe == 0 && predictedForward == 0) continue;
 
-                    final double predictedAngle = MathHelper.wrapAngleTo180_double(Math.toDegrees(direction(yaw, predictedForward, predictedStrafe)));
+                    final double predictedAngle = MathHelper.wrapAngleTo180_double(Math.toDegrees(direction(rotationYaw, predictedForward, predictedStrafe)));
                     final double difference = wrappedDifference(angle, predictedAngle);
 
                     if (difference < closestDifference) {
@@ -53,27 +72,32 @@ public class MovementFix {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onJump(JumpEvent e) {
-        if (fixMovement()) {
-            Utils.sendMessage("&7Fix movement: &bJump");
-            e.setYaw(yaw);
+        if (fixMovement() && rotationYaw != null) {
+            e.setYaw(rotationYaw);
         }
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST) // called last in order to apply fix
     public void onStrafe(StrafeEvent event) {
-        if (fixMovement()) {
-            Utils.sendMessage("&7Fix movement: &bStrafe");
-            event.setYaw(yaw);
+        if (fixMovement() && rotationYaw != null) {
+            event.setYaw(rotationYaw);
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
+    @SubscribeEvent
     public void onPreMotion(PreMotionEvent e) {
-        this.yaw = e.getYaw();
+        if (rotationed) {
+            if (rotationYaw != null) {
+                e.setYaw(rotationYaw);
+            }
+            if (rotationPitch != null) {
+                e.setPitch(rotationPitch);
+            }
+        }
     }
 
     private boolean fixMovement() {
-        return Settings.movementFix != null && Settings.movementFix.isToggled() && this.yaw != mc.thePlayer.prevRotationYaw;
+        return Settings.movementFix != null && Settings.movementFix.isToggled() && rotationed;
     }
 
     public double wrappedDifference(double number1, double number2) {

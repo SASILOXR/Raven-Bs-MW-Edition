@@ -1,4 +1,4 @@
-package keystrokesmod.mixins.impl.entity;
+package keystrokesmod.mixin.impl.entity;
 
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.combat.AimAssist;

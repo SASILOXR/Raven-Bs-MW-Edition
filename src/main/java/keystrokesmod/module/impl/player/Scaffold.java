@@ -13,7 +13,6 @@ import keystrokesmod.module.impl.movement.LongJump;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
 import keystrokesmod.utility.*;
-import keystrokesmod.utility.Timer;
 import net.minecraft.block.BlockAir;
 import net.minecraft.block.BlockTNT;
 import net.minecraft.client.settings.KeyBinding;
@@ -23,14 +22,20 @@ import net.minecraft.network.play.client.C0APacketAnimation;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraft.network.play.server.S27PacketExplosion;
 import net.minecraft.potion.PotionEffect;
-import net.minecraft.util.*;
+import net.minecraft.util.BlockPos;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.Vec3;
 import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Mouse;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Scaffold extends Module {
@@ -48,10 +53,10 @@ public class Scaffold extends Module {
     public ButtonSetting showBlockCount;
     private ButtonSetting silentSwing;
 
-    private String[] rotationModes = new String[] { "None", "Simple", "Offset", "Precise" };
-    private String[] sprintModes = new String[] { "None", "Vanilla", "Float" };
-    private String[] fastScaffoldModes = new String[] { "None", "Jump B", "Jump C", "Jump D", "Keep-Y A", "Keep-Y B", "Jump A" };
-    private String[] multiPlaceModes = new String[] { "Disabled", "1 extra", "2 extra" };
+    private String[] rotationModes = new String[]{"None", "Simple", "Offset", "Precise"};
+    private String[] sprintModes = new String[]{"None", "Vanilla", "Float"};
+    private String[] fastScaffoldModes = new String[]{"None", "Jump B", "Jump C", "Jump D", "Keep-Y A", "Keep-Y B", "Jump A"};
+    private String[] multiPlaceModes = new String[]{"Disabled", "1 extra", "2 extra"};
 
     public Map<BlockPos, Timer> highlight = new HashMap<>();
 
@@ -161,8 +166,7 @@ public class Scaffold extends Module {
         }
         if (Utils.isMoving()) {
             scaffoldTicks++;
-        }
-        else {
+        } else {
             scaffoldTicks = 0;
         }
         canBlockFade = true;
@@ -182,8 +186,7 @@ public class Scaffold extends Module {
                     }
                 }
             }
-        }
-        else if (fastScaffoldKeepY) {
+        } else if (fastScaffoldKeepY) {
             fastScaffoldKeepY = firstKeepYPlace = false;
             startYPos = -1;
             keepYTicks = 0;
@@ -282,8 +285,7 @@ public class Scaffold extends Module {
                     yawAngle = firstStraight;
                     minOffset = firstOffset;
                     quadVal = 1;
-                }
-                else if (quad > 5 || quad < 85) {
+                } else if (quad > 5 || quad < 85) {
 
                     //second straight
                     if (quad >= 80 || quad < 10) {
@@ -462,8 +464,7 @@ public class Scaffold extends Module {
             case 3:
                 if (blockRotations != null) {
                     e.setRotations(blockRotations[0], blockRotations[1]);
-                }
-                else {
+                } else {
                     e.setRotations(mc.thePlayer.rotationYaw - hardcodedYaw(), 81.150F);
                 }
                 break;
@@ -489,8 +490,7 @@ public class Scaffold extends Module {
                 e.setYaw(forwardYaw);
                 e.setPitch(10 - (float) Utils.randomizeDouble(1, 5));
             }
-        }
-        else {
+        } else {
             rotatingForward = false;
         }
 
@@ -629,8 +629,7 @@ public class Scaffold extends Module {
             if (((S12PacketEntityVelocity) e.getPacket()).getEntityID() == mc.thePlayer.getEntityId()) {
                 e.setCanceled(true);
             }
-        }
-        else if (e.getPacket() instanceof S27PacketExplosion) {
+        } else if (e.getPacket() instanceof S27PacketExplosion) {
             e.setCanceled(true);
         }
     }
@@ -640,8 +639,7 @@ public class Scaffold extends Module {
         String info;
         if (fastOnRMB.isToggled()) {
             info = Mouse.isButtonDown(1) && Utils.tabbedIn() ? fastScaffoldModes[(int) fastScaffold.getInput()] : sprintModes[(int) sprint.getInput()];
-        }
-        else {
+        } else {
             info = fastScaffold.getInput() > 0 ? fastScaffoldModes[(int) fastScaffold.getInput()] : sprintModes[(int) sprint.getInput()];
         }
         return info;
@@ -680,8 +678,7 @@ public class Scaffold extends Module {
     private int handleFastScaffolds() {
         if (fastOnRMB.isToggled()) {
             return Mouse.isButtonDown(1) && Utils.tabbedIn() ? (int) fastScaffold.getInput() : (int) sprint.getInput();
-        }
-        else {
+        } else {
             return fastScaffold.getInput() > 0 ? (int) fastScaffold.getInput() : (int) sprint.getInput();
         }
     }
@@ -706,8 +703,7 @@ public class Scaffold extends Module {
         if (mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, heldItem, block.blockPos, block.enumFacing, block.hitVec)) {
             if (silentSwing.isToggled()) {
                 mc.thePlayer.sendQueue.addToSendQueue(new C0APacketAnimation());
-            }
-            else {
+            } else {
                 mc.thePlayer.swingItem();
                 if (!(autoSwap.isToggled() && ModuleManager.autoSwap.spoofItem.isToggled())) {
                     mc.getItemRenderer().resetEquippedProgress();
@@ -812,9 +808,12 @@ public class Scaffold extends Module {
 
     private double getCoord(EnumFacing facing, String axis) {
         switch (axis) {
-            case "x": return (facing == EnumFacing.WEST) ? -0.5 : (facing == EnumFacing.EAST) ? 0.5 : 0;
-            case "y": return (facing == EnumFacing.DOWN) ? -0.5 : (facing == EnumFacing.UP) ? 0.5 : 0;
-            case "z": return (facing == EnumFacing.NORTH) ? -0.5 : (facing == EnumFacing.SOUTH) ? 0.5 : 0;
+            case "x":
+                return (facing == EnumFacing.WEST) ? -0.5 : (facing == EnumFacing.EAST) ? 0.5 : 0;
+            case "y":
+                return (facing == EnumFacing.DOWN) ? -0.5 : (facing == EnumFacing.UP) ? 0.5 : 0;
+            case "z":
+                return (facing == EnumFacing.NORTH) ? -0.5 : (facing == EnumFacing.SOUTH) ? 0.5 : 0;
         }
         return 0;
     }
@@ -881,8 +880,7 @@ public class Scaffold extends Module {
                     }
                 }
             }
-        }
-        else {
+        } else {
             return null;
         }
         return possibleBlocks.isEmpty() ? null : possibleBlocks;
@@ -952,13 +950,11 @@ public class Scaffold extends Module {
             simpleYaw -= 180;
             if (mc.thePlayer.moveStrafing >= f) simpleYaw += 45;
             if (mc.thePlayer.moveStrafing <= -f) simpleYaw -= 45;
-        }
-        else if (mc.thePlayer.moveForward == 0) {
+        } else if (mc.thePlayer.moveForward == 0) {
             simpleYaw -= 180;
             if (mc.thePlayer.moveStrafing >= f) simpleYaw += 90;
             if (mc.thePlayer.moveStrafing <= -f) simpleYaw -= 90;
-        }
-        else if (mc.thePlayer.moveForward <= -f) {
+        } else if (mc.thePlayer.moveForward <= -f) {
             if (mc.thePlayer.moveStrafing >= f) simpleYaw -= 45;
             if (mc.thePlayer.moveStrafing <= -f) simpleYaw += 45;
         }
@@ -1020,8 +1016,7 @@ public class Scaffold extends Module {
         if (autoSwap.isToggled() && blockSlot != -1) {
             if (ModuleManager.autoSwap.swapToGreaterStack.isToggled()) {
                 mc.thePlayer.inventory.currentItem = slot;
-            }
-            else {
+            } else {
                 mc.thePlayer.inventory.currentItem = blockSlot;
             }
         }

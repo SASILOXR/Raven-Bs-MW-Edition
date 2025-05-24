@@ -11,4 +11,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface IAccessorEntityLivingBase {
     @Accessor("jumpTicks")
     void setJumpTicks(int ticks);
+
+    @Accessor("jumpTicks")
+    int getJumpTicks();
 }

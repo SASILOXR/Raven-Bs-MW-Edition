@@ -12,7 +12,9 @@ import net.minecraft.util.ResourceLocation;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +29,7 @@ public class Settings extends Module {
     public static ButtonSetting rotateBody;
     public static ButtonSetting fullBody;
     public static ButtonSetting movementFix;
+    public static ButtonSetting strictMove;
     public static SliderSetting randomYawFactor;
 
     public static ButtonSetting loadGuiPositions;
@@ -35,7 +38,8 @@ public class Settings extends Module {
     public static SliderSetting offset;
     public static SliderSetting timeMultiplier;
 
-    private String[] capes = new String[] { "None", "Anime", "Aqua", "Green", "Purple", "Red", "White", "Yellow" };
+    private String[] capes = new String[]{"None", "Anime", "Aqua", "Green", "Purple", "Red", "White", "Yellow", "Custom"};
+    public File directory;
 
     public static List<ResourceLocation> loadedCapes = new ArrayList<>();
 
@@ -51,7 +55,8 @@ public class Settings extends Module {
         this.registerSetting(new DescriptionSetting("Rotations"));
         this.registerSetting(rotateBody = new ButtonSetting("Rotate body", true));
         this.registerSetting(fullBody = new ButtonSetting("Full body", false));
-        //this.registerSetting(movementFix = new ButtonSetting("Movement fix", false));
+        this.registerSetting(movementFix = new ButtonSetting("Movement fix", false));
+        this.registerSetting(strictMove = new ButtonSetting("StrictMove", false));
         this.registerSetting(randomYawFactor = new SliderSetting("Random yaw factor", 1.0, 0.0, 10.0, 1.0));
         this.registerSetting(new DescriptionSetting("Profiles"));
         this.registerSetting(loadGuiPositions = new ButtonSetting("Load gui state", false));
@@ -60,22 +65,44 @@ public class Settings extends Module {
         this.registerSetting(offset = new SliderSetting("Offset", 0.5, -3.0, 3.0, 0.1));
         this.registerSetting(timeMultiplier = new SliderSetting("Time multiplier", 0.5, 0.1, 4.0, 0.1));
         this.canBeEnabled = false;
-        loadCapes();
+        directory = new File(mc.mcDataDir + File.separator + "capes");
+        if (!directory.exists()) {
+            boolean success = directory.mkdirs();
+            if (!success) {
+                System.out.println("There was an issue creating capes directory.");
+                return;
+            }
+        }
+        if (directory.listFiles().length == 0) {
+            System.out.println("None Load Custom Cape");
+        }
+        loadCapes(directory.listFiles());
     }
 
-    public void loadCapes() {
+    public void loadCapes(File[] CustomCapes) {
         try {
             for (int i = 1; i < capes.length; i++) {
-                String name = capes[i].toLowerCase();
-                if (i > 1) {
-                    name = "rvn_" + name;
+                if (capes[i].equals("Custom")) {
+                    System.out.println("Load Custom Cape");
+                    if (CustomCapes.length == 0) {
+                        loadedCapes.add(null);
+                        continue;
+                    }
+                    InputStream stream = Files.newInputStream(CustomCapes[0].toPath());
+                    BufferedImage bufferedImage = ImageIO.read(stream);
+                    loadedCapes.add(mc.renderEngine.getDynamicTextureLocation("Custom", new DynamicTexture(bufferedImage)));
+                } else {
+                    String name = capes[i].toLowerCase();
+                    if (i > 1) {
+                        name = "rvn_" + name;
+                    }
+                    InputStream stream = Raven.class.getResourceAsStream("/assets/keystrokesmod/textures/capes/" + name + ".png");
+                    if (stream == null) {
+                        continue;
+                    }
+                    BufferedImage bufferedImage = ImageIO.read(stream);
+                    loadedCapes.add(mc.renderEngine.getDynamicTextureLocation(name, new DynamicTexture(bufferedImage)));
                 }
-                InputStream stream = Raven.class.getResourceAsStream("/assets/keystrokesmod/textures/capes/" + name + ".png");
-                if (stream == null) {
-                    continue;
-                }
-                BufferedImage bufferedImage = ImageIO.read(stream);
-                loadedCapes.add(mc.renderEngine.getDynamicTextureLocation(name, new DynamicTexture(bufferedImage)));
             }
         } catch (Exception e) {
             e.printStackTrace();

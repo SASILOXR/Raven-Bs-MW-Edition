@@ -45,21 +45,13 @@ public class PacketsHandler {
                 C02_INTERACT_AT.sentCurrentTick.set(true);
             }
             C02.sentCurrentTick.set(true);
-        }
-        else if (packet instanceof C08PacketPlayerBlockPlacement) {
+        } else if (packet instanceof C08PacketPlayerBlockPlacement) {
             C08.sentCurrentTick.set(true);
-        }
-        else if (packet instanceof C07PacketPlayerDigging) {
+        } else if (packet instanceof C07PacketPlayerDigging) {
             C07.sentCurrentTick.set(true);
-        }
-        else if (packet instanceof C0APacketAnimation) {
-            if (C07.sentCurrentTick.get()) {
-                e.setCanceled(true);
-                return;
-            }
+        } else if (packet instanceof C0APacketAnimation) {
             C0A.sentCurrentTick.set(true);
-        }
-        else if (packet instanceof C09PacketHeldItemChange && handleSlots) {
+        } else if (packet instanceof C09PacketHeldItemChange && handleSlots) {
             C09PacketHeldItemChange slotPacket = (C09PacketHeldItemChange) packet;
             int slotId = slotPacket.getSlotId();
             if (slotId == playerSlot.get() && slotId == serverSlot.get()) {
@@ -83,8 +75,7 @@ public class PacketsHandler {
             if (index >= 0 && index < InventoryPlayer.getHotbarSize()) {
                 serverSlot.set(index);
             }
-        }
-        else if (e.getPacket() instanceof S0CPacketSpawnPlayer && Minecraft.getMinecraft().thePlayer != null && handleSlots) {
+        } else if (e.getPacket() instanceof S0CPacketSpawnPlayer && Minecraft.getMinecraft().thePlayer != null && handleSlots) {
             S0CPacketSpawnPlayer packet = (S0CPacketSpawnPlayer) e.getPacket();
             if (packet.getEntityID() != Minecraft.getMinecraft().thePlayer.getEntityId()) {
                 return;
@@ -108,20 +99,16 @@ public class PacketsHandler {
             int slotId = ((C09PacketHeldItemChange) packet).getSlotId();
             this.playerSlot.set(slotId);
             C09.sentCurrentTick.set(true);
-        }
-        else if (packet instanceof C02PacketUseEntity) {
+        } else if (packet instanceof C02PacketUseEntity) {
             C02.sentCurrentTick.set(true);
             if (((C02PacketUseEntity) packet).getAction() == C02PacketUseEntity.Action.INTERACT_AT) {
                 C02_INTERACT_AT.sentCurrentTick.set(true);
             }
-        }
-        else if (packet instanceof C07PacketPlayerDigging) {
+        } else if (packet instanceof C07PacketPlayerDigging) {
             C07.sentCurrentTick.set(true);
-        }
-        else if (packet instanceof C08PacketPlayerBlockPlacement) {
+        } else if (packet instanceof C08PacketPlayerBlockPlacement) {
             C08.sentCurrentTick.set(true);
-        }
-        else if (packet instanceof C0APacketAnimation) {
+        } else if (packet instanceof C0APacketAnimation) {
             C0A.sentCurrentTick.set(true);
         }
     }

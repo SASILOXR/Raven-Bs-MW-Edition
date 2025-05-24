@@ -1,4 +1,4 @@
-package keystrokesmod.mixins.impl.render;
+package keystrokesmod.mixin.impl.render;
 
 
 import keystrokesmod.module.ModuleManager;

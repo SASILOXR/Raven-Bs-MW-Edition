@@ -25,6 +25,9 @@ public abstract class MixinEntity {
     @Shadow
     public float rotationYaw;
 
+    @Shadow
+    public float prevRotationYaw;
+
     @ModifyVariable(method = "moveEntity", at = @At(value = "STORE", ordinal = 0), name = "flag")
     private boolean injectSafeWalk(boolean flag) {
         Entity entity = (Entity) (Object) this;
@@ -41,7 +44,7 @@ public abstract class MixinEntity {
     @Overwrite
     public void moveFlying(float strafe, float forward, float friction) {
         StrafeEvent strafeEvent = new StrafeEvent(strafe, forward, friction, this.rotationYaw);
-        if((Object) this == Minecraft.getMinecraft().thePlayer) {
+        if ((Object) this == Minecraft.getMinecraft().thePlayer) {
             MinecraftForge.EVENT_BUS.post(strafeEvent);
         }
 
@@ -61,8 +64,8 @@ public abstract class MixinEntity {
             f = friction / f;
             strafe *= f;
             forward *= f;
-            float f1 = MathHelper.sin(yaw * (float)Math.PI / 180.0F);
-            float f2 = MathHelper.cos(yaw * (float)Math.PI / 180.0F);
+            float f1 = MathHelper.sin(yaw * (float) Math.PI / 180.0F);
+            float f2 = MathHelper.cos(yaw * (float) Math.PI / 180.0F);
             this.motionX += strafe * f2 - forward * f1;
             this.motionZ += forward * f2 + strafe * f1;
         }

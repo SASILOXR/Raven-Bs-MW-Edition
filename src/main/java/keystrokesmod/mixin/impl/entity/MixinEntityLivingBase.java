@@ -50,7 +50,7 @@ public abstract class MixinEntityLivingBase extends Entity {
     @Shadow
     public float swingProgress;
 
-    @Inject(method = { "updateDistance", "func_110146_f" }, at = @At("HEAD"), cancellable = true)
+    @Inject(method = {"updateDistance", "func_110146_f"}, at = @At("HEAD"), cancellable = true)
     protected void injectUpdateDistance(float p_110146_1_, float p_110146_2_, CallbackInfoReturnable<Float> cir) {
         float rotationYaw = this.rotationYaw;
         if (Settings.fullBody != null && Settings.rotateBody != null && !Settings.fullBody.isToggled() && Settings.rotateBody.isToggled() && (EntityLivingBase) (Object) this instanceof EntityPlayerSP && PreMotionEvent.setRenderYaw()) {
@@ -98,10 +98,6 @@ public abstract class MixinEntityLivingBase extends Entity {
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(jumpEvent);
         if (jumpEvent.isCanceled()) {
             return;
-        }
-
-        if (Settings.movementFix != null && Settings.movementFix.isToggled() && PreMotionEvent.setRenderYaw()) {
-            jumpEvent.setYaw(RotationUtils.renderYaw);
         }
 
         this.motionY = jumpEvent.getMotionY();

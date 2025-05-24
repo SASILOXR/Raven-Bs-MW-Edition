@@ -1,4 +1,4 @@
-package keystrokesmod.mixins.impl.render;
+package keystrokesmod.mixin.impl.render;
 
 import net.minecraft.client.renderer.block.statemap.BlockStateMapper;
 import net.minecraft.init.Blocks;

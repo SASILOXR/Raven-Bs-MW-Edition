@@ -1,16 +1,12 @@
 package keystrokesmod;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
+import keystrokesmod.clickgui.ClickGui;
 import keystrokesmod.event.PostProfileLoadEvent;
 import keystrokesmod.event.PostSetSliderEvent;
 import keystrokesmod.keystroke.KeySrokeRenderer;
 import keystrokesmod.keystroke.KeyStrokeConfigGui;
 import keystrokesmod.keystroke.keystrokeCommand;
 import keystrokesmod.module.Module;
-import keystrokesmod.clickgui.ClickGui;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.script.ScriptDefaults;
 import keystrokesmod.script.ScriptManager;
@@ -30,6 +26,10 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.Phase;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Mod(modid = "keystrokes", name = "KeystrokesMod", version = "KMV5", acceptedMinecraftVersions = "[1.8.9]")
 public class Raven {
@@ -99,8 +99,7 @@ public class Raven {
                 for (Module module : getModuleManager().getModules()) {
                     if (mc.currentScreen == null && module.canBeEnabled()) {
                         module.onKeyBind();
-                    }
-                    else if (mc.currentScreen instanceof ClickGui) {
+                    } else if (mc.currentScreen instanceof ClickGui) {
                         module.guiUpdate();
                     }
 
@@ -119,8 +118,7 @@ public class Raven {
                 isKeyStrokeConfigGuiToggled = false;
                 mc.displayGuiScreen(new KeyStrokeConfigGui());
             }
-        }
-        else {
+        } else {
             if (mc.currentScreen == null && Utils.nullCheck()) {
                 for (Profile profile : Raven.profileManager.profiles) {
                     profile.getModule().onKeyBind();

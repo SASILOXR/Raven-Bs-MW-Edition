@@ -2,12 +2,14 @@ package keystrokesmod.utility;
 
 import com.google.common.base.Predicates;
 import keystrokesmod.event.PreMotionEvent;
+import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.impl.client.Settings;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityItemFrame;
 import net.minecraft.util.*;
 
 import java.util.List;
@@ -18,7 +20,7 @@ public class RotationUtils {
     public static float prevRenderPitch;
     public static float renderYaw;
     public static float prevRenderYaw;
-    public static float[] serverRotations = new float[] { 0, 0 } ;
+    public static float[] serverRotations = new float[]{0, 0};
     public static final float PI = (float) Math.PI;
     public static final float TO_DEGREES = 180.0F / PI;
 
@@ -51,7 +53,7 @@ public class RotationUtils {
 
         pitch = clampTo90(pitch);
 
-        return new float[] { yaw, pitch };
+        return new float[]{yaw, pitch};
     }
 
     public static float[] getRotations(double posX, double posY, double posZ) {
@@ -70,7 +72,7 @@ public class RotationUtils {
 
         pitch = clampTo90(pitch);
 
-        return new float[] { yaw, pitch };
+        return new float[]{yaw, pitch};
     }
 
     public static float[] getRotations(Vec3 vec3) {
@@ -89,7 +91,7 @@ public class RotationUtils {
 
         pitch = clampTo90(pitch);
 
-        return new float[] { yaw, pitch };
+        return new float[]{yaw, pitch};
     }
 
     public static float[] getRotations(BlockPos blockPos, EnumFacing enumFacing) {
@@ -107,7 +109,7 @@ public class RotationUtils {
         double distance = Math.hypot(diff.xCoord, diff.zCoord);
         float yaw = (float) (MathHelper.atan2(diff.zCoord, diff.xCoord) * TO_DEGREES) - 90.0F;
         float pitch = (float) (-(MathHelper.atan2(diff.yCoord, distance) * TO_DEGREES));
-        return new float[] { applyVanilla(yaw), clampTo90(pitch) };
+        return new float[]{applyVanilla(yaw), clampTo90(pitch)};
     }
 
     public static float interpolateValue(float tickDelta, float old, float newFloat) {
@@ -127,7 +129,7 @@ public class RotationUtils {
     }
 
     public static float i(final double n, final double n2) {
-        return (float)(Math.atan2(n - mc.thePlayer.posX, n2 - mc.thePlayer.posZ) * 57.295780181884766 * -1.0);
+        return (float) (Math.atan2(n - mc.thePlayer.posX, n2 - mc.thePlayer.posZ) * 57.295780181884766 * -1.0);
     }
 
     public static boolean isPossibleToHit(Entity target, double reach, float[] rotations) {
@@ -136,7 +138,7 @@ public class RotationUtils {
         final float yaw = rotations[0];
         final float pitch = rotations[1];
 
-        final float radianYaw = -yaw * 0.017453292f - (float)Math.PI;
+        final float radianYaw = -yaw * 0.017453292f - (float) Math.PI;
         final float radianPitch = -pitch * 0.017453292f;
 
         final float cosYaw = MathHelper.cos(radianYaw);
@@ -214,11 +216,10 @@ public class RotationUtils {
         if (entity instanceof EntityLivingBase) {
             final EntityLivingBase entityLivingBase = (EntityLivingBase) entity;
             n3 = entityLivingBase.posY + playerOffset.getHeightOffset(entityLivingBase) * 0.9 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
-        }
-        else {
+        } else {
             n3 = (entity.getEntityBoundingBox().minY + entity.getEntityBoundingBox().maxY) / 2.0 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
         }
-        return new float[] { mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float((float) (Math.atan2(n2, n) * 57.295780181884766) - 90.0f - mc.thePlayer.rotationYaw), clampTo90(mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float((float) (-(Math.atan2(n3, MathHelper.sqrt_double(n * n + n2 * n2)) * 57.295780181884766)) - mc.thePlayer.rotationPitch) + 3.0f)};
+        return new float[]{mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float((float) (Math.atan2(n2, n) * 57.295780181884766) - 90.0f - mc.thePlayer.rotationYaw), clampTo90(mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float((float) (-(Math.atan2(n3, MathHelper.sqrt_double(n * n + n2 * n2)) * 57.295780181884766)) - mc.thePlayer.rotationPitch) + 3.0f)};
     }
 
     public static float[] getRotationsPredicated(final Entity entity, final int ticks) {
@@ -241,12 +242,11 @@ public class RotationUtils {
         double n5;
         if (entity instanceof EntityLivingBase) {
             n5 = posY + entity.getEyeHeight() * 0.9 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
-        }
-        else {
+        } else {
             n5 = (entity.getEntityBoundingBox().minY + entity.getEntityBoundingBox().maxY) / 2.0 - (mc.thePlayer.posY + mc.thePlayer.getEyeHeight());
         }
         final double n6 = posZ - mc.thePlayer.posZ;
-        return new float[] { applyVanilla(mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float((float)(Math.atan2(n6, n4) * 57.295780181884766) - 90.0f - mc.thePlayer.rotationYaw)), clampTo90(mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float((float)(-(Math.atan2(n5, MathHelper.sqrt_double(n4 * n4 + n6 * n6)) * 57.295780181884766)) - mc.thePlayer.rotationPitch) + 3.0f) };
+        return new float[]{applyVanilla(mc.thePlayer.rotationYaw + MathHelper.wrapAngleTo180_float((float) (Math.atan2(n6, n4) * 57.295780181884766) - 90.0f - mc.thePlayer.rotationYaw)), clampTo90(mc.thePlayer.rotationPitch + MathHelper.wrapAngleTo180_float((float) (-(Math.atan2(n5, MathHelper.sqrt_double(n4 * n4 + n6 * n6)) * 57.295780181884766)) - mc.thePlayer.rotationPitch) + 3.0f)};
     }
 
     public static float clampTo90(final float n) {
@@ -272,7 +272,7 @@ public class RotationUtils {
         } else if (abs <= 0.04) {
             yaw += ((abs > 0.0f) ? 0.01 : -0.01);
         }
-        return new float[] { yaw, clampTo90(n2) };
+        return new float[]{yaw, clampTo90(n2)};
     }
 
     public static float angle(final double n, final double n2) {
@@ -298,10 +298,10 @@ public class RotationUtils {
     }
 
     public static Vec3 getVectorForRotation(float pitch, float yaw) {
-        float f = MathHelper.cos(-yaw * ((float)Math.PI / 180F) - (float)Math.PI);
-        float f1 = MathHelper.sin(-yaw * ((float)Math.PI / 180F) - (float)Math.PI);
-        float f2 = -MathHelper.cos(-pitch * ((float)Math.PI / 180F));
-        float f3 = MathHelper.sin(-pitch * ((float)Math.PI / 180F));
+        float f = MathHelper.cos(-yaw * ((float) Math.PI / 180F) - (float) Math.PI);
+        float f1 = MathHelper.sin(-yaw * ((float) Math.PI / 180F) - (float) Math.PI);
+        float f2 = -MathHelper.cos(-pitch * ((float) Math.PI / 180F));
+        float f3 = MathHelper.sin(-pitch * ((float) Math.PI / 180F));
         return new Vec3(f1 * f2, f3, f * f2);
     }
 
@@ -313,8 +313,7 @@ public class RotationUtils {
         float unwrappedYaw = yaw + 360 * scaleFactor;
         if (unwrappedYaw < serverRotations[0] - 180) {
             unwrappedYaw += 360;
-        }
-        else if (unwrappedYaw > serverRotations[0] + 180) {
+        } else if (unwrappedYaw > serverRotations[0] + 180) {
             unwrappedYaw -= 360;
         }
 
@@ -333,7 +332,7 @@ public class RotationUtils {
         MovingObjectPosition hitObject;
         double d0 = range;
         if (rotations == null) {
-            rotations = new float[] { mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch };
+            rotations = new float[]{mc.thePlayer.rotationYaw, mc.thePlayer.rotationPitch};
         }
         hitObject = rayTraceCustom(d0, rotations[0], rotations[1]);
         double distanceTo = d0;
@@ -354,7 +353,7 @@ public class RotationUtils {
         List<Entity> list = mc.theWorld.getEntitiesInAABBexcluding(mc.thePlayer, mc.thePlayer.getEntityBoundingBox().addCoord(vec31.xCoord * d0, vec31.yCoord * d0, vec31.zCoord * d0).expand(f, f, f), Predicates.and(EntitySelectors.NOT_SPECTATING, Entity::canBeCollidedWith));
         double d2 = distanceTo;
 
-        for(int j = 0; j < list.size(); ++j) {
+        for (int j = 0; j < list.size(); ++j) {
             Entity entity1 = list.get(j);
             float f1 = entity1.getCollisionBorderSize();
             AxisAlignedBB axisalignedbb = entity1.getEntityBoundingBox().expand(f1, f1, f1);
@@ -365,8 +364,7 @@ public class RotationUtils {
                     vec33 = movingobjectposition == null ? vec3 : movingobjectposition.hitVec;
                     d2 = 0.0;
                 }
-            }
-            else if (movingobjectposition != null) {
+            } else if (movingobjectposition != null) {
                 double d3 = vec3.distanceTo(movingobjectposition.hitVec);
                 if (d3 < d2 || d2 == 0.0) {
                     if (entity1 == mc.thePlayer.ridingEntity && !mc.thePlayer.canRiderInteract()) {
@@ -374,8 +372,7 @@ public class RotationUtils {
                             targetEntity = entity1;
                             vec33 = movingobjectposition.hitVec;
                         }
-                    }
-                    else {
+                    } else {
                         targetEntity = entity1;
                         vec33 = movingobjectposition.hitVec;
                         d2 = d3;
@@ -464,5 +461,73 @@ public class RotationUtils {
             }
             return entity.getEyeHeight();
         }
+    }
+
+    public static boolean isMouseOver(final float yaw, final float pitch, final Entity target, final float range) {
+        final float partialTicks = ((IAccessorMinecraft) mc).getTimer().renderPartialTicks;
+        final Entity entity = mc.getRenderViewEntity();
+        MovingObjectPosition objectMouseOver;
+        Entity mcPointedEntity = null;
+
+        if (entity != null && mc.theWorld != null) {
+
+            mc.mcProfiler.startSection("pick");
+            final double d0 = mc.playerController.getBlockReachDistance();
+            objectMouseOver = entity.rayTrace(d0, partialTicks);
+            double d1 = d0;
+            final Vec3 vec3 = entity.getPositionEyes(partialTicks);
+            final boolean flag = d0 > (double) range;
+
+            if (objectMouseOver != null) {
+                d1 = objectMouseOver.hitVec.distanceTo(vec3);
+            }
+
+            final Vec3 vec31 = getVectorForRotation(pitch, yaw);
+            final Vec3 vec32 = vec3.addVector(vec31.xCoord * d0, vec31.yCoord * d0, vec31.zCoord * d0);
+            Entity pointedEntity = null;
+            Vec3 vec33 = null;
+            final float f = 1.0F;
+            final List<Entity> list = mc.theWorld.getEntitiesInAABBexcluding(entity, entity.getEntityBoundingBox().addCoord(vec31.xCoord * d0, vec31.yCoord * d0, vec31.zCoord * d0).expand(f, f, f), Predicates.and(EntitySelectors.NOT_SPECTATING, Entity::canBeCollidedWith));
+            double d2 = d1;
+
+            for (final Entity entity1 : list) {
+                final float f1 = entity1.getCollisionBorderSize();
+                final AxisAlignedBB axisalignedbb = entity1.getEntityBoundingBox().expand(f1, f1, f1);
+                final MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(vec3, vec32);
+
+                if (axisalignedbb.isVecInside(vec3)) {
+                    if (d2 >= 0.0D) {
+                        pointedEntity = entity1;
+                        vec33 = movingobjectposition == null ? vec3 : movingobjectposition.hitVec;
+                        d2 = 0.0D;
+                    }
+                } else if (movingobjectposition != null) {
+                    final double d3 = vec3.distanceTo(movingobjectposition.hitVec);
+
+                    if (d3 < d2 || d2 == 0.0D) {
+                        pointedEntity = entity1;
+                        vec33 = movingobjectposition.hitVec;
+                        d2 = d3;
+                    }
+                }
+            }
+
+            if (pointedEntity != null && flag && vec3.distanceTo(vec33) > (double) range) {
+                pointedEntity = null;
+                objectMouseOver = new MovingObjectPosition(MovingObjectPosition.MovingObjectType.MISS, vec33, null, new BlockPos(vec33));
+            }
+
+            if (pointedEntity != null && (d2 < d1 || objectMouseOver == null)) {
+                if (pointedEntity instanceof EntityLivingBase || pointedEntity instanceof EntityItemFrame) {
+                    mcPointedEntity = pointedEntity;
+                }
+            }
+
+            mc.mcProfiler.endSection();
+
+            return mcPointedEntity == target;
+        }
+
+        return false;
     }
 }
