@@ -1,11 +1,13 @@
 package keystrokesmod.mixin.impl.entity;
 
+import keystrokesmod.event.ClientLookEvent;
 import keystrokesmod.event.StrafeEvent;
 import keystrokesmod.module.ModuleManager;
 import keystrokesmod.module.impl.player.SafeWalk;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.Vec3;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -70,4 +72,21 @@ public abstract class MixinEntity {
             this.motionZ += forward * f2 + strafe * f1;
         }
     }
+
+    @Overwrite
+    protected final Vec3 getVectorForRotation(float pitch, float yaw) {
+        ClientLookEvent event = new ClientLookEvent(yaw, pitch);
+        MinecraftForge.EVENT_BUS.post(event);
+
+        pitch = event.pitch;
+        yaw = event.yaw;
+
+        float f = MathHelper.cos(-yaw * ((float) Math.PI / 180) - (float) Math.PI);
+        float f1 = MathHelper.sin(-yaw * ((float) Math.PI / 180) - (float) Math.PI);
+        float f2 = -MathHelper.cos(-pitch * ((float) Math.PI / 180));
+        float f3 = MathHelper.sin(-pitch * ((float) Math.PI / 180));
+        return new Vec3(f1 * f2, f3, f * f2);
+    }
+
 }
+

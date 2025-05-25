@@ -6,6 +6,8 @@ public class RotationEvent extends Event {
     private float yaw;
     private float pitch;
     private boolean isSet;
+    private boolean isYawSet;
+    private boolean isPitchSet;
 
     public RotationEvent(float yaw, float pitch) {
         this.yaw = yaw;
@@ -19,6 +21,7 @@ public class RotationEvent extends Event {
     public void setPitch(float pitch) {
         this.pitch = pitch;
         isSet = true;
+        isPitchSet = true;
     }
 
     public float getYaw() {
@@ -28,9 +31,18 @@ public class RotationEvent extends Event {
     public void setYaw(float yaw) {
         this.yaw = yaw;
         isSet = true;
+        isYawSet = true;
     }
 
     public boolean isSet() {
         return isSet;
+    }
+
+    public boolean isYawSet() {
+        return isYawSet;
+    }
+
+    public boolean isPitchSet() {
+        return isPitchSet;
     }
 }

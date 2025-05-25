@@ -1,11 +1,14 @@
 package keystrokesmod.module.impl.combat;
 
 import keystrokesmod.Raven;
+import keystrokesmod.event.ClientLookEvent;
+import keystrokesmod.event.RotationEvent;
 import keystrokesmod.mixin.impl.accessor.IAccessorMinecraft;
 import keystrokesmod.module.Module;
 import keystrokesmod.module.impl.world.AntiBot;
 import keystrokesmod.module.setting.impl.ButtonSetting;
 import keystrokesmod.module.setting.impl.SliderSetting;
+import keystrokesmod.utility.RotationUtils;
 import keystrokesmod.utility.Utils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
@@ -13,11 +16,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 
 public class AimAssist extends Module {
+    private SliderSetting mode;
     private SliderSetting speed;
     private SliderSetting fov;
     private SliderSetting distance;
@@ -32,9 +37,13 @@ public class AimAssist extends Module {
     public ButtonSetting hitThroughBlock;
     public static EntityLivingBase targetEntity;
     private static boolean shouldRender;
+    private static Float[] lookAt = null;
+
+    private String[] modes = new String[]{"Vanilla", "Silent"};
 
     public AimAssist() {
         super("AimAssist", category.combat, 0);
+        this.registerSetting(mode = new SliderSetting("Mode", 0, modes));
         this.registerSetting(speed = new SliderSetting("Speed", 45.0D, 1.0D, 100.0D, 1.0D));
         this.registerSetting(fov = new SliderSetting("FOV", 90.0D, 15.0D, 180.0D, 1.0D));
         this.registerSetting(distance = new SliderSetting("Distance", 4.5D, 1.0D, 10.0D, 0.5D));
@@ -50,6 +59,9 @@ public class AimAssist extends Module {
     }
 
     public void onUpdate() {
+        if (mode.getInput() != 0) {
+            return;
+        }
         if (mc.currentScreen == null && mc.inGameHasFocus) {
             if (!weaponOnly.isToggled() || Utils.holdingWeapon()) {
                 if (!clickAim.isToggled() || Utils.isClicking()) {
@@ -65,7 +77,7 @@ public class AimAssist extends Module {
                             Utils.aim(en, 0.0F, false);
                         } else if (speed.getInput() == 100) {
                             Utils.aim(en, 0.0F, false);
-                        } else {
+                        } else if (mode.getInput() == 0) {
                             double n = Utils.n(en);
                             if (n > 1.0D || n < -1.0D) {
                                 float val = (float) (-(n / (100.0D - (speed.getInput()))));
@@ -81,6 +93,62 @@ public class AimAssist extends Module {
             }
         }
         targetEntity = null;
+    }
+
+    @SubscribeEvent
+    public void onRotated(RotationEvent event) {
+        lookAt = null;
+        if (mode.getInput() != 1) {
+            return;
+        }
+
+        if (mc.currentScreen == null && mc.inGameHasFocus) {
+            if (!weaponOnly.isToggled() || Utils.holdingWeapon()) {
+                if (!clickAim.isToggled() || Utils.isClicking()) {
+                    Entity entity = this.getEnemy();
+                    if (entity != null) {
+                        if (entity instanceof EntityLivingBase) {
+                            targetEntity = (EntityLivingBase) entity;
+                        }
+                        if (speed.getInput() == 100) {
+                            float[] rotations = RotationUtils.getRotations(entity);
+                            if (rotations != null) {
+                                float yaw = rotations[0];
+                                float pitch = MathHelper.clamp_float(rotations[1] + 4.0F, -90, 90);
+                                event.setPitch(pitch);
+                                event.setYaw(yaw);
+                                lookAt = new Float[]{yaw, pitch};
+                            }
+
+                        } else {
+                            double n = Utils.aimDiff(entity, true);
+                            float val = (float) (-(n / (100.0D - (speed.getInput()))));
+                            event.setYaw(RotationUtils.serverRotations[0] + val);
+                            lookAt = new Float[]{RotationUtils.serverRotations[0] + val};
+                        }
+                        return;
+                    }
+                    if (shouldRender) {
+                        return;
+                    }
+                }
+            }
+        }
+        targetEntity = null;
+    }
+
+    @SubscribeEvent
+    public void onClientLook(ClientLookEvent event) {
+        if (lookAt != null) {
+            if (lookAt.length == 2) {
+                if (lookAt[1] != null) {
+                    event.pitch = lookAt[1];
+                }
+            }
+            if (lookAt[0] != null) {
+                event.yaw = lookAt[0];
+            }
+        }
     }
 
     private Entity getEnemy() {

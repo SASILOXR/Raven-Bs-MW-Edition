@@ -918,6 +918,10 @@ public class Utils {
         return ((double) (mc.thePlayer.rotationYaw - getYaw(en)) % 360.0D + 540.0D) % 360.0D - 180.0D;
     }
 
+    public static double aimDiff(Entity en, boolean useServerYaw) {
+        return ((double) ((useServerYaw ? RotationUtils.serverRotations[0] : mc.thePlayer.rotationYaw) - getYaw(en)) % 360.0D + 540.0D) % 360.0D - 180.0D;
+    }
+
     public static float getYaw(Entity ent) {
         double x = ent.posX - mc.thePlayer.posX;
         double z = ent.posZ - mc.thePlayer.posZ;

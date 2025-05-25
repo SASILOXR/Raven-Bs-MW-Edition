@@ -13,7 +13,7 @@ public class MovementFix {
     private Minecraft mc;
     public static @Nullable Float rotationYaw = null;
     public static @Nullable Float rotationPitch = null;
-    private boolean rotationed;
+    public static boolean rotationed;
 
     public MovementFix(Minecraft mc) {
         this.mc = mc;
@@ -25,8 +25,12 @@ public class MovementFix {
         MinecraftForge.EVENT_BUS.post(rotationEvent);
         if (rotationEvent.isSet()) {
             rotationed = true;
-            rotationYaw = rotationEvent.getYaw();
-            rotationPitch = rotationEvent.getPitch();
+            if (rotationEvent.isYawSet()) {
+                rotationYaw = rotationEvent.getYaw();
+            }
+            if (rotationEvent.isPitchSet()) {
+                rotationPitch = rotationEvent.getPitch();
+            }
         }
     }
 
