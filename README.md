@@ -10,8 +10,6 @@ MW Edition add features like MWItemESP, ShowBarrier, BetterXray and more.
 
 Also imporved some modules like AimAssist, MoveFix
 
-It can bypass prediciton in 1.8 as long as you configure it correctly
-
 ![image](https://github.com/user-attachments/assets/d2568078-6e45-46d7-8480-9f5d5eb6bc23)
 
 # Discord
