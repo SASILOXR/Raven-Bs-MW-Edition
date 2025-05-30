@@ -20,3 +20,9 @@ Also imporved some modules like AimAssist, MoveFix
 
 When you import your project into IntelliJ, you need to set the gradle jvm to the Java 17 JDK or higher in the gradle tab, and the Project SDK to the Java 1.8 JDK
 
+# Other
+
+If you want the ghosthand feature, there is a mod that provides it.
+
+[Ghost-Hand-Mod](https://github.com/SASILOXR/Ghost-Hand-Mod)
+
