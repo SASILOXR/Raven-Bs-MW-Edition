@@ -8,7 +8,7 @@ I wanted to fork the original repository, but the original repository was closed
 
 MW Edition add features like MWItemESP, ShowBarrier, BetterXray and more.
 
-Also imporved some moduless like AimAssist, MoveFix
+Also imporved some modules like AimAssist, MoveFix
 
 It can bypass prediciton in 1.8 as long as you configure it correctly
 
