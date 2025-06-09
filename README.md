@@ -8,7 +8,11 @@ I wanted to fork the original repository, but the original repository was closed
 
 MW Edition add features like MWItemESP, ShowBarrier, BetterXray and more.
 
-Also imporved some modules like AimAssist, MoveFix
+Also imporved some modules like AimAssist, MoveFix(only fix KillAura and AimAssist)
+
+This client only used on legit
+
+if u get banned, u should care for ur config and don't use blatant module
 
 ![image](https://github.com/user-attachments/assets/d2568078-6e45-46d7-8480-9f5d5eb6bc23)
 
