@@ -41,6 +41,7 @@ public class AimAssist extends Module {
   private static boolean shouldRender;
   private static Float[] lookAt = null;
   private static Random rand = null;
+  private static boolean rotated;
 
   private String[] modes = new String[] {"Vanilla", "Silent"};
 
@@ -69,6 +70,7 @@ public class AimAssist extends Module {
 
   public void onDisable() {
     targetEntity = null;
+    rotated = false;
   }
 
   public void onUpdate() {
@@ -146,6 +148,7 @@ public class AimAssist extends Module {
                 event.setPitch(pitch);
                 event.setYaw(yaw);
                 lookAt = new Float[] {yaw, pitch};
+                rotated = true;
               }
 
             } else {
@@ -153,6 +156,7 @@ public class AimAssist extends Module {
               float val = (float) (-(n / (100.0D - (speed.getInput()))));
               event.setYaw(RotationUtils.serverRotations[0] + val);
               lookAt = new Float[] {RotationUtils.serverRotations[0] + val};
+              rotated = true;
             }
             return;
           }
@@ -162,6 +166,7 @@ public class AimAssist extends Module {
             event.setYaw(yaw);
             event.setPitch(pitch);
             lookAt = new Float[] {yaw, pitch};
+            rotated = true;
             return;
           }
         }
@@ -169,9 +174,10 @@ public class AimAssist extends Module {
     }
     targetEntity = null;
 
-    if (!norotation.isToggled()) {
+    if (!norotation.isToggled() && rotated) {
       mc.thePlayer.rotationYaw = RotationUtils.serverRotations[0];
       mc.thePlayer.rotationPitch = RotationUtils.serverRotations[1];
+      rotated = false;
     }
   }
 
@@ -212,7 +218,9 @@ public class AimAssist extends Module {
         if (!blatantMode.isToggled() && n != 360 && !Utils.inFov((float) n, entityPlayer)) {
           continue;
         }
-        if (aimNecessary.isToggled() && mc.objectMouseOver.entityHit instanceof EntityPlayer) {
+        if (aimNecessary.isToggled()
+            && mc.objectMouseOver != null
+            && mc.objectMouseOver.entityHit instanceof EntityPlayer) {
           targetEntity = (EntityLivingBase) mc.objectMouseOver.entityHit;
           shouldRender = true;
           return null;
