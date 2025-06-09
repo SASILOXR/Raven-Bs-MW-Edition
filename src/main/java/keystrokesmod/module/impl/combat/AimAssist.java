@@ -2,6 +2,7 @@ package keystrokesmod.module.impl.combat;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Random;
 import keystrokesmod.Raven;
 import keystrokesmod.event.ClientLookEvent;
 import keystrokesmod.event.RotationEvent;
@@ -25,6 +26,7 @@ public class AimAssist extends Module {
   private SliderSetting speed;
   private SliderSetting fov;
   private SliderSetting distance;
+  private SliderSetting jitter;
   private ButtonSetting clickAim;
   private ButtonSetting weaponOnly;
   private ButtonSetting aimInvis;
@@ -33,10 +35,12 @@ public class AimAssist extends Module {
   private ButtonSetting rangeFirst;
   private ButtonSetting fovPriority;
   private ButtonSetting aimNecessary;
+  private ButtonSetting norotation;
   public ButtonSetting hitThroughBlock;
   public static EntityLivingBase targetEntity;
   private static boolean shouldRender;
   private static Float[] lookAt = null;
+  private static Random rand = null;
 
   private String[] modes = new String[] {"Vanilla", "Silent"};
 
@@ -45,6 +49,7 @@ public class AimAssist extends Module {
     this.registerSetting(mode = new SliderSetting("Mode", 0, modes));
     this.registerSetting(speed = new SliderSetting("Speed", 45.0D, 1.0D, 100.0D, 1.0D));
     this.registerSetting(fov = new SliderSetting("FOV", 90.0D, 15.0D, 180.0D, 1.0D));
+    this.registerSetting(jitter = new SliderSetting("Jitter", 0.0, 0.0, 3.0, 0.1));
     this.registerSetting(distance = new SliderSetting("Distance", 4.5D, 1.0D, 10.0D, 0.5D));
     this.registerSetting(clickAim = new ButtonSetting("Click aim", true));
     this.registerSetting(weaponOnly = new ButtonSetting("Weapon only", false));
@@ -54,7 +59,12 @@ public class AimAssist extends Module {
     this.registerSetting(rangeFirst = new ButtonSetting("Range First", false));
     this.registerSetting(fovPriority = new ButtonSetting("Fov Priority", false));
     this.registerSetting(aimNecessary = new ButtonSetting("Aim Necessary", false));
+    this.registerSetting(norotation = new ButtonSetting("No Rotation", true));
     this.registerSetting(hitThroughBlock = new ButtonSetting("Hit Through Block", false));
+  }
+
+  public void onEnable() {
+    rand = new Random();
   }
 
   public void onDisable() {
@@ -118,6 +128,21 @@ public class AimAssist extends Module {
               if (rotations != null) {
                 float yaw = rotations[0];
                 float pitch = MathHelper.clamp_float(rotations[1] + 4.0F, -90, 90);
+
+                if (jitter.getInput() > 0.0D) {
+                  double jitterAmount = jitter.getInput() * 0.45D;
+                  if (rand.nextBoolean()) {
+                    yaw += rand.nextFloat() * jitterAmount;
+                  } else {
+                    yaw -= rand.nextFloat() * jitterAmount;
+                  }
+                  if (rand.nextBoolean()) {
+                    pitch += rand.nextFloat() * jitterAmount * 0.45D;
+                  } else {
+                    pitch -= rand.nextFloat() * jitterAmount * 0.45D;
+                  }
+                }
+
                 event.setPitch(pitch);
                 event.setYaw(yaw);
                 lookAt = new Float[] {yaw, pitch};
@@ -132,12 +157,22 @@ public class AimAssist extends Module {
             return;
           }
           if (shouldRender) {
+            float yaw = RotationUtils.serverRotations[0];
+            float pitch = RotationUtils.serverRotations[1];
+            event.setYaw(yaw);
+            event.setPitch(pitch);
+            lookAt = new Float[] {yaw, pitch};
             return;
           }
         }
       }
     }
     targetEntity = null;
+
+    if (!norotation.isToggled()) {
+      mc.thePlayer.rotationYaw = RotationUtils.serverRotations[0];
+      mc.thePlayer.rotationPitch = RotationUtils.serverRotations[1];
+    }
   }
 
   @SubscribeEvent
