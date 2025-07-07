@@ -1690,4 +1690,8 @@ public class Utils {
     }
     return false;
   }
+
+  public static boolean inLiquid() {
+    return mc.thePlayer.isInWater() || mc.thePlayer.isInLava();
+  }
 }

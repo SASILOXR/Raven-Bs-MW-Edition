@@ -32,7 +32,7 @@ public class DelayRemover extends Module {
     if (oldReg.isToggled()) {
       ((IAccessorMinecraft) mc).setLeftClickCounter(0);
     }
-    if (disableInWater.isToggled() && mc.thePlayer.isInWater()) {
+    if (disableInWater.isToggled() && Utils.inLiquid()) {
       return;
     }
     if (removeJumpTicks.isToggled()) {
