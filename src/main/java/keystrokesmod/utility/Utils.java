@@ -1694,4 +1694,67 @@ public class Utils {
   public static boolean inLiquid() {
     return mc.thePlayer.isInWater() || mc.thePlayer.isInLava();
   }
+
+  public static Object[] raycastEntity(final double distance, final float yaw, final float pitch) {
+    net.minecraft.entity.Entity pointedEntity = null;
+    MovingObjectPosition mop = mc.thePlayer.rayTrace(distance, 1.0f);
+    final net.minecraft.util.Vec3 eyeVec = mc.thePlayer.getPositionEyes(1.0f);
+    final net.minecraft.util.Vec3 lookVec = Utils.getLookVec(yaw, pitch);
+    final net.minecraft.util.Vec3 vec32 =
+        eyeVec.addVector(
+            lookVec.xCoord * distance, lookVec.yCoord * distance, lookVec.zCoord * distance);
+    net.minecraft.util.Vec3 vec33 = null;
+    final List list =
+        mc.theWorld.getEntitiesWithinAABBExcludingEntity(
+            mc.getRenderViewEntity(),
+            mc.getRenderViewEntity()
+                .getEntityBoundingBox()
+                .addCoord(
+                    lookVec.xCoord * distance, lookVec.yCoord * distance, lookVec.zCoord * distance)
+                .expand(1.0, 1.0, 1.0));
+    double d2 = distance;
+    for (int i = 0; i < list.size(); ++i) {
+      final net.minecraft.entity.Entity entity = (net.minecraft.entity.Entity) list.get(i);
+      if (entity instanceof EntityLivingBase && entity.canBeCollidedWith()) {
+        if (((EntityLivingBase) entity).deathTime == 0) {
+          final float cbs = entity.getCollisionBorderSize();
+          final AxisAlignedBB axisalignedbb =
+              entity.getEntityBoundingBox().expand((double) cbs, (double) cbs, (double) cbs);
+          final MovingObjectPosition movingobjectposition =
+              axisalignedbb.calculateIntercept(eyeVec, vec32);
+          if (axisalignedbb.isVecInside(eyeVec)) {
+            if (0.0 < d2 || d2 == 0.0) {
+              pointedEntity = entity;
+              vec33 = ((movingobjectposition == null) ? eyeVec : movingobjectposition.hitVec);
+              d2 = 0.0;
+            }
+          } else if (movingobjectposition != null) {
+            final double d3 = eyeVec.distanceTo(movingobjectposition.hitVec);
+            if (d3 < d2 || d2 == 0.0) {
+              if (entity == mc.getRenderViewEntity().ridingEntity && !entity.canRiderInteract()) {
+                if (d2 == 0.0) {
+                  pointedEntity = entity;
+                  vec33 = movingobjectposition.hitVec;
+                }
+              } else {
+                pointedEntity = entity;
+                vec33 = movingobjectposition.hitVec;
+                d2 = d3;
+              }
+            }
+          }
+        }
+      }
+    }
+    if (pointedEntity != null && (d2 < distance || mop == null)) {
+      mop = new MovingObjectPosition(pointedEntity, vec33);
+      final Vec3 offset =
+          new Vec3(
+              mop.hitVec.xCoord - pointedEntity.posX,
+              mop.hitVec.yCoord - pointedEntity.posY,
+              mop.hitVec.zCoord - pointedEntity.posZ);
+      return new Object[] {mop.entityHit, offset, eyeVec.squareDistanceTo(mop.hitVec)};
+    }
+    return null;
+  }
 }
