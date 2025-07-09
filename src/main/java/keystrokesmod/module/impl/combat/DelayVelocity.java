@@ -43,6 +43,12 @@ public class DelayVelocity extends Module {
   @Override
   public void onEnable() {
     packets.clear();
+    delaying = conditionals = aiming = false;
+  }
+
+  @Override
+  public void onDisable() {
+    flushAll();
   }
 
   @SubscribeEvent
