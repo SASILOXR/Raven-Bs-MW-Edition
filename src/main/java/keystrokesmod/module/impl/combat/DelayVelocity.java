@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import keystrokesmod.Raven;
 import keystrokesmod.event.PostMotionEvent;
 import keystrokesmod.event.ReceivePacketEvent;
 import keystrokesmod.event.SendPacketEvent;
@@ -28,16 +29,22 @@ public class DelayVelocity extends Module {
   private ButtonSetting requireMouseDown;
   private ButtonSetting onlyWeapon;
   private ButtonSetting lookAtPlayer;
+  private ButtonSetting onlyAir;
+  private ButtonSetting disableInLiquid;
+  private ButtonSetting disableInInventroy;
 
   private List<Map<String, Object>> packets = new ArrayList<>();
   private boolean delaying, conditionals, aiming;
 
   public DelayVelocity() {
     super("DelayVelocity", category.combat);
-    this.registerSetting(delayMs = new SliderSetting("Delay MS", "ms", 400, 0, 1000, 10));
+    this.registerSetting(delayMs = new SliderSetting("Delay MS", "ms", 200, 0, 1000, 10));
     this.registerSetting(requireMouseDown = new ButtonSetting("require Mouse Down", false));
     this.registerSetting(onlyWeapon = new ButtonSetting("only Weapon", false));
     this.registerSetting(lookAtPlayer = new ButtonSetting("look At Player", false));
+    this.registerSetting(onlyAir = new ButtonSetting("only Air", false));
+    this.registerSetting(disableInLiquid = new ButtonSetting("disable In Liquid", true));
+    this.registerSetting(disableInInventroy = new ButtonSetting("disable In Inventory", true));
   }
 
   @Override
@@ -57,13 +64,18 @@ public class DelayVelocity extends Module {
       S12PacketEntityVelocity packet = (S12PacketEntityVelocity) e.getPacket();
       if (packet.getEntityID() == mc.thePlayer.getEntityId() && conditionals) {
         delaying = true;
+        if (Raven.debug) {
+          Utils.sendMessage("delaying velocity packet");
+        }
       }
     }
     if (!delaying) return;
     Map<String, Object> entry = new HashMap<>();
     entry.put("packet", e.getPacket());
     entry.put("time", System.currentTimeMillis());
-    packets.add(entry);
+    synchronized (packets) {
+      packets.add(entry);
+    }
     e.setCanceled(true);
   }
 
@@ -84,7 +96,7 @@ public class DelayVelocity extends Module {
       }
     }
 
-    if (!conditionals && !containsVelocity()) {
+    if (!conditionals || !containsVelocity()) {
       flushAll();
     }
   }
@@ -101,8 +113,13 @@ public class DelayVelocity extends Module {
   }
 
   private void flushOne() {
-    Map<String, Object> entry = packets.remove(0);
-    PacketUtils.receivePacketNoEvent((Packet) entry.get("packet"));
+    synchronized (packets) {
+      Map<String, Object> entry = packets.remove(0);
+      PacketUtils.receivePacketNoEvent((Packet) entry.get("packet"));
+    }
+    if (Raven.debug) {
+      Utils.sendMessage("relase velocity packet");
+    }
   }
 
   private void flushAll() {
@@ -113,21 +130,25 @@ public class DelayVelocity extends Module {
   }
 
   private boolean conditionals() {
+    if (disableInInventroy.isToggled() && mc.currentScreen != null) return false;
     if (onlyWeapon.isToggled() && !Utils.holdingWeapon()) return false;
     if (requireMouseDown.isToggled() && !Mouse.isButtonDown(0)) return false;
     if (lookAtPlayer.isToggled() && !aiming) return false;
     if (mc.thePlayer.isCollidedHorizontally) return false;
-    if (mc.thePlayer.onGround) return false;
+    if (onlyAir.isToggled() && mc.thePlayer.onGround) return false;
     if (mc.thePlayer.capabilities.isFlying) return false;
+    if (disableInLiquid.isToggled() && Utils.inLiquid()) return false;
     return true;
   }
 
   private boolean containsVelocity() {
-    for (Map<String, Object> entry : packets) {
-      Packet packet = (Packet) entry.get("packet");
-      if (packet instanceof S12PacketEntityVelocity
-          && ((S12PacketEntityVelocity) packet).getEntityID() == mc.thePlayer.getEntityId())
-        return true;
+    synchronized (packets) {
+      for (Map<String, Object> entry : packets) {
+        Packet packet = (Packet) entry.get("packet");
+        if (packet instanceof S12PacketEntityVelocity
+            && ((S12PacketEntityVelocity) packet).getEntityID() == mc.thePlayer.getEntityId())
+          return true;
+      }
     }
     return false;
   }

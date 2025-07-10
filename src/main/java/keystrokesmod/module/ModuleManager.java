@@ -72,6 +72,7 @@ public class ModuleManager {
   public static Xray xray;
   public static Barrier barrier;
   public static AimAssist aimAssist;
+  public static DelayVelocity delayVelocity;
   public static ChatCommands chatCommands;
 
   public void register() {
@@ -173,6 +174,7 @@ public class ModuleManager {
     this.addModule(new Shaders());
     this.addModule(new MegaWallsItemESP());
     this.addModule(barrier = new Barrier());
+    this.addModule(delayVelocity = new DelayVelocity());
     antiBot.enable();
     Collections.sort(this.modules, Comparator.comparing(Module::getName));
   }
