@@ -31,6 +31,7 @@ public class JumpReset extends Module {
   private boolean ignoreNext;
   private int LastHurtTime;
   private double lastFallDistance;
+  private ButtonSetting disableInLiquid;
 
   public JumpReset() {
     super("Jump Reset", category.combat);
@@ -38,11 +39,17 @@ public class JumpReset extends Module {
     this.registerSetting(requireMouseDown = new ButtonSetting("Require Mouse Down", true));
     this.registerSetting(requireMovingForward = new ButtonSetting("Require Moving Forward", true));
     this.registerSetting(requireAim = new ButtonSetting("Require Aim", true));
+    this.registerSetting(disableInLiquid = new ButtonSetting("Disable In Liquid", true));
     this.closetModule = true;
   }
 
   public void onDisable() {
     jump = false;
+  }
+
+  @Override
+  public String getInfo() {
+    return String.valueOf(chance.getInput());
   }
 
   @SubscribeEvent
@@ -56,6 +63,7 @@ public class JumpReset extends Module {
       boolean aimingAt = aiming || !requireAim.isToggled();
       boolean forward =
           mc.gameSettings.keyBindForward.isKeyDown() || !requireMovingForward.isToggled();
+      boolean liquidCheck = !(disableInLiquid.isToggled() && Utils.inLiquid());
       if (!ignoreNext
           && !mc.thePlayer.isBurning()
           && onGround
@@ -63,6 +71,7 @@ public class JumpReset extends Module {
           && forward
           && mouseDown
           && Utils.randomizeDouble(0, 100) < chance.getInput()
+          && liquidCheck
           && !hasBadEffect()) {
         KeyBinding.setKeyBindState(mc.gameSettings.keyBindJump.getKeyCode(), jump = true);
         KeyBinding.onTick(mc.gameSettings.keyBindJump.getKeyCode());

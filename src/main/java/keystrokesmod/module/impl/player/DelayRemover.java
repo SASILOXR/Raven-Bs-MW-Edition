@@ -18,10 +18,15 @@ public class DelayRemover extends Module {
   public DelayRemover() {
     super("Delay Remover", category.player, 0);
     this.registerSetting(oldReg = new ButtonSetting("1.7 hitreg", true));
-    this.registerSetting(removeJumpTicks = new ButtonSetting("Remove jump ticks", false));
+    this.registerSetting(removeJumpTicks = new ButtonSetting("Remove Jump Ticks", false));
     this.registerSetting(jumpDelay = new SliderSetting("Jump Delay", 0, 0, 10, 1));
-    this.registerSetting(disableInWater = new ButtonSetting("Disable in water", true));
+    this.registerSetting(disableInWater = new ButtonSetting("Disable In Water", true));
     this.closetModule = true;
+  }
+
+  @Override
+  public String getInfo() {
+    return String.valueOf(jumpDelay.getInput());
   }
 
   @SubscribeEvent

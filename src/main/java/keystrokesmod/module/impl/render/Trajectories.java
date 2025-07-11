@@ -223,7 +223,7 @@ public class Trajectories extends Module {
     double distSq2 = 0.0;
     if (entity != null) {
       distSq2 = mc.thePlayer.getDistanceSq(entity.getPosition());
-    } else {
+    } else if (block != null) {
       distSq2 = mc.thePlayer.getDistanceSq(block.getBlockPos());
     }
     if (facing != null) {

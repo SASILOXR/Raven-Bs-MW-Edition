@@ -73,6 +73,11 @@ public class AimAssist extends Module {
     rotated = false;
   }
 
+  @Override
+  public String getInfo() {
+    return modes[(int) mode.getInput()];
+  }
+
   public void onUpdate() {
     if (mode.getInput() != 0) {
       return;

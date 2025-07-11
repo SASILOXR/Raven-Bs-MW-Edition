@@ -39,12 +39,12 @@ public class DelayVelocity extends Module {
   public DelayVelocity() {
     super("DelayVelocity", category.combat);
     this.registerSetting(delayMs = new SliderSetting("Delay MS", "ms", 200, 0, 1000, 10));
-    this.registerSetting(requireMouseDown = new ButtonSetting("require Mouse Down", false));
-    this.registerSetting(onlyWeapon = new ButtonSetting("only Weapon", false));
-    this.registerSetting(lookAtPlayer = new ButtonSetting("look At Player", false));
-    this.registerSetting(onlyAir = new ButtonSetting("only Air", false));
-    this.registerSetting(disableInLiquid = new ButtonSetting("disable In Liquid", true));
-    this.registerSetting(disableInInventroy = new ButtonSetting("disable In Inventory", true));
+    this.registerSetting(requireMouseDown = new ButtonSetting("Require Mouse Down", false));
+    this.registerSetting(onlyWeapon = new ButtonSetting("Only Weapon", false));
+    this.registerSetting(lookAtPlayer = new ButtonSetting("Look At Player", false));
+    this.registerSetting(onlyAir = new ButtonSetting("Only Air", false));
+    this.registerSetting(disableInLiquid = new ButtonSetting("Disable In Liquid", true));
+    this.registerSetting(disableInInventroy = new ButtonSetting("Disable In Inventory", true));
   }
 
   @Override
@@ -56,6 +56,11 @@ public class DelayVelocity extends Module {
   @Override
   public void onDisable() {
     flushAll();
+  }
+
+  @Override
+  public String getInfo() {
+    return String.valueOf(delayMs.getInput()) + "MS";
   }
 
   @SubscribeEvent
