@@ -19,6 +19,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C03PacketPlayer;
 import net.minecraft.network.play.client.C03PacketPlayer.C05PacketPlayerLook;
 import net.minecraft.network.play.client.C03PacketPlayer.C06PacketPlayerPosLook;
+import net.minecraft.network.play.server.S08PacketPlayerPosLook;
 import net.minecraft.network.play.server.S12PacketEntityVelocity;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Mouse;
@@ -32,12 +33,14 @@ public class DelayVelocity extends Module {
   private ButtonSetting onlyAir;
   private ButtonSetting disableInLiquid;
   private ButtonSetting disableInInventroy;
+  private SliderSetting chance;
 
   private List<Map<String, Object>> packets = new ArrayList<>();
-  private boolean delaying, conditionals, aiming;
+  private boolean delaying, conditionals, aiming, teleported;
 
   public DelayVelocity() {
     super("DelayVelocity", category.combat);
+    this.registerSetting(chance = new SliderSetting("Chance", "%", 80, 0, 100, 1));
     this.registerSetting(delayMs = new SliderSetting("Delay MS", "ms", 200, 0, 1000, 10));
     this.registerSetting(requireMouseDown = new ButtonSetting("Require Mouse Down", false));
     this.registerSetting(onlyWeapon = new ButtonSetting("Only Weapon", false));
@@ -50,7 +53,7 @@ public class DelayVelocity extends Module {
   @Override
   public void onEnable() {
     packets.clear();
-    delaying = conditionals = aiming = false;
+    delaying = conditionals = aiming = teleported = false;
   }
 
   @Override
@@ -65,7 +68,10 @@ public class DelayVelocity extends Module {
 
   @SubscribeEvent
   public void onReceivePacket(ReceivePacketEvent e) {
-    if (e.getPacket() instanceof S12PacketEntityVelocity) {
+    if (e.getPacket() instanceof S08PacketPlayerPosLook) {
+      teleported = true;
+    } else if (e.getPacket() instanceof S12PacketEntityVelocity) {
+      teleported = false;
       S12PacketEntityVelocity packet = (S12PacketEntityVelocity) e.getPacket();
       if (packet.getEntityID() == mc.thePlayer.getEntityId() && conditionals) {
         delaying = true;
@@ -89,6 +95,10 @@ public class DelayVelocity extends Module {
     conditionals = conditionals();
     if (packets.isEmpty()) return;
 
+    if (!conditionals || !containsVelocity() || teleported) {
+      flushAll();
+    }
+
     long now = System.currentTimeMillis();
     long delay = (long) delayMs.getInput();
 
@@ -99,10 +109,6 @@ public class DelayVelocity extends Module {
       } else {
         break;
       }
-    }
-
-    if (!conditionals || !containsVelocity()) {
-      flushAll();
     }
   }
 
@@ -143,6 +149,7 @@ public class DelayVelocity extends Module {
     if (onlyAir.isToggled() && mc.thePlayer.onGround) return false;
     if (mc.thePlayer.capabilities.isFlying) return false;
     if (disableInLiquid.isToggled() && Utils.inLiquid()) return false;
+    if (Utils.randomizeInt(0, 100) > chance.getInput()) return false;
     return true;
   }
 
