@@ -25,6 +25,10 @@ public class Settings extends Module {
   public static ButtonSetting middleClickFriends;
   public static ButtonSetting setChatAsInventory;
 
+  public static ButtonSetting checkColor;
+  public static ButtonSetting checkPrefix;
+  public static ButtonSetting checkVanillaTeam;
+
   public static ButtonSetting rotateBody;
   public static ButtonSetting fullBody;
   public static ButtonSetting movementFix;
@@ -57,6 +61,11 @@ public class Settings extends Module {
     this.registerSetting(fullBody = new ButtonSetting("Full body", false));
     this.registerSetting(movementFix = new ButtonSetting("Movement fix", false));
     this.registerSetting(strictMove = new ButtonSetting("StrictMove", true));
+    this.registerSetting(new DescriptionSetting("Teammates Check"));
+    this.registerSetting(checkColor = new ButtonSetting("Check teammates by color", true));
+    this.registerSetting(checkPrefix = new ButtonSetting("Check teammates by prefix", true));
+    this.registerSetting(
+        checkVanillaTeam = new ButtonSetting("Check teammates by vanilla team", false));
     this.registerSetting(
         randomYawFactor = new SliderSetting("Random yaw factor", 1.0, 0.0, 10.0, 1.0));
     this.registerSetting(new DescriptionSetting("Profiles"));

@@ -730,9 +730,26 @@ public class Utils {
 
   public static boolean isTeamMate(Entity entity) {
     try {
-      Entity teamMate = entity;
-      if (mc.thePlayer.isOnSameTeam((EntityLivingBase) entity)
-          || (isSameColorWithPlayer(entity) && isPrefixSameWithPlayer(entity))) {
+      boolean checkColor = false;
+      boolean checkPrefix = false;
+      boolean checkVanillaTeam = false;
+      if (Settings.checkColor.isToggled() && isSameColorWithPlayer(entity)) {
+        checkColor = true;
+      }
+
+      if (Settings.checkPrefix.isToggled() && isSameColorWithPlayer(entity)) {
+        checkPrefix = true;
+      }
+
+      if (Settings.checkVanillaTeam.isToggled()
+          && mc.thePlayer.isOnSameTeam((EntityLivingBase) entity)) {
+        checkVanillaTeam = true;
+      }
+
+      if (checkVanillaTeam
+          || (checkColor && checkPrefix)
+          || (!Settings.checkColor.isToggled() && checkPrefix)
+          || (!Settings.checkPrefix.isToggled() && checkColor)) {
         return true;
       }
     } catch (Exception ignored) {
@@ -755,6 +772,7 @@ public class Utils {
       return false;
     }
     String playerColor = playerColorstring.substring(index2, index2 + 2);
+
     String entityName = entity.getDisplayName().getUnformattedText();
     int index1 = entityName.indexOf(((EntityPlayer) entity).getDisplayNameString());
     if (index1 < 1) {
@@ -769,7 +787,7 @@ public class Utils {
     return playerColor.equals(entityColor);
   }
 
-  public static boolean isPrefixSameWithPlayer(Entity entity) {
+  public static boolean isSamePrefixWithPlayer(Entity entity) {
     if (!(entity instanceof EntityPlayer)) {
       return false;
     }
@@ -777,7 +795,9 @@ public class Utils {
 
     ArrayList<String> prefixes = new ArrayList<>();
     String playerName = mc.thePlayer.getDisplayName().getUnformattedText();
-    Matcher matcher = pattern.matcher(playerName);
+    int index = playerName.indexOf(mc.thePlayer.getDisplayNameString());
+    String playerPrefix = playerName.substring(0, index);
+    Matcher matcher = pattern.matcher(playerPrefix);
     while (matcher.find()) {
       String context = matcher.group(0);
       if (context.equals("[§2S§6]")) {
@@ -791,7 +811,9 @@ public class Utils {
     }
 
     String entityName = entity.getDisplayName().getUnformattedText();
-    Matcher matcher1 = pattern.matcher(entityName);
+    int index1 = entityName.indexOf(((EntityPlayer) entity).getDisplayNameString());
+    String entityPrefix = entityName.substring(0, index1);
+    Matcher matcher1 = pattern.matcher(entityPrefix);
     while (matcher1.find()) {
       String context = matcher1.group(0);
       for (String prefix : prefixes) {
